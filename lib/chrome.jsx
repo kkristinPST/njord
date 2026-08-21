@@ -294,27 +294,90 @@ function useTextSize() { return React.useSyncExternalStore(textSizeStore.subscri
 Object.assign(window, { textSizeStore, useTextSize, TEXT_SIZES });
 
 // ---- Alarm "area" → process screen resolver ----
-// Maps a free-text alarm area (e.g. "DPT2 Pump Sump") to a building+dept+system so an
-// operator handling an alarm can jump straight to where the problem physically is.
-// Returns { b, d, sub } or null when no related process screen exists (PLC rooms, sumps
-// with no mimic, etc.) — callers render those areas as plain, non-linked text.
+// Maps a free-text area ("DPT2 Drum filter", "Building 2 Dead Fish") to a building + department
+// + system, so clicking it shows MORE ABOUT THE SAME THING: the same equipment, in the
+// department that owns it. Two rules, in this order:
+//
+//   1. Scope comes from the area text, never from the equipment. "DPT2 Drum filter" is DPT2's
+//      drum filter, so it resolves inside DPT2 — it must not land on some other department that
+//      happens to own the nicest filter mimic.
+//   2. System comes from the equipment, resolved against what that department ACTUALLY HAS in
+//      FACILITY. Each keyword carries an ordered preference list and the first label the
+//      department really offers wins. That is why one rule covers the whole loop: Building 1's
+//      departments carry "RAS" and Building 2's carry "MBBR", and both labels render the same
+//      dept-aware loop mimic — which draws the drum filters, bioreactor, CO₂ stripper, lye
+//      pumps and pump sump, so all of those legitimately resolve to it.
+//
+// Validating against FACILITY is what makes this safe: the resolver can no longer name a
+// department/system pair that does not exist (it used to send turbidity to "Water Treatment"
+// under a department that has only Fish Tank / RAS / Feeding, so the tab strip never matched).
+// Equipment a department does not own — UV skids, dead-fish handling — falls back to another
+// department in the SAME building, which is where the facility model keeps shared systems.
+//
+// Returns { b, d, sub }, or null when nothing in that building models the area (control rooms /
+// "Tavlerom", fish transport, system-level tags) — callers render those as plain, unlinked text.
+
+// DPT1/DPT2 are Building 1's production departments and DPT3/DPT4 Building 2's. Building 3 also
+// labels its departments DPT1/DPT2 (Hatchery / Start-Feeding), but those are addressed by name
+// ("Building 3 Hatchery"), never by a bare DPTn, so the short form is unambiguous in practice.
+const NJ_AREA_DEPT = { 1: ["b1", "b1-d1"], 2: ["b1", "b1-d2"], 3: ["b2", "b2-d3"], 4: ["b2", "b2-d4"] };
+
+// keyword → ordered preference list of system labels that show that equipment
+const NJ_AREA_SYSTEM = [
+  [/fish\s*tank|oxygen|\bdox\b/, ["Fish Tank"]],
+  [/feed(ing|\s*screw|\s*count)|hyflow/, ["Feeding", "HyFlow Feeding"]],
+  [/pump\s*sump|returnvann/, ["Pump Sump", "RAS", "MBBR"]],
+  [/biofilter|mbbr|\btan\b/, ["MBBR", "RAS"]],
+  [/drum\s*filter|turbidity|backwash|co₂|co2|stripper|degasser|lye/, ["RAS", "MBBR", "Lye Dosing"]],
+  [/\buv\b|water\s*treatment/, ["Water Treatment"]],
+  [/energy\s*plant/, ["Energy Plant"]],
+  [/sludge/, ["Sludge Treatment"]],
+  [/sorting/, ["Sorting", "Hatchery"]],
+  [/hatchery|incubation|\begg\b/, ["Hatchery"]],
+  [/dead\s*fish|grinder/, ["Dead Fish"]],
+  [/fish\s*barrier/, ["Fish Barrier"]],
+  [/seawater/, ["Seawater Exchange"]],
+  [/technical|tavlerom/, ["Technical"]],
+  [/overview/, ["Overview"]],
+];
+
+// first preferred label that the given department actually offers
+function njDeptOffers(deptId, prefs) {
+  for (const b of FACILITY) {
+    const d = b.depts.find((x) => x.id === deptId);
+    if (!d) continue;
+    const labels = d.systems.map((s) => s.label);
+    return prefs.find((p) => labels.includes(p)) || null;
+  }
+  return null;
+}
+
 function njResolveArea(area) {
   if (!area) return null;
   const a = area.toLowerCase();
-  const d4 = /dpt4/.test(a);
-  const P = (b, d, sub) => ({ b, d, sub });
-  if (/pump\s*sump/.test(a)) return P("b2", d4 ? "b2-d4" : "b2-d3", "Pump Sump");
-  if (/drum\s*filter|turbidity|\buv\b|backwash|water treatment/.test(a)) return P("b2", "b2-sup", "Water Treatment");
-  if (/co₂|co2|stripper|degasser/.test(a)) return P("b3", "b3-d2", "Overview");
-  if (/biofilter|mbbr|\btan\b/.test(a)) return P("b2", d4 ? "b2-d4" : "b2-d3", "MBBR");
-  if (/oxygen|fish\s*tank|feed\s*screw|feed\s*count/.test(a)) return P("b1", "b1-d1", "Fish Tank");
-  if (/energy\s*plant/.test(a)) return P("b2", d4 ? "b2-d4" : "b2-d3", "Energy Plant");
-  if (/sorting/.test(a)) return P("b1", "b1-sup", "Sorting");
-  if (/sludge/.test(a)) return P("b1", "b1-sup", "Sludge Treatment");
-  if (/hatchery/.test(a)) return P("b3", "b3-d1", "Hatchery");
-  if (/lye/.test(a)) return P("b2", "b2-sup", "Lye Dosing");
-  if (/dead\s*fish|grinder/.test(a)) return P("b2", "b2-sup", "Dead Fish");
-  if (/technical/.test(a)) return P("b3", "b3-com", "Technical");
+  const rule = NJ_AREA_SYSTEM.find(([re]) => re.test(a));
+  if (!rule) return null;
+  const prefs = rule[1];
+
+  // 1. the department named in the text, if it offers the equipment
+  const dptNo = /\bdpt\s*([1-4])\b/.exec(a);
+  const home = dptNo && NJ_AREA_DEPT[dptNo[1]];
+  if (home) {
+    const own = njDeptOffers(home[1], prefs);
+    if (own) return { b: home[0], d: home[1], sub: own };
+  }
+  // 2. otherwise the first department of the relevant building that does offer it — this is how
+  //    shared support systems (Water Treatment, Dead Fish, Lye Dosing) get picked up
+  const bldNo = /\bbuilding\s*([1-3])\b/.exec(a);
+  const scope = home ? [home[0]] : bldNo ? ["b" + bldNo[1]] : FACILITY.map((b) => b.id);
+  for (const bId of scope) {
+    const b = FACILITY.find((x) => x.id === bId);
+    if (!b) continue;
+    for (const d of b.depts) {
+      const hit = njDeptOffers(d.id, prefs);
+      if (hit) return { b: bId, d: d.id, sub: hit };
+    }
+  }
   return null;
 }
 // Navigate to an explicit building + department + system.
@@ -720,4 +783,4 @@ function njActivate(fn) {
   };
 }
 
-Object.assign(window, { njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });
+Object.assign(window, { njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });

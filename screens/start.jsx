@@ -139,11 +139,12 @@ function StartScreen() {
         <KpiCard label="Tanks in Operation" value={String(activeTanks.length)} unit={"of " + tanks.length}
           delta={tanks.length - activeTanks.length ? (tanks.length - activeTanks.length) + " deactivated" : "all tanks active"}
           deltaDir="flat" icon="waves" onClick={goFishTank} />
+        {/* the delta names the area these link to, so the destination is predictable before the click */}
         <KpiCard label="Max TAN" value={tan ? tan.base.toFixed(2) : "0.62"} unit="mg/L"
-          delta={`Biofilter · alarm limit ${tan ? tan.thr.value.toFixed(2) : "1.50"} mg/L`}
+          delta={`${tanRow ? tanRow.area : "Biofilter"} · alarm limit ${tan ? tan.thr.value.toFixed(2) : "1.50"} mg/L`}
           deltaDir="up" icon="flask-conical" onClick={() => njGoArea(tanRow ? tanRow.area : "Biofilter A")} />
         <KpiCard label="Max Turbidity" value={turb ? turb.base.toFixed(2) : "0.45"} unit="NTU"
-          delta={`Drum filter out · alarm limit ${turb ? turb.thr.value.toFixed(1) : "1.0"} NTU`}
+          delta={`${turbRow ? turbRow.area : "Drum filter"} · alarm limit ${turb ? turb.thr.value.toFixed(1) : "1.0"} NTU`}
           deltaDir="up" icon="waves" onClick={() => njGoArea(turbRow ? turbRow.area : "Drum filter")} />
       </div>
 
