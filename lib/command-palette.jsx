@@ -4,10 +4,12 @@
 // trend-tag catalog (TREND_CATALOG). Selecting a result navigates / re-scopes / trends.
 // Keyboard: Cmd/Ctrl-K toggles · ↑/↓ move · Enter run · Esc close.
 
+// njGoSystem sets __njNavSub before routing, so NavigationView mounts on the right tab. This
+// used to navigate first and switch tabs from a 60ms setTimeout, which briefly showed whatever
+// tab was last open and lost the target if the mount took longer. It also routes Feeding to the
+// top-level Feeding screen, which the palette previously did not.
 function cmdGoSystem(bId, dId, label) {
-  if (window.setCtx) window.setCtx(bId, dId);
-  if (window.__njNavigate) window.__njNavigate("navigation");
-  setTimeout(() => { if (window.__njDeptTab) window.__njDeptTab(label); }, 60);
+  njGoSystem(bId, dId, label);
 }
 
 // build the full command index once (rebuilt each open so live counts are fresh)

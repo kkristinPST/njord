@@ -317,16 +317,28 @@ function njResolveArea(area) {
   if (/technical/.test(a)) return P("b3", "b3-com", "Technical");
   return null;
 }
+// Navigate to an explicit building + department + system.
+//
+// The __njNavSub assignment below is what makes this work from anywhere. __njDeptTab is only
+// registered while NavigationView is mounted, so from the Dashboard it is always null; the
+// fallback to __njNavigate("navigation") then lands on whatever sub-tab was last open, NOT the
+// one the caller asked for. Setting __njNavSub first fixes that, because NavigationView seeds
+// its state from __njNavSub on mount. Always route through here (or njGoArea / njDeptNav /
+// __njGoPlan, which all delegate to the same pattern) rather than calling __njNavigate
+// ("navigation") directly.
+function njGoSystem(b, d, sub) {
+  setCtx(b, d);
+  if (/^(feeding|fish feeding)$/i.test(sub)) { if (window.__njNavigate) window.__njNavigate("feeding"); return true; }
+  window.__njNavSub = sub;
+  if (window.__njDeptTab) window.__njDeptTab(sub);
+  else if (window.__njNavigate) window.__njNavigate("navigation");
+  return true;
+}
 // navigate to an area's process screen; returns false if unresolvable
 function njGoArea(area) {
   const r = njResolveArea(area);
   if (!r) return false;
-  setCtx(r.b, r.d);
-  if (r.sub === "Feeding") { if (window.__njNavigate) window.__njNavigate("feeding"); return true; }
-  window.__njNavSub = r.sub;
-  if (window.__njDeptTab) window.__njDeptTab(r.sub);
-  else if (window.__njNavigate) window.__njNavigate("navigation");
-  return true;
+  return njGoSystem(r.b, r.d, r.sub);
 }
 // inline area cell: a link when a related process screen exists, plain text otherwise
 function AreaLink({ area, strong }) {
@@ -708,4 +720,4 @@ function njActivate(fn) {
   };
 }
 
-Object.assign(window, { njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njGoArea, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });
+Object.assign(window, { njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });
