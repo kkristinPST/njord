@@ -1,0 +1,272 @@
+/* ============================================================
+   NJORD — responsive system
+   Loaded LAST. One fluid system, not per-screen breakpoints.
+
+   Rules of the system
+   1. The shell is fluid: no fixed app width; gutters/gaps scale with viewport.
+   2. Card fields use auto-fit minmax() — they add/drop columns instead of
+      shrinking. This is what makes 1920px feel used, not stretched.
+   3. Workspace layouts (mimic + dock, chart + pens) keep an asymmetric
+      2-pane grid with a clamped side rail, and stack at one shared breakpoint.
+   4. Divider borders inside wrapping grids become 1px gaps, so a wrapped
+      row never shows an orphaned rule.
+   5. Horizontal overflow is contained inside the card that owns it — the
+      page itself never scrolls sideways, and no column is hidden.
+   ============================================================ */
+
+:root{
+  --pad-x:clamp(16px,1.7vw,32px);
+  --pad-y:clamp(18px,1.5vw,28px);
+  --gap:clamp(12px,1.05vw,16px);
+  --gap-lg:clamp(14px,1.35vw,20px);
+  --rail:clamp(276px,23vw,352px);
+  /* one shared stack point for 2-pane workspaces */
+}
+
+/* ---- 1. fluid shell ---- */
+.app{width:100%;min-width:0;max-width:100%}
+.app .content{padding:var(--pad-y) var(--pad-x) calc(var(--pad-y) + 12px);min-width:0}
+.topbar{padding:0 var(--pad-x)}
+.app .main{min-width:0;overflow-x:hidden}
+body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
+
+/* ---- 2. card fields: reflow by adding/removing columns ---- */
+.kpi-row{grid-template-columns:repeat(auto-fit,minmax(min(208px,100%),1fr));gap:var(--gap)}
+/* a 4-up KPI row splits 2×2 rather than leaving one orphan card on a 3-wide row */
+@media (max-width:1180px){
+  .kpi-row:has(> :nth-child(4)):not(:has(> :nth-child(5))){grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.ff-cards{grid-template-columns:repeat(auto-fit,minmax(min(264px,100%),1fr));gap:var(--gap)}
+.tank-row{grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr));gap:var(--gap)}
+.ec-cards,.hp-grid{grid-template-columns:repeat(auto-fit,minmax(min(282px,100%),1fr));gap:var(--gap)}
+.set-grid{grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:var(--gap)}
+.theme-grid{grid-template-columns:repeat(auto-fit,minmax(min(176px,100%),1fr))}
+.bfoot-body{grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))}
+.bldg-body{grid-template-columns:repeat(auto-fit,minmax(min(238px,100%),1fr));gap:var(--gap-lg)}
+.tg-lib-grid{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))}
+/* paired field grids inside cards + dialogs */
+.fd-essential,.fd-extra,.tex-grid,.oc-days,.oc-modem-cards,.form-grid,
+.de-form-2col,.ff-grid{grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr))}
+.de-form-3col,.de-detail-grid{grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))}
+.tank-stats{grid-template-columns:repeat(auto-fit,minmax(min(96px,100%),1fr))}
+
+/* ---- 3. divider-grids: hairline gaps survive wrapping ----
+   The lines are 1px GAPS with a ring on each cell — NOT the LINE colour on the container
+   showing through. A slate container background also paints the empty tracks of an
+   incomplete final row (5 KPIs in a 2-column grid showed a gray block beside the last one,
+   reading as broken padding). The container paints the CARD SURFACE instead — not
+   `transparent`: .ratn-kpis IS its own `.card`, so transparent punches a hole through to the
+   page background (worst in legacy/dark). With gap:1px, adjacent cell rings coincide into
+   one hairline and an empty track correctly reads as card surface in all three themes. */
+.ratn-kpis,.oncall-cols,.rv-meta,.tank-fish,.tank-readouts{
+  gap:1px;background:var(--surface);
+}
+.ratn-kpis{grid-template-columns:repeat(auto-fit,minmax(min(162px,100%),1fr))}
+.oncall-cols{grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr))}
+.rv-meta{grid-template-columns:repeat(auto-fit,minmax(min(146px,100%),1fr))}
+.tank-fish{grid-template-columns:repeat(auto-fit,minmax(min(92px,100%),1fr))}
+.tank-readouts{grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr))}
+.ratn-kpi,.oncall-col,.rv-meta-i,.tfish,.tank-readouts > .ro{
+  border-right:none!important;border-left:none!important;background:var(--surface);
+  box-shadow:0 0 0 1px var(--slate-200);
+}
+.ratn-kpis{background:var(--surface)}
+/* .ratn-kpis IS the card, so the square cell rings paint over its 12px radius and only the
+   one corner no cell reaches stays rounded. Clip them to the card's rounded box. */
+.ratn-kpis{overflow:hidden}
+
+/* A .bulkbar that is a direct child of a card is full-bleed (the card has no padding), so
+   its own radius + bottom margin read as a stray floating pill. Flush band instead \u2014 but it
+   is an OPAQUE square band inside a rounded, non-clipping card, so as the first child (the
+   Deactivated list, which has no filterbar above it) it must keep the card's top corners.
+   Don't fix that with overflow:hidden on the card \u2014 it would clip the column-chooser and
+   row-action popovers. */
+.card > .bulkbar{border-radius:0;margin-bottom:0}
+.card > .bulkbar:first-child{border-radius:var(--r-lg) var(--r-lg) 0 0}
+/* Same class of defect, same cure: a table header is also opaque, square and full-bleed, so
+   when the table (or its scroll wrapper) is the card's first child \u2014 Deactivated Alarms with
+   nothing selected \u2014 the header paints over the card's top corners. The compact 16px card
+   padding used to inset it off the arc; removing that padding exposed it. */
+/* The WRAPPER takes the radius rather than th:last-child, because a scrolled table puts a
+   MIDDLE column at the visible right edge. .tbl-scroll already clips overflow-x, so this
+   only rounds the corners — it adds no new clipping. */
+.card > .tbl-scroll:first-child{border-radius:var(--r-lg) var(--r-lg) 0 0}
+.card > table.tbl:first-child thead tr:first-child th:first-child{border-top-left-radius:var(--r-lg)}
+.card > table.tbl:first-child thead tr:first-child th:last-child{border-top-right-radius:var(--r-lg)}
+
+/* bulk-action bar: a dark pill of buttons that must never push a button off the card */
+.bulkbar{flex-wrap:wrap;row-gap:10px}
+.bulkbar .bb-spacer{margin-left:auto}
+
+/* ---- 4. two-pane workspaces: clamped rail, one stack point ---- */
+.ras-layout,.an-layout{grid-template-columns:minmax(0,1fr) var(--rail);gap:var(--gap)}
+.ratn-overview{grid-template-columns:minmax(0,1fr) clamp(272px,22vw,330px);gap:var(--gap)}
+.stat-charts{grid-template-columns:clamp(300px,26vw,404px) minmax(0,1fr);gap:var(--gap)}
+.role-layout{grid-template-columns:clamp(226px,20vw,300px) minmax(0,1fr);gap:var(--gap)}
+.de-layout{grid-template-columns:clamp(212px,19vw,272px) minmax(0,1fr)}
+/* Data Entry stacks here — responsive.css loads last, so it owns the stack point
+   (screens.css's own 1120px rule was being overridden by the line above). */
+@media (max-width:1120px){
+  .de-layout{grid-template-columns:minmax(0,1fr);height:auto;min-height:0}
+  /* stacked: the location tree flows at full height — no second scroll region */
+  .de-rail{max-height:none;border-right:none;border-bottom:1px solid var(--border)}
+  .de-rail-scroll{flex:none;overflow:visible;max-height:none;max-width:460px}
+  .de-panel-scroll{overflow:visible}
+}
+.start-grid,.bio-grid2{gap:var(--gap-lg)}
+
+@media (max-width:1180px){
+  .ras-layout,.an-layout,.ratn-overview,.stat-charts,.role-layout,
+  .bio-grid2,.perf-grid{grid-template-columns:minmax(0,1fr)}
+  .start-grid{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"alarms" "facility" "notes" "vitals" "consumption" "maneuver"}
+  .stat-charts > *{min-width:0}
+  .ratn-bed-row{grid-template-columns:minmax(0,1fr);gap:6px}
+}
+
+/* ---- 5. contain horizontal overflow inside the card that owns it ---- */
+.app .content{overflow-x:hidden}
+/* any block that directly wraps a table becomes the scroll owner, so a wide
+   table scrolls inside its own card instead of being clipped by the page */
+.content :where(div,section,form):has(> table.tbl){overflow-x:auto}
+/* …but the scroll owner must not also hold the card's CONTROLS: on the alarm lists the
+   table is a direct child of .card, so the card scrolled and took the filter chips + bulk
+   actions sideways with it. Those screens wrap their table in an explicit .tbl-scroll
+   instead. Do NOT solve this with `display:block` on the table — that makes the inner
+   anonymous table box shrink-to-fit, so a fixed-width table stops short of the card edge. */
+.tbl-scroll{overflow-x:auto}
+.tbl{min-width:0}
+.filterbar{row-gap:12px}
+/* Filterbars end with an unclassed action cluster (Hide overview / Columns / Import /
+   Export on Rationalization). A flex row defaults to nowrap, so that cluster kept its
+   full min-content and pushed past the card. Groups and clusters wrap — but NOT .field:
+   it is an icon + input on ONE line, and wrapping it puts the search icon on its own row. */
+.filterbar > *{min-width:0}
+.filterbar > *:not(.field){flex-wrap:wrap}
+/* A from → to pair is ONE control, not two: it must never be split across rows (the Time of
+   day inputs were landing on separate lines, so the range read as two unrelated times).
+   The pair stays atomic; the group around it still wraps. */
+.fbar-pair{display:inline-flex;align-items:center;gap:8px;flex-wrap:nowrap;flex:none}
+/* …but atomic must not mean overflowing: below the width where a from → to pair can fit on
+   one line it wraps rather than running past the card edge. Last resort only. */
+.card:has(> .filterbar){container-type:inline-size}
+@container (max-width:460px){.fbar-pair{flex-wrap:wrap;flex:0 1 auto;min-width:0;max-width:100%}}
+/* A search field is elastic, not a 260px block: letting it shrink keeps the range group on
+   the SAME row while there is room, instead of wrapping it off early. */
+.filterbar .field{flex:1 1 200px;min-width:150px}
+/* Filter chips carry a nowrap label + count, so a shrunk chip clips its own text.
+   Chips keep their intrinsic size and the STRIP wraps to a second line instead. */
+.chips{flex-wrap:wrap;min-width:0}
+.chips > *{flex:0 0 auto}
+/* Same treatment for the pager: a nowrap flex row whose First/…/Last buttons kept their full
+   min-content and pushed past the table footer. The strip breaks to a second line; the buttons
+   never shrink below their own labels. Don't "fix" this by capping the page-number count. */
+.pager{flex-wrap:wrap;min-width:0}
+.pager > *{flex:0 0 auto}
+/* filter-group dividers are decoration, not structure — once the bar wraps, a divider can
+   land first or last on a line and read as an orphaned rule (rule 4). Drop them at the
+   width where wrapping starts; the 18px group gap carries the grouping on its own. */
+@media (max-width:1180px){.filterbar .fbar-div{display:none}}
+.pagehead-row,.tank-toolbar,.card-head{flex-wrap:wrap}
+/* Tab strips live in .pagehead-right. A strip of 6 tabs (Alarms) has a min-content wider
+   than a narrow content pane — and the pane can be narrow without the VIEWPORT being
+   narrow (expanded sidebar on a tablet), so this must be fluid, not a breakpoint. */
+.segmented{flex-wrap:wrap}
+.pagehead-right{min-width:0;max-width:100%}
+.pagehead-right > .segmented{max-width:100%}
+
+/* ---- SCADA mimics: scale with their pane, never force a min width ---- */
+.ras-mimic,.ov-mimic,.sys-col,.an-chart-card{min-width:0}
+.ras-mimic,.ov-mimic{width:100%;height:auto}
+
+/* ---- tablet landscape (~1024) ---- */
+@media (max-width:1080px){
+  .fs-dist{max-width:none}
+}
+
+/* ---- top bar: shed the least-important chrome before anything can clip ---- */
+@media (max-width:1240px){
+  .topbar{padding-left:var(--pad-x);padding-right:var(--pad-x)}
+  .topbar-r{gap:12px}
+  .tb-search-lbl,.tb-search-kbd{display:none}
+  .tb-search{padding:0 8px}
+}
+@media (max-width:1080px){
+  /* the crumb trail repeats the page h1 below it — drop it, keep title + scope */
+  .topbar-l .tb-crumb,.topbar-l .tb-crumb + .tb-sep,.tb-title + .tb-sep{display:none}
+  .tb-clock{display:none}
+}
+
+/* ---- tablet portrait (~768) — last stop before the mobile build ---- */
+@media (max-width:820px){
+  .topbar{height:auto;min-height:60px;padding-top:8px;padding-bottom:8px;flex-wrap:wrap;row-gap:6px}
+  .topbar-l{min-width:0;flex:1 1 auto}
+  .tb-crumb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .de-keypad{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+/* ---- 6. modal layer: dialogs and floating windows fit any viewport ---- */
+.modal-scrim{padding:clamp(12px,2vw,32px);padding-top:max(24px,7vh)}
+.modal-host{width:100%;justify-content:center}
+.dlg{max-width:100%;max-height:calc(100vh - 56px)}
+/* fixed-column grids inside dialogs reflow like the ones on screens do */
+.eq-readouts,.eqx-stats{grid-template-columns:repeat(auto-fit,minmax(min(168px,100%),1fr))}
+.eq-readouts{gap:1px;background:var(--slate-200)}
+.eq-readouts > .eq-ro{background:var(--surface);border-right:none!important;border-bottom:none!important}
+.rv-sheet{padding:clamp(18px,2.4vw,34px) clamp(18px,2.6vw,34px) clamp(18px,2vw,26px)}
+.rv-sheet-head{flex-wrap:wrap}
+@media (max-width:700px){
+  .dlg{width:100%!important}
+  .dlg-foot{flex-wrap:wrap}
+  .dlg-foot .btn{flex:1 1 auto;justify-content:center}
+}
+/* floating windows (report viewer, trend window): never larger than the viewport,
+   and below tablet width they dock to the full screen instead of floating half off it */
+.rwin,.twin{max-width:calc(100vw - 16px);max-height:calc(100vh - 16px)}
+.rwin.min,.twin.min{max-height:none}
+@media (max-width:900px){
+  .rwin,.twin{left:8px!important;top:8px!important;width:calc(100vw - 16px)!important;
+    height:calc(100vh - 16px)!important;min-width:0!important}
+  .rwin.min,.twin.min{height:auto!important}
+  .rwin-resize,.twin-resize{display:none}
+  .rwin-bar,.twin-bar{cursor:default}
+  .rwin-scroll{padding:10px}
+}
+
+/* ---- 7. bar rows: title + actions ----
+   A "bar" is a flex row with a label/title on the left and controls on the right
+   (space-between). Without wrap the text side collapses to a sliver, its words break
+   one-per-line, and the buttons push out past the container — that is the whole class
+   of bug, not one screen's. So every bar wraps, and its label side keeps a real
+   minimum width (flex-basis) so it is the ROW that breaks, never the sentence.
+   Value rows (.param-row, .set-row, .score-row …) are deliberately NOT in this list:
+   their right side is one short figure and they should stay on one line. */
+.bio-actionbar,.stat-toolbar,.pump-head,.bldg-head,.fdist-actions,.hpc-head,
+.bio-scorehead,.tg-ed-params-head,.an-alms-head,.tex-penhead,.twin-pens-head,
+.ratn-be-foot,.tg-card-confirm,.rasm-full-bar,.ftd-head,.mvr-top{
+  flex-wrap:wrap;row-gap:10px;
+}
+.bio-actionbar-l,.pump-head > .eyebrow,.bldg-head > :first-child,
+.bio-scorehead > :first-child,.tg-ed-params-head > :first-child,
+.tex-penhead > :first-child,.twin-pens-head > :first-child{
+  flex:1 1 auto;min-width:0;
+}
+/* the action cluster keeps its buttons intact and, once wrapped, sits under the
+   title on the same side it started on (rule: controls never re-align on wrap) */
+.bio-actions,.fdist-actions-l,.fdist-actions-r,.tex-penhead-r,.twin-pens-head-r,
+.tg-card-confirm-btns{flex-wrap:wrap;min-width:0}
+.bio-actionbar .sub{text-wrap:pretty}
+
+/* donut + legend: the donut is a fixed 188px, so below ~430px of card the legend
+   was down to ~90px and every label broke mid-phrase. Stack instead. */
+.donut-wrap{flex-wrap:wrap;row-gap:16px}
+.donut-legend{flex:1 1 210px}
+
+/* ---- large monitors: keep density, gain columns (handled by auto-fit),
+        but stop single long-form text panels from becoming unreadable ---- */
+@media (min-width:1700px){
+  .ratn-bed-intro,.dlg-confirm-msg,.tex-intro,.oc-modem-intro{max-width:78ch}
+}
+
+@media (max-width:1400px){.cons-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.cons-dash-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.cons-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.cons-dash-row{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NJORD Mobile: RAS Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/tokens.css">
+<link rel="stylesheet" href="mobile/mobile.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>.micon svg{width:100%;height:100%}</style>
+</head>
+<body data-hc="off">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0F182B"/><rect x="34" y="18" width="32" height="64" rx="8" fill="none" stroke="#00AEEE" stroke-width="3"/><circle cx="50" cy="44" r="9" fill="#00C483"/><rect x="42" y="60" width="16" height="4" rx="2" fill="#6B7686"/><rect x="42" y="68" width="16" height="4" rx="2" fill="#6B7686"/></svg></template>
+
+<div id="root"></div>
+
+<script type="text/babel" src="screens/alarm-rationalization-data.jsx"></script>
+<script type="text/babel" src="screens/alarm-stats.jsx"></script>
+<script type="text/babel" src="screens/reports.jsx"></script>
+<script type="text/babel" src="screens/maneuver.jsx"></script>
+<script type="text/babel" src="screens/energy-consumption.jsx"></script>
+<script type="text/babel" src="screens/heat-pumps.jsx"></script>
+<script type="text/babel" src="lib/trends.jsx"></script>
+<script type="text/babel" src="mobile/data.jsx"></script>
+<script type="text/babel" src="mobile/shell.jsx"></script>
+<script type="text/babel" src="mobile/screens-core.jsx"></script>
+<script type="text/babel" src="mobile/screens-detail.jsx"></script>
+<script type="text/babel" src="mobile/rationalization.jsx"></script>
+<script type="text/babel" src="mobile/stats.jsx"></script>
+<script type="text/babel" src="mobile/trends-mobile.jsx"></script>
+<script type="text/babel" src="mobile/reports-help.jsx"></script>
+<script type="text/babel" src="mobile/utilities.jsx"></script>
+<script type="text/babel" src="mobile/systems.jsx"></script>
+
+<script type="text/babel">
+const STACK = {
+  alarmDetail: (p) => <AlarmDetailScreen {...p} />, tank: (p) => <TankScreen {...p} />, tankList: (p) => <TankListScreen {...p} />,
+  equipment: (p) => <EquipmentScreen {...p} />, chart: (p) => <ChartScreen {...p} />, feeding: (p) => <FeedingScreen {...p} />,
+  profile: (p) => <ProfileScreen {...p} />, scan: (p) => <ScanScreen {...p} />, rationalization: (p) => <RationalizationScreen {...p} />,
+  ratnDetail: (p) => <RatnDetailScreen {...p} />,
+  stats: (p) => <AlarmStatsScreen {...p} />, trendGroups: (p) => <TrendGroupsScreen {...p} />,
+  report: (p) => <ReportViewerScreen {...p} />, help: (p) => <HelpScreen {...p} />,
+  energy: (p) => <EnergyScreen {...p} />, heatpumps: (p) => <MHeatPumpsScreen {...p} />, system: (p) => <SystemScreen {...p} />,
+  biology: (p) => <BiologyScreen {...p} />, analytics: (p) => <AnalyticsScreen {...p} />, reports: (p) => <ReportsScreen {...p} />, settings: (p) => <SettingsScreen {...p} />,
+};
+const ROOTS = {
+  dashboard: <DashboardScreen />, alarms: <AlarmsScreen />, navigation: <NavigationScreen />,
+  activity: <ActivityScreen />, more: <MoreScreen />,
+};
+
+function App() {
+  const nav = useNav(); const off = useOffline();
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (sheetStore.node) sheetStore.close();
+      else if (searchStore.open) searchStore.set(false);
+      else if (window.qaStore && qaStore.row) qaStore.close();
+      else if (window.scanStore && scanStore.open) scanStore.set(false);
+      else if (navStore.stacks[navStore.tab].length) navStore.back();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+  const top = nav.stack[nav.stack.length - 1];
+  // unknown route must never white-screen the app — fall back to the tab root (desktop
+  // does the same with ComingSoon) and drop the bad frame off the stack.
+  const view = top && STACK[top.screen];
+  React.useEffect(() => { if (top && !STACK[top.screen]) mBack(); }, [top && top.screen]);
+  const content = view ? view(top.props) : ROOTS[nav.tab];
+  const showRibbon = !top || (top.screen !== "alarmDetail" && top.screen !== "chart" && top.screen !== "scan");
+  return (
+    <div className="device">
+      <div className="screen">
+        <StatusBar />
+        <div className="m-app">
+          {off.on && <div className="m-offbar"><MIcon name="cloud-off" size={15} /> Offline: showing last synced data{off.queue > 0 && <span className="q">{off.queue} queued</span>}</div>}
+          {showRibbon && <AlarmRibbon />}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>{content}</div>
+        </div>
+        <TabBar />
+        <div className="m-home" />
+        <MToast />
+        <QuickActionsSheet />
+        <SearchSheet />
+        <MSheetHost />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

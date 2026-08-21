@@ -1,0 +1,394 @@
+/* NJORD Design System — tokens (fonts via Google Fonts; see <head>)
+
+   SYNC NOTE — this file is MIRRORED by `njord-ds-v2/tokens/*.css`. The application keeps its
+   own copy on purpose, so it never depends on the design system at runtime; the token NAMES
+   are identical by design, so a change here is a mechanical copy over there (and back).
+   Split across colors / severity / typography / spacing / elevation / scada / theme-dark /
+   theme-legacy on the DS side; one file here.
+   Known divergence: the DS legacy skin keeps a dark sidebar rail, this app flips it to the
+   classic light rail (#E7EAED). Both are AA-clean; the app is the reference. */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* neutrals (slate ramp) */
+  --ink:       #0F182B;
+  --slate-800: #1D293D;
+  --slate-700: #314158;
+  --slate-600: #5C646F;
+  --slate-500: #62748E;
+  /* slate-400 darkened #90A1B9 → #666F7D so muted text/icons clear WCAG-AA on white AND on
+     the slate-50 / status-tint fills they often sit on (#6B7686 only reached 4.4 there) */
+  --slate-400: #666F7D;
+  --slate-350: #90A1B9;   /* the old light slate-400 — kept for decorative dots/hairlines only */
+  --slate-300: #CAD5E2;
+  --slate-200: #E0E5EB;
+  --slate-100: #EFF2F5;
+  --slate-50:  #F8FAFC;
+  --neutral-100: #F4F4F4;
+  --white:     #FFFFFF;
+  --black:     #000000;
+
+  /* brand / semantic */
+  --primary:   #00AEEE;
+  --success:   #00C483;
+  --warning:   #FBA100;
+  --critical:  #F53E39;
+
+  --success-bg:  #E7F8F0;  --success-mid:  #70D7A7;  --success-text: #007A52;
+  /* solid fill for a positive ACTION surface with white text (mobile swipe-to-ack). --success
+     itself is a bright indicator green — white on it is only 2.3:1 and must never carry text. */
+  --success-solid: #00734C;
+  --warning-bg:  #FFF3E0;  --warning-mid:  #FEBE72;  --warning-text: #8A5A00;
+  --critical-bg: #FEEAE9;  --critical-mid: #FF8377;  --critical-text:#C42620;
+  --critical-solid: #D8302B;  /* solid fill for the highest-priority badge (white text, AA) */
+  /* MEDIUM alarm priority has its OWN dedicated hue (royal blue) so it never shares
+     the brand cyan used for links / focus / selection — per ISA-101, alarm colors are
+     reserved for alarm state only. Warm (red→amber) = act now; medium blue = informational. */
+  --medium:      #2563EB;  --medium-bg:    #E8EEFC;  --medium-text:  #1D4ED8;
+  --primary-bg:  #E6F7FE;  --primary-text: #00719B;
+  --info-bg:     #EFF2F5;  --info-text:    #5C646F;
+
+  /* elevation */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow:    0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg: 0 12px 32px rgba(15,24,43,0.12);
+
+  /* severity marks (dots, chart fills, rails). SEV[].dot reads these, so a theme can shift the
+     whole ramp without touching JS. *-ink is the label colour that clears AA when a number sits
+     directly ON that fill (the stacked chart bars). Modern = our accessible ISA ramp. */
+  --sev-crit: #F53E39; --sev-high: #FBA100; --sev-med: #2563EB;
+  /* ink for text sitting ON a --primary fill (bright cyan wants dark ink; legacy's deeper blue
+     wants white) — a fixed literal here would fail in one skin or the other */
+  --primary-ink: #04222F;
+  --sev-low: #90A1B9; --sev-diag: #62748E; --sev-ok: #00C483;
+  --sev-crit-ink: #0F182B; --sev-high-ink: #0F182B; --sev-med-ink: #FFFFFF;
+  --sev-low-ink: #0F182B; --sev-diag-ink: #FFFFFF; --sev-ok-ink: #0F182B;
+  /* -text = severity as TEXT on an ordinary surface. Never use the bare --sev-* for this:
+     --sev-crit measures 3.73:1 on white and --sev-high 2.06:1. Aliases the themed status
+     text tokens, so all three skins follow with no extra maintenance. */
+  --sev-crit-text: var(--critical-text); --sev-high-text: var(--warning-text);
+  --sev-med-text:  var(--medium-text);   --sev-low-text:  var(--slate-600);
+  --sev-diag-text: var(--slate-600);     --sev-ok-text:   var(--success-text);
+
+  /* radii */
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-pill: 999px;
+
+  /* spacing */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+
+  --fg: var(--ink); --fg-muted: var(--slate-600); --fg-subtle: var(--slate-400);
+  --border: var(--slate-200); --bg: var(--slate-50); --surface: var(--white); --surface-2: var(--slate-50);
+
+  /* SCADA mimic palette (process-diagram symbols) */
+  --sc-pipe:        #b8c2cf;   /* connector pipes */
+  /* process-fluid line coding (mimic pipes) — subtle: status still reads louder */
+  --fl-proc:   #2C6FA8;   /* process / recirculated water (deeper than raw so the pair reads apart) */
+  --fl-raw:    #4093D2;   /* raw · intake · make-up water (≥3:1 on white, still lighter than proc) */
+  --fl-drain:  #6E7B8C;   /* effluent · drain · overflow */
+  --fl-sludge: #8A7250;   /* sludge · dead-fish transport */
+  --fl-glycol: #B87214;   /* glycol / heat-exchanger loop */
+  --fl-brine:  #2AA198;   /* brine loop · seawater exchange */
+  --fl-o2:     #1F8FA8;   /* oxygen (gas — dashed) */
+  --fl-gas:    #6E7B8C;   /* air · CO₂ off-gas (dashed) */
+  --fl-chem:   #B0563F;   /* chemical dosing (lye) */
+  --fl-feed:   #5F7A2E;   /* waterborne feed transport (HyFlow) */
+
+  --sc-node:        #ffffff;   /* equipment boxes / readouts / media fills */
+  --sc-edge:        #222b3a;   /* dark equipment outlines & pump bodies */
+  --sc-vessel:      #d9d1c8;   /* tank / vessel walls */
+  --sc-water:       #9e9e9e;   /* water / media body */
+  --sc-line:        #9aa3af;   /* hatch / detail lines */
+  --sc-fill-lite:   #e4e9f0;   /* light gauge / panel fills */
+  --sc-cabinet:     #ede7df;   /* equipment cabinets */
+  --sc-cabinet-edge:#b9b0a4;
+  --sc-halo:        #ffffff;   /* text outline halo over the diagram */
+  /* HP-HMI equipment state (ISA-101): NORMAL is neutral gray, color is reserved for
+     ABNORMAL. Running/open = solid dark-neutral fill; stopped/closed = light-neutral fill. */
+  --sc-run:         #3c4a5e;   /* running / open — energized (solid neutral) */
+  --sc-stop:        #c9d2dc;   /* stopped / closed — de-energized (light neutral) */
+  --sc-abnormal:    #F53E39;   /* equipment in alarm — the only saturated symbol color */
+}
+
+/* ============================================================
+   THEMES — Light is the :root default above. Dark remaps the
+   palette below; the whole app is token-driven so flipping these
+   variables re-skins every screen. (Legacy theme: TODO.)
+   ============================================================ */
+[data-theme="dark"] {
+  /* dark chrome (sidebar / primary chrome) stay dark navy */
+  --ink:        #0E1828;
+  --slate-800:  #1C2C49;   /* active nav / sidebar hover / raised chrome */
+  --slate-700:  #28395A;   /* avatar */
+  /* mid + text tones (ramp inverts: high slates become light text) */
+  --slate-600:  #B7C2D4;   /* body text + icons */
+  --slate-500:  #97A5BC;   /* secondary text */
+  --slate-400:  #8B99B2;   /* subtle text / placeholder / icons — AA on the dark card */
+  --slate-300:  #384963;   /* strong / input borders */
+  --slate-200:  #28374F;   /* default borders / dividers */
+  --slate-100:  #1C2B45;   /* hover fills / row dividers */
+  --slate-50:   #13203A;   /* subtle surface / table header / row hover */
+  --neutral-100:#1C2B45;
+  --white:      #FFFFFF;   /* keep true white for glyphs on color/dark */
+
+  --primary:    #00AEEE;
+  --success:    #00C483;
+  --warning:    #FBA100;
+  --critical:   #F53E39;
+
+  /* status tints recomputed for dark surfaces */
+  --success-bg:  #102A20;  --success-mid:  #1E6149;  --success-text: #3BD79F;
+  --success-solid: #00734C;
+  --warning-bg:  #2C2410;  --warning-mid:  #6E5618;  --warning-text: #F2B341;
+  --critical-bg: #301715;  --critical-mid: #71291F;  --critical-text:#FF6F66;
+  --critical-solid: #D8302B;
+  --medium:      #5B8DEF;  --medium-bg:    #16233F;  --medium-text:  #93B7FF;
+  --primary-bg:  #0C2333;  --primary-text: #41C4F5;
+  --info-bg:     #1C2B45;  --info-text:    #97A5BC;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.45);
+  --shadow:    0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 6px 18px rgba(0,0,0,0.5);
+  --shadow-lg: 0 16px 40px rgba(0,0,0,0.6);
+
+  --surface:   #16243E;    /* cards / topbar / inputs */
+  --surface-2: #13203A;
+  --bg:        #0A1322;    /* page */
+  --fg:        #E8EDF5;
+  --fg-muted:  #B7C2D4;
+  --fg-subtle: #8B99B2;
+  --border:    #28374F;
+
+  /* SCADA mimic palette — dark */
+  /* fluid line coding — dark (lifted for contrast on the dark schematic) */
+  --fl-proc: #5FA6DE; --fl-raw: #A6D4F2; --fl-drain: #97A5B8; --fl-sludge: #B9986C;
+  --fl-glycol: #EDAE5A; --fl-brine: #4FCABF; --fl-o2: #55B6CF; --fl-gas: #97A5B8; --fl-chem: #D38571;
+  --fl-feed: #A8C46B;
+  --sc-pipe:        #47576F;
+  --sc-node:        #1B2B45;
+  --sc-edge:        #8593AC;
+  --sc-vessel:      #2C3A52;
+  --sc-water:       #44546E;
+  --sc-line:        #4D5D77;
+  --sc-fill-lite:   #1D2B45;
+  --sc-cabinet:     #2A3A55;
+  --sc-cabinet-edge:#47576F;
+  --sc-halo:        #16243E;
+  --sc-run:         #C6D2E4;   /* running / open — light-neutral (reads as present on dark) */
+  --sc-stop:        #3A4A63;   /* stopped / closed — recessed dark-neutral */
+  --sc-abnormal:    #FF6F66;
+
+  /* severity marks — lifted so dots/chart fills stay legible on the dark card */
+  --sev-crit: #F85C55; --sev-high: #F2B341; --sev-med: #5B8DEF;
+  --primary-ink: #04222F;
+  --sev-low: #97A5BC; --sev-diag: #7C8BA4; --sev-ok: #3BD79F;
+  /* every dark-theme fill is a lifted tint, so dark ink wins on all six */
+  --sev-crit-ink: #0F182B; --sev-high-ink: #0F182B; --sev-med-ink: #0F182B;
+  --sev-low-ink: #0F182B; --sev-diag-ink: #0F182B; --sev-ok-ink: #0F182B;
+}
+
+/* dark-mode component touch-ups (cases that used hard literals or
+   need a clearer contrast than the raw token swap gives) */
+/* native controls (select popups, scrollbars, date pickers) must follow the skin, or the OS paints
+   a light backdrop under our light text — the rows-per-page picker was unreadable on dark */
+[data-theme="dark"] { color-scheme: dark; }
+[data-theme="legacy"] { color-scheme: light; }
+[data-theme="dark"] body,
+[data-theme="dark"] html { background: var(--bg); }
+[data-theme="dark"] .sidebar { border-right: 1px solid var(--slate-200); }
+/* primary actions read as bright cyan on dark (matches dark exploration) */
+[data-theme="dark"] .btn-primary { background: var(--primary); border-color: var(--primary); color: #04222F; }
+[data-theme="dark"] .btn-primary:hover { background: #2FBDF2; border-color: #2FBDF2; }
+/* solid "ink chip" active states need a visible raised tone on dark cards */
+[data-theme="dark"] .pg.active { background: var(--slate-700); }
+[data-theme="dark"] .chip-on { background: var(--slate-700); border-color: var(--slate-700); }
+[data-theme="dark"] .shelve-dur.on { background: var(--slate-700); border-color: var(--slate-700); }
+/* status dots need a light defining ring on dark surfaces */
+[data-theme="dark"] .statusdot { box-shadow: 0 0 0 1px rgba(255,255,255,.20); }
+
+/* ============================================================
+   LEGACY THEME — recreates the classic NJORD/Ignition HMI look:
+   flat light-gray page, white bordered panels, hard hairlines,
+   bordered tabs, loud saturated alarm rows, zebra tables.
+   ============================================================ */
+[data-theme="legacy"] {
+  --ink:        #2C3A48;   /* classic dark chrome (primary btns, bulkbar) */
+  --slate-800:  #3A4A5A;
+  --slate-700:  #4A5A6B;
+  --slate-600:  #2F3A45;   /* body text (dark) */
+  --slate-500:  #4B5563;
+  --slate-400:  #4B535E;   /* muted text: darkened so 10–11px labels clear AA on the gray page */
+  --slate-300:  #9AA3AE;   /* strong borders */
+  --slate-200:  #B4BCC5;   /* default borders (heavier than modern) */
+  --slate-100:  #D3D8DD;   /* hover / dividers */
+  --slate-50:   #E4E7EA;   /* subtle bg / table header */
+  --neutral-100:#E4E7EA;
+  --white:      #FFFFFF;
+
+  --primary:    #2F6CB0;   /* classic blue */
+  --success:    #2E9E4F;
+  --warning:    #E0922A;
+  --critical:   #C8443D;
+
+  --success-bg:  #DDF0E1;  --success-mid:  #8FCF9F;  --success-text: #1E7A39;
+  --success-solid: #1B6B33;
+  --warning-bg:  #FBEBD2;  --warning-mid:  #EBC07A;  --warning-text: #6B4600;
+  --critical-bg: #F6DAD8;  --critical-mid: #E08079;  --critical-text:#A83229;
+  --critical-solid: #C0392E;
+  --medium:      #2F5AAE;  --medium-bg:    #DEE7F5;  --medium-text:  #234B92;
+  --primary-bg:  #DEE9F4;  --primary-text: #2C5E99;
+  --info-bg:     #E4E7EA;  --info-text:    #4B5563;
+
+  /* classic HMI relies on borders, not shadows */
+  --shadow-sm: none;
+  --shadow:    none;
+  --shadow-md: 0 1px 4px rgba(0,0,0,0.18);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.25);
+
+  --r-sm: 3px; --r-md: 4px; --r-lg: 4px; --r-xl: 6px; --r-pill: 999px;
+
+  --surface:   #FFFFFF;
+  --surface-2: #EEF0F2;
+  --bg:        #D6DADE;     /* flat gray page */
+  --fg:        #1F2733;
+  --fg-muted:  #3F4A57;
+  --fg-subtle: #565F6B;
+  --border:    #B4BCC5;
+
+  /* SCADA mimic — classic light schematic with near-black pipes.
+     The legacy skin is monochrome by definition: every fluid falls back to the pipe colour. */
+  --fl-proc: #2B2B2B; --fl-raw: #2B2B2B; --fl-drain: #2B2B2B; --fl-sludge: #2B2B2B;
+  --fl-glycol: #2B2B2B; --fl-brine: #2B2B2B; --fl-o2: #2B2B2B; --fl-gas: #2B2B2B; --fl-chem: #2B2B2B;
+  --fl-feed: #2B2B2B;
+  --sc-pipe:        #2B2B2B;
+  --sc-node:        #FFFFFF;
+  --sc-edge:        #222B3A;
+  --sc-vessel:      #D9D1C8;
+  --sc-water:       #9E9E9E;
+  --sc-line:        #9AA3AF;
+  --sc-fill-lite:   #E4E9F0;
+  --sc-cabinet:     #EDE7DF;
+  --sc-cabinet-edge:#B9B0A4;
+  --sc-halo:        #FFFFFF;
+  --sc-run:         #2C3A48;
+  --sc-stop:        #C4CCD4;
+  --sc-abnormal:    #C8443D;
+
+  /* severity marks — the classic saturated HMI ramp, drawn from this theme's own
+     palette so a dot always matches the badge beside it */
+  --sev-crit: #C8443D; --sev-high: #E0922A; --sev-med: #2F5AAE;
+  --primary-ink: #FFFFFF;
+  --sev-low: #6B7480; --sev-diag: #8A929C; --sev-ok: #2E9E4F;
+  --sev-crit-ink: #FFFFFF; --sev-high-ink: #0F182B; --sev-med-ink: #FFFFFF;
+  --sev-low-ink: #FFFFFF; --sev-diag-ink: #0F182B; --sev-ok-ink: #0F182B;
+}
+
+/* ---- legacy chrome ---- */
+[data-theme="legacy"] body, [data-theme="legacy"] html { background: var(--bg); }
+/* sidebar becomes a light classic nav rail */
+[data-theme="legacy"] .sidebar { background: #E7EAED; border-right: 1px solid #AEB6BF; }
+[data-theme="legacy"] .sb-logo { border-bottom: 1px solid #C4CCD4; }
+[data-theme="legacy"] .sb-wordmark, [data-theme="legacy"] .sb-mark { filter: brightness(0) saturate(100%) invert(28%) sepia(34%) saturate(900%) hue-rotate(178deg); }
+[data-theme="legacy"] .sb-collapse { color: #3F4A57; }
+[data-theme="legacy"] .sb-collapse:hover { background: #D3D8DD; }
+[data-theme="legacy"] .sb-item { color: #3A4754; }
+[data-theme="legacy"] .sb-item:hover { background: #D3D8DD; color: #1F2733; }
+[data-theme="legacy"] .sb-item.active { background: var(--primary); color: #fff; }
+[data-theme="legacy"] .sb-user { border-top: 1px solid #C4CCD4; }
+[data-theme="legacy"] .sb-user-name { color: #1F2733; }
+[data-theme="legacy"] .sb-user-role { color: #5A6472; }
+[data-theme="legacy"] .sb-avatar { background: #4A5A6B; }
+/* topbar: flat white with hard bottom rule */
+[data-theme="legacy"] .topbar { background: #fff; border-bottom: 1px solid #AEB6BF; }
+[data-theme="legacy"] .change-btn { background: #fff; border-color: #9AA3AE; }
+
+/* legacy cards/panels: square, hard border, no shadow */
+[data-theme="legacy"] .card, [data-theme="legacy"] .kpi { box-shadow: none; border-color: #B4BCC5; }
+[data-theme="legacy"] .card-head { border-bottom-color: #C4CCD4; }
+
+/* legacy tabs: separate bordered buttons */
+[data-theme="legacy"] .segmented { background: transparent; border: none; padding: 0; gap: 8px; }
+[data-theme="legacy"] .seg { background: #fff; border: 1px solid #9AA3AE; border-radius: 4px; color: #1F2733; box-shadow: none; font-weight: 700; padding: 7px 18px; }
+[data-theme="legacy"] .seg:hover { background: #F1F3F5; }
+[data-theme="legacy"] .seg.active { background: #fff; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); color: #1F2733; }
+
+/* legacy buttons */
+[data-theme="legacy"] .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+[data-theme="legacy"] .btn-primary:hover { background: #2A5E9A; border-color: #2A5E9A; }
+[data-theme="legacy"] .btn-secondary { background: #fff; border-color: #9AA3AE; box-shadow: none; }
+/* an active toggle must stay dark-on-light — the .btn-secondary override above would
+   otherwise repaint it white while it keeps its white label */
+[data-theme="legacy"] .btn.btn-active, [data-theme="legacy"] .btn-secondary.btn-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* legacy tables: hard hairlines + zebra + loud hover */
+[data-theme="legacy"] .tbl th { background: #E4E7EA; border-bottom: 1px solid #9AA3AE; color: #2F3A45; }
+[data-theme="legacy"] .tbl td { border-bottom: 1px solid #C9CFD5; }
+[data-theme="legacy"] .tbl tbody tr:nth-child(even) td { background: #F1F3F5; }
+[data-theme="legacy"] .tbl tbody tr:hover td { background: #DCE6F2; }
+
+/* Loud alarm rows, the classic signature. The legacy spec (Alarm Status Table) codes the row on
+   TWO axes: hue = state (unacknowledged red / acknowledged purple / returned-to-normal blue) and
+   lightness = priority; Normal, shelved and out-of-service rows carry no fill, and diagnostic is
+   never filled. Rows expose data-almstate + data-almlvl and the matrix lives here.
+   Shades are nudged off the source hexes only where needed to clear AA against their own ink. */
+[data-theme="legacy"] .tbl tr[data-almstate="unack"][data-almlvl="critical"] > td { background: #C62B2B !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="unack"][data-almlvl="high"] > td { background: #D14343 !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="unack"][data-almlvl="medium"] > td { background: #E86D6D !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="unack"][data-almlvl="low"] > td { background: #F28787 !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="ack"][data-almlvl="critical"] > td { background: #8A39DB !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="ack"][data-almlvl="high"] > td { background: #9349DE !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="ack"][data-almlvl="medium"] > td { background: #AA6DE8 !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="ack"][data-almlvl="low"] > td { background: #BC87F2 !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="rtn"][data-almlvl="critical"] > td { background: #2E5EAA !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="rtn"][data-almlvl="high"] > td { background: #4A72B4 !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="rtn"][data-almlvl="medium"] > td { background: #7198D6 !important; box-shadow: none; }
+[data-theme="legacy"] .tbl tr[data-almstate="rtn"][data-almlvl="low"] > td { background: #A0BEEF !important; box-shadow: none; }
+/* one ink per filled row: white on the deep critical/high shades, dark on the light medium/low
+   ones. Everything that sits inside the row borrows it, so no child needs its own literal. */
+[data-theme="legacy"] .tbl tr[data-almstate] > td { --alm-ink: #fff; --alm-ink-line: rgba(255,255,255,.55); --alm-ink-wash: rgba(255,255,255,.20); }
+[data-theme="legacy"] .tbl tr[data-almstate][data-almlvl="medium"] > td,
+[data-theme="legacy"] .tbl tr[data-almstate][data-almlvl="low"] > td { --alm-ink: #0F182B; --alm-ink-line: rgba(15,24,43,.5); --alm-ink-wash: rgba(15,24,43,.14); }
+[data-theme="legacy"] .tbl tr[data-almstate] > td,
+[data-theme="legacy"] .tbl tr[data-almstate] > td * { color: var(--alm-ink) !important; }
+/* badges / state tags / chips go flat outline so they read on any of the twelve fills */
+[data-theme="legacy"] .tbl tr[data-almstate] .badge,
+[data-theme="legacy"] .tbl tr[data-almstate] .statetag { background: transparent !important; border-color: var(--alm-ink-line) !important; }
+/* the state glyph and stale pill sit INSIDE a filled cell, so a translucent wash behind them only
+   lightens the fill and drops their own contrast — they stay unfilled and lean on the ink outline */
+[data-theme="legacy"] .tbl tr[data-almstate] .statetag .st-glyph { background: transparent !important; box-shadow: inset 0 0 0 1px var(--alm-ink-line) !important; }
+[data-theme="legacy"] .tbl tr[data-almstate] .mvr-chip { background: var(--alm-ink-wash) !important; }
+[data-theme="legacy"] .tbl tr[data-almstate] .stale-pill { background: transparent !important; border-color: var(--alm-ink-line) !important; }
+/* the severity dot would sit on its own colour here, and a non-text indicator still needs 3:1 */
+[data-theme="legacy"] .tbl tr[data-almstate] .statusdot { background: var(--alm-ink) !important; box-shadow: 0 0 0 1px var(--alm-ink-line) !important; }
+/* row action buttons: outlined in the row ink, not white-on-white */
+[data-theme="legacy"] .tbl tr[data-almstate] .icnact { background: transparent !important; border-color: var(--alm-ink-line) !important; color: var(--alm-ink) !important; }
+[data-theme="legacy"] .tbl tr[data-almstate] .icnact:hover:not(:disabled) { background: var(--alm-ink-wash) !important; border-color: var(--alm-ink) !important; }
+[data-theme="legacy"] .tbl tr[data-almstate] .icnact:disabled { opacity: .5 !important; }
+/* selection and trend-arrival highlight can't repaint a coded row without destroying its meaning,
+   so on legacy they mark the row with a left rail instead of a fill */
+[data-theme="legacy"] .tbl tr.row-sel[data-almstate] > td:first-child,
+[data-theme="legacy"] .tbl tr.row-hl[data-almstate] > td:first-child { box-shadow: inset 4px 0 0 var(--primary) !important; }
+
+/* legacy feeding cards: centered bold tank header */
+[data-theme="legacy"] .ff-title { text-align: center; font-size: 22px; }
+[data-theme="legacy"] .ff-feeder { text-align: center; }
+
+/* legacy inputs/fields square */
+[data-theme="legacy"] .field, [data-theme="legacy"] .select, [data-theme="legacy"] .set-input,
+[data-theme="legacy"] .form-input, [data-theme="legacy"] .dateinput { border-color: #9AA3AE; border-radius: 4px; }
+
+
+/* ---- semantic text helpers ---- */
+.eyebrow { font-family: var(--font-sans); font-weight: 700; font-size: 11px; line-height: 15px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--slate-600); }
+.h1 { font-family: var(--font-sans); font-weight: 700; font-size: 24px; line-height: 32px; letter-spacing: -0.2px; color: var(--fg); margin: 0; }
+.h2 { font-family: var(--font-sans); font-weight: 700; font-size: 18px; line-height: 24px; color: var(--fg); margin: 0; }
+.section-label { font-family: var(--font-sans); font-weight: 700; font-size: 12px; line-height: 16px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--fg); }
+.body { font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 20px; color: var(--slate-600); }
+.body-strong { font-family: var(--font-sans); font-weight: 600; font-size: 14px; line-height: 20px; color: var(--fg); }
+.small { font-family: var(--font-sans); font-weight: 400; font-size: 12px; line-height: 16px; color: var(--slate-600); }
+.caption { font-family: var(--font-sans); font-weight: 400; font-size: 11.5px; line-height: 15px; color: var(--slate-400); }
+.metric { font-family: var(--font-mono); font-weight: 400; font-size: 24px; line-height: 32px; color: var(--fg); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.data { font-family: var(--font-mono); font-weight: 400; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
+.tag { font-family: var(--font-mono); font-weight: 400; font-size: 12px; line-height: 16px; color: var(--slate-600); letter-spacing: 0.3px; }
