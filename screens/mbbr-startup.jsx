@@ -6,7 +6,9 @@
 // Legacy split estimate and actual into eight separate columns; here each chemical is ONE column —
 // the dosed figure with its estimate underneath — so plan vs actual reads without scrolling.
 
-const { CmCell, cmFmt, cmKeyOf, cmDayOf, cmHash, cmRng, CM_USER } = window;
+// CmCell, cmFmt, cmKeyOf, cmDayOf, cmHash, cmRng and CM_USER come from commissioning.jsx,
+// which the build loads first. They were aliased off `window` here back when every file was
+// its own <script>; in the concatenated bundle that alias re-declared them and broke the parse.
 
 const MB_KEY = "nj_mbbr_startup_v1";
 const MB_TODAY = new Date(2026, 2, 4);

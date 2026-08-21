@@ -1,0 +1,14 @@
+{
+  "name": "njord",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Web UI and frontend assets for the NJORD project.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --dev --watch",
+    "watch": "node build.mjs --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

@@ -7,11 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="lib/tokens.css">
-<link rel="stylesheet" href="lib/app.css">
-<link rel="stylesheet" href="lib/screens.css">
-<link rel="stylesheet" href="lib/dialogs.css">
-<link rel="stylesheet" href="lib/responsive.css">
+<link rel="stylesheet" href="bundle/app.css">
 <script>
   /* apply persisted theme before first paint to avoid a flash */
   (function () { try { document.documentElement.setAttribute("data-theme", localStorage.getItem("nj_theme_v1") || "light"); } catch (e) { document.documentElement.setAttribute("data-theme", "light"); } })();
@@ -35,125 +31,15 @@
   </svg>
 </template>
 
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<!-- React + lucide are vendored locally: same origin as the page, so no extra DNS/TLS
+     handshake and no unpkg @latest redirect on every load. -->
+<script src="vendor/react.production.min.js" defer></script>
+<script src="vendor/react-dom.production.min.js" defer></script>
+<script src="vendor/lucide.min.js" defer></script>
 
-<script type="text/babel" src="lib/icon.jsx"></script>
-<script type="text/babel" src="lib/chrome.jsx"></script>
-<script type="text/babel" src="lib/alarmstore.jsx"></script>
-<script type="text/babel" src="lib/alarm-governance.jsx"></script>
-<script type="text/babel" src="lib/dialogs.jsx"></script>
-<script type="text/babel" src="lib/manuals.jsx"></script>
-<script type="text/babel" src="lib/notes.jsx"></script>
-<script type="text/babel" src="lib/trends.jsx"></script>
-<script type="text/babel" src="lib/trend-window.jsx"></script>
-<script type="text/babel" src="lib/scada.jsx"></script>
-<script type="text/babel" src="screens/equipment.jsx"></script>
-<script type="text/babel" src="screens/equipment-tabs.jsx"></script>
-<script type="text/babel" src="screens/start.jsx"></script>
-<script type="text/babel" src="screens/navshow.jsx"></script>
-<script type="text/babel" src="screens/alarms.jsx"></script>
-<script type="text/babel" src="screens/maneuver.jsx"></script>
-<script type="text/babel" src="screens/alarm-stats.jsx"></script>
-<script type="text/babel" src="screens/alarm-rationalization-data.jsx"></script>
-<script type="text/babel" src="screens/alarm-rationalization.jsx"></script>
-<script type="text/babel" src="screens/reports.jsx"></script>
-<script type="text/babel" src="screens/settings.jsx"></script>
-<script type="text/babel" src="screens/fish-welfare.jsx"></script>
-<script type="text/babel" src="screens/fish-biology.jsx"></script>
-<script type="text/babel" src="screens/feeding-dialogs.jsx"></script>
-<script type="text/babel" src="screens/feeding.jsx"></script>
-<script type="text/babel" src="screens/tank.jsx"></script>
-<script type="text/babel" src="screens/tank-vitals.jsx"></script>
-<script type="text/babel" src="screens/ras.jsx"></script>
-<script type="text/babel" src="screens/ras-mimic.jsx"></script>
-<script type="text/babel" src="screens/ras-dpt2-mimic.jsx"></script>
-<script type="text/babel" src="screens/ras-dock.jsx"></script>
-<script type="text/babel" src="screens/fish-tank-dock.jsx"></script>
-<script type="text/babel" src="screens/water-treatment.jsx"></script>
-<script type="text/babel" src="screens/sludge-treatment.jsx"></script>
-<script type="text/babel" src="screens/fish-summary.jsx"></script>
-<script type="text/babel" src="screens/site-plan.jsx"></script>
-<script type="text/babel" src="screens/systems-a.jsx"></script>
-<script type="text/babel" src="screens/energy-plant-mimic.jsx"></script>
-<script type="text/babel" src="screens/pump-sump.jsx"></script>
-<script type="text/babel" src="screens/hyflow.jsx"></script>
-<script type="text/babel" src="screens/dead-fish.jsx"></script>
-<script type="text/babel" src="screens/systems-b.jsx"></script>
-<script type="text/babel" src="screens/common-technical.jsx"></script>
-<script type="text/babel" src="screens/energy-consumption.jsx"></script>
-<script type="text/babel" src="screens/heat-pumps.jsx"></script>
-<script type="text/babel" src="screens/consumption.jsx"></script>
-<script type="text/babel" src="screens/overview.jsx"></script>
-<script type="text/babel" src="screens/systems-c.jsx"></script>
-<script type="text/babel" src="screens/trend-groups.jsx"></script>
-<script type="text/babel" src="screens/data-entry.jsx"></script>
-<script type="text/babel" src="screens/commissioning.jsx"></script>
-<script type="text/babel" src="screens/mbbr-startup.jsx"></script>
-<script type="text/babel" src="screens/analytics.jsx"></script>
-<script type="text/babel" src="lib/command-palette.jsx"></script>
-
-<script type="text/babel">
-document.body.classList.add("standalone");
-window.__njNavSub = "plan";
-
-// nav id -> screen component (built screens). Navigation is a sub-router across
-// the active department's systems (Fish Tank / RAS / Fish Summary).
-const SCREENS = {
-  start:      StartScreen,
-  navigation: NavigationView,
-  alarms:     AlarmsView,
-  maneuver:   ManeuverHistoryScreen,
-  reports:    ReportsScreen,
-  settings:   SettingsScreen,
-  feeding:    FeedingScreen,
-  biology:    FishBiologyScreen,
-  energy:      EnergyConsumptionScreen,
-  consumption: ConsumptionScreen,
-  heatpumps:  HeatPumpsScreen,
-  analytics:  AnalyticsScreen,
-};
-
-function ComingSoon({ id }) {
-  const item = NAV.find((n) => n.id === id) || { label: id, icon: "square" };
-  return (
-    <AppShell active={id} title={item.label} statusLevel="ok">
-      <div className="pagehead">
-        <p className="pagehead-sub">This screen has not been redesigned yet.</p>
-      </div>
-      <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "72px 24px", textAlign: "center" }}>
-        <span style={{ width: 56, height: 56, borderRadius: "var(--r-lg)", background: "var(--slate-100)", color: "var(--slate-400)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon name={item.icon} size={26} />
-        </span>
-        <div className="body-strong">{item.label} is queued for redesign</div>
-        <p className="body" style={{ maxWidth: 360, margin: 0 }}>Pick this page from the sidebar list to design it next.</p>
-      </div>
-    </AppShell>
-  );
-}
-
-function App() {
-  const [active, setActive] = React.useState("start");
-  // __njRoute mirrors the live route so shared code (njPickContext) can tell which top-level
-  // screen is showing without prop threading.
-  React.useEffect(() => { window.__njNavigate = (id) => { window.__njRoute = id; setActive(id); }; window.__njRoute = active; }, []);
-  React.useEffect(() => { window.__njRoute = active; }, [active]);
-  const Screen = SCREENS[active];
-  return (
-    <React.Fragment>
-      {Screen ? <Screen /> : <ComingSoon id={active} />}
-      <DialogHost />
-      <TrendWindow />
-      <ReportWindow />
-      <CommandPalette />
-      <AlarmDrawer />
-    </React.Fragment>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-</script>
+<!-- The app, precompiled by build.mjs. This used to be 54 <script type="text/babel"> tags
+     transpiled in the browser by @babel/standalone; edit the .jsx sources and run
+     `npm run build` (or `npm run watch`) to regenerate. -->
+<script src="bundle/app.js" defer></script>
 </body>
 </html>
