@@ -219,3 +219,5 @@ function Dpt2RasMimic() {
 }
 
 window.Dpt2RasMimic = Dpt2RasMimic;
+
+Object.assign(window, { Dpt2RasMimic });

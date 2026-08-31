@@ -137,13 +137,19 @@ function HfScrewRow({ s, L, split }) {
         <div className="hf-sv"><span className="hf-sv-l">Dosed today</span><span className="hf-sv-v">{s.today}<i>kg</i></span></div>
         <div className="hf-sv"><span className="hf-sv-l">Calibration</span><span className="hf-sv-v">{s.cal}<i>g/rot</i></span></div>
       </div>
-      <div className="hf-screw-feed"><Icon name="package" size={13} color="var(--slate-500)" /> {s.feed}</div>
+      <div className="hf-screw-feed"><Icon name="package" size={14} color="var(--slate-500)" /> {s.feed}</div>
     </div>
   );
 }
 function HfTankCard({ L }) {
   const [run, setRun] = React.useState(L.run);
   const [flushing, setFlushing] = React.useState(false);
+  // HyFlow shows everything normal Feeding shows: the tank-level feeding record comes from the
+  // SAME dataset + store as the Fish Feeding screen (never a HyFlow copy of it), and the screw
+  // rows below stay HyFlow's own — they carry dosing rate / pellet / dosed today on top.
+  window.useFeed();
+  const ffView = window.useFfView();
+  const ffT = (window.FF_TANKS || []).find((x) => x.n === L.n);
   const total = L.screws.reduce((a, s) => a + Number(s.today), 0);
   const multi = L.screws.length > 1;
   const share = multi ? L.screws.map((s) => Math.round(Number(s.today) / total * 100)) : null;
@@ -168,6 +174,7 @@ function HfTankCard({ L }) {
           <Icon name="utensils" size={16} color="var(--slate-600)" />
           <span className="card-title">{"Tank " + L.n}</span>
           <span className="hf-tag">{L.tag}</span>
+          <span className="hf-badge">HyFlow</span>
         </div>
         <Badge level={flushing ? "medium" : run ? "ok" : "diagnostic"}>{flushing ? "FLUSHING" : run ? "FEEDING" : "STOPPED"}</Badge>
       </div>
@@ -188,6 +195,12 @@ function HfTankCard({ L }) {
             <div className="hf-screw-sum"><span>Total dosed today</span><span className="hf-sv-v">{String(total)}<i>kg</i></span></div>
           )}
         </div>
+        {ffT && (
+          <div className="hf-feedblock">
+            <div className="hf-fb-h"><span>Feeding record</span><span className="hf-fb-src">shared with Fish Feeding</span></div>
+            <window.FfFeedBlock t={ffT} vis={ffView.vis} hyflow showScrews={false} />
+          </div>
+        )}
       </div>
       <div className="hf-actions">
         <button className={"btn " + (run ? "btn-secondary" : "btn-primary")} onClick={toggleRun}>
@@ -266,14 +279,14 @@ function HyFlowScreen() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={15} /> Parameters</button>
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
-        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={15} /> SCADA view</button>
+        <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={16} /> Parameters</button>
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={16} /> SCADA view</button>
       </div>
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="utensils" size={17} color="var(--slate-600)" /><span className="card-title">HyFlow Feeding · FED10 · Building 2</span></div>
+          <div className="card-head-l"><Icon name="utensils" size={16} color="var(--slate-600)" /><span className="card-title">HyFlow Feeding · FED10 · Building 2</span></div>
           <span className="caption">Pellets transported in water · click equipment for controls</span>
         </div>
         <div className="card-body rasm-body"><HyFlowMimic /></div>
@@ -286,7 +299,7 @@ function HyFlowScreen() {
 
       {dock && <div className="dock-drawer-scrim" onClick={() => setDock(false)} />}
       <div className={"dock-drawer" + (dock ? " open" : "")} aria-hidden={!dock}>
-        <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={18} /></button>
+        <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={20} /></button>
         <ParamTabs dock tabs={HF_TABS} params={HF_PARAMS} title="HyFlow · parameters" />
       </div>
 

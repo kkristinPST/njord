@@ -131,45 +131,65 @@ function TankVitalsRail({ buildingId, deptId, onOpen }) {
   );
 }
 
-// ---- Dashboard card: same rail, with a department picker (the dashboard is facility-wide) ----
-const TV_LS = "nj_dash_vitals_dept_v1";
+// ---- Dashboard card: EVERY tank-bearing department, one rail per row ----
+// The picker is gone: a dashboard that shows one department of six is a dashboard that hides
+// five. Collapsed, the card shows the first row only; a department whose tanks are out of band
+// stays visible past the fold (same rule as the site plan) — a fold must never hide an alarm.
+const TV_EXP_LS = "nj_dash_vitals_open_v1";
 function tvDeptOpts() {
   const out = [];
   FACILITY.forEach((b) => b.depts.forEach((d) => { if (d.systems.some((s) => s.label === "Fish Tank")) out.push({ b, d }); }));
   return out;
 }
+// Only a CRITICAL department is exempt from the fold. A tank sitting below setpoint minus
+// hysteresis is normal operation — the dosing loop is about to open a valve, not an alarm — and
+// every seeded department has one, so exempting "high" would exempt all of them and the fold
+// would do nothing. Computed from the BASE values (not the wandering tick) so the fold cannot
+// reshuffle itself every 5 s.
+function tvDeptCritical(o) {
+  return njVitalTanks(o.b.id, o.d.id).some((t) => t.active && tvO2State(t, t.o2) === "critical");
+}
 function DashTankVitals() {
   const opts = tvDeptOpts();
-  const [sel, setSel] = React.useState(() => {
-    try { const v = localStorage.getItem(TV_LS); if (v && opts.some((o) => o.d.id === v)) return v; } catch (e) {}
-    return opts[0].d.id;
-  });
-  const cur = opts.find((o) => o.d.id === sel) || opts[0];
-  const pick = (id) => { setSel(id); try { localStorage.setItem(TV_LS, id); } catch (e) {} };
+  const [open, setOpen] = React.useState(() => { try { return localStorage.getItem(TV_EXP_LS) === "1"; } catch (e) { return false; } });
+  const toggle = () => { const v = !open; setOpen(v); try { localStorage.setItem(TV_EXP_LS, v ? "1" : "0"); } catch (e) {} };
+  const crit = opts.map(tvDeptCritical);
+  const shown = open ? opts : opts.filter((o, i) => i === 0 || crit[i]);
+  const hidden = opts.length - shown.length;
   return (
     <div className="card dash-vitals">
       <div className="card-head">
         <div className="card-head-l">
-          <Icon name="gauge" size={17} color="var(--slate-600)" />
+          <Icon name="gauge" size={16} color="var(--slate-600)" />
           <span className="card-title">Tank Vitals</span>
-          <span className="caption">O₂ saturation · water level · pump sump</span>
-        </div>
-        <div className="card-head-r tv-head-r">
-          <select className="nj-select" value={sel} onChange={(e) => pick(e.target.value)} aria-label="Department">
-            {FACILITY.map((b) => {
-              const ds = opts.filter((o) => o.b.id === b.id);
-              if (!ds.length) return null;
-              return <optgroup key={b.id} label={b.name}>{ds.map((o) => <option key={o.d.id} value={o.d.id}>{o.d.name} · {o.d.sub}</option>)}</optgroup>;
-            })}
-          </select>
-          <button className="linkbtn" onClick={() => njGoTankScreen(cur.b.id, cur.d.id)}>Fish Tank <Icon name="arrow-up-right" size={13} /></button>
+          <span className="caption">Every department · O₂ saturation · water level · pump sump</span>
         </div>
       </div>
       <div className="card-body tv-body">
-        <TankVitalsRail buildingId={cur.b.id} deptId={cur.d.id} />
+        {shown.map((o) => {
+          const isCrit = crit[opts.indexOf(o)];
+          return (
+            <div key={o.d.id} className="tv-grp">
+              <div className="tv-grp-head">
+                <span className="tv-grp-name">{o.d.name}</span>
+                <span className="tv-grp-sub">{o.b.name} · {o.d.sub}</span>
+                {isCrit && <Badge level="critical">O₂ CRITICAL</Badge>}
+                <button className="linkbtn tv-grp-link" onClick={() => njGoTankScreen(o.b.id, o.d.id)}
+                  title={"Open the Fish Tank screen for " + o.d.name}>Fish Tank <Icon name="arrow-up-right" size={14} /></button>
+              </div>
+              <TankVitalsRail buildingId={o.b.id} deptId={o.d.id} />
+            </div>
+          );
+        })}
+        {opts.length > 1 && (
+          <button className="tv-more" onClick={toggle} aria-expanded={open}>
+            <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
+            {open ? "Show less" : hidden > 0 ? "Show " + hidden + " more department" + (hidden === 1 ? "" : "s") : "Show all departments"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-Object.assign(window, { TankVitalsRail, DashTankVitals, njVitalTanks, njSumpVital, njGoTankScreen });
+Object.assign(window, { TankVitalsRail, DashTankVitals, njVitalTanks, njSumpVital, njGoTankScreen, tvDeptOpts });

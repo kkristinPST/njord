@@ -41,7 +41,7 @@ function FtdControl({ tank }) {
   ];
   return (
     <React.Fragment>
-      <div className="param-group-h"><Icon name="power" size={13} /> Tank status</div>
+      <div className="param-group-h"><Icon name="power" size={14} /> Tank status</div>
       <DockToggleRow label="Fish tank" on={active} onLabel="Active" offLabel="Deactivated" tank={tank}
         onConfirm={(v) => { setActive(v); njToast("Tank " + tank.n + (v ? " activated." : " deactivated."), "Maneuver history", () => window.__njNavigate && window.__njNavigate("maneuver")); }} />
       <ParamList rows={oxRows} tag={tank.tag} key={"ox" + tank.n} />
@@ -53,7 +53,7 @@ function FtdFish({ tank }) {
     { h: "Fish data" },
     { l: "Biomass", v: tank.biomass, unit: "kg" },
     { l: "Density", v: tank.density.toFixed(2), unit: "kg/m³" },
-    { l: "Population", v: tank.population.toLocaleString(), unit: "" },
+    { l: "Population", v: tank.population.toLocaleString("nb-NO"), unit: "" },
     { l: "Volume", v: tank.volume, unit: "m³" },
     { l: "Average weight", v: tank.avgWt, unit: "g", edit: true, min: 0, max: 8000, step: 0.1, tag: tank.tag, trend: true },
   ];
@@ -72,10 +72,10 @@ function FtdFish({ tank }) {
     <React.Fragment>
       <ParamList rows={dataRows} tag={tank.tag} key={"fd" + tank.n} />
       <ParamList rows={moveRows} tag={tank.tag} key={"fm" + tank.n} />
-      <div className="ftd-note"><Icon name="info" size={13} /> Register counts as they occur; totals roll into the daily maneuver log.</div>
+      <div className="ftd-note"><Icon name="info" size={14} /> Register counts as they occur; totals roll into the daily maneuver log.</div>
       <div className="ftd-actions">
-        <button className="btn btn-secondary btn-sm" onClick={() => window.njOpenDeadfishRegistration && window.njOpenDeadfishRegistration(tank)}><Icon name="clipboard-list" size={13} /> Register mortality</button>
-        <button className="btn btn-secondary btn-sm" onClick={resetTank}><Icon name="rotate-ccw" size={13} /> Reset tank</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => window.njOpenDeadfishRegistration && window.njOpenDeadfishRegistration(tank)}><Icon name="clipboard-list" size={14} /> Register mortality</button>
+        <button className="btn btn-secondary btn-sm" onClick={resetTank}><Icon name="rotate-ccw" size={14} /> Reset tank</button>
       </div>
     </React.Fragment>
   );
@@ -112,7 +112,7 @@ function FtdFeeding({ tank }) {
   });
   return (
     <React.Fragment>
-      <div className="param-group-h"><Icon name="utensils" size={13} /> Feeding</div>
+      <div className="param-group-h"><Icon name="utensils" size={14} /> Feeding</div>
       <DockToggleRow label="Feeding" on={!paused} onLabel="Feeding" offLabel="Paused" tank={tank}
         onConfirm={(v) => { setPaused(!v); njToast("Feeding " + (v ? "resumed" : "paused") + " on Tank " + tank.n + "."); }} />
       <ParamList rows={rows} tag={tank.tag} key={"fe" + tank.n} />
@@ -128,16 +128,16 @@ function FtdFeeding({ tank }) {
               {[1, 2, 5, 10, 15].map((n) => <option key={n} value={n}>{n} min</option>)}
             </select>
           </span>
-          <button className="btn btn-secondary btn-sm" onClick={startBoost} disabled={paused}><Icon name="zap" size={13} /> Start</button>
+          <button className="btn btn-secondary btn-sm" onClick={startBoost} disabled={paused}><Icon name="zap" size={14} /> Start</button>
         </span>
       </div>
       <div className="param-row">
         <span className="pl">Hand feed</span>
-        <span className="param-row-r"><button className="btn btn-secondary btn-sm" onClick={handFeed}><Icon name="plus" size={13} /> Register</button></span>
+        <span className="param-row-r"><button className="btn btn-secondary btn-sm" onClick={handFeed}><Icon name="plus" size={14} /> Register</button></span>
       </div>
       <ParamList rows={feedRows} tag={tank.tag} key={"fdt" + tank.n} />
       <div className="ftd-actions">
-        <button className="btn btn-secondary btn-sm" onClick={() => window.__njNavigate && window.__njNavigate("feeding")}><Icon name="utensils" size={13} /> Open Fish Feeding</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => window.__njNavigate && window.__njNavigate("feeding")}><Icon name="utensils" size={14} /> Open Fish Feeding</button>
       </div>
     </React.Fragment>
   );
@@ -171,13 +171,13 @@ function FishTankDock({ tank, tanks, onSwitch }) {
       <div className="dock-rail">
         {FTD_MODES.map((x) => (
           <button key={x.id} className={"dock-rail-btn" + (x.id === mode ? " active" : "")} title={x.title} onClick={() => setMode(x.id)}>
-            <Icon name={x.icon} size={18} />
+            <Icon name={x.icon} size={20} />
           </button>
         ))}
       </div>
       <div className="dock-main">
         <div className="card-head dock-head ftd-head">
-          <div className="card-head-l"><Icon name={m.icon} size={17} color="var(--slate-600)" /><span className="card-title">{m.title}</span></div>
+          <div className="card-head-l"><Icon name={m.icon} size={16} color="var(--slate-600)" /><span className="card-title">{m.title}</span></div>
           <div className="ftd-tanksw">
             {tanks.map((t) => (
               <button key={t.n} className={"ftd-tank" + (t.n === tank.n ? " active" : "")} title={"Tank " + t.n} onClick={() => onSwitch(t.n)}>{t.n}</button>
@@ -199,7 +199,7 @@ function FishTankDock({ tank, tanks, onSwitch }) {
           {mode === "params" && tab === "Feeding" && <FtdFeeding tank={tank} key={"fe" + tank.n} />}
           {mode === "limits" && (
             <div className="lim-list">
-              <div className="param-group-h"><Icon name="alarm-clock" size={13} /> Tank {tank.n} limits</div>
+              <div className="param-group-h"><Icon name="alarm-clock" size={14} /> Tank {tank.n} limits</div>
               {limitBlocks.map((b, i) => <LimitBlock key={tank.n + "-" + i} b={b} />)}
             </div>
           )}

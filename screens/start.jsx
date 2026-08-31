@@ -35,7 +35,7 @@ function DashAlarmRow({ a }) {
         <div className="dash-al-top">
           <span className="dash-al-lvl" data-lvl={a.level}>{a.level}</span>
           <AreaLink area={a.area} strong />
-          {isStale(a) && <span className="dash-al-stale" title={`Standing ${Math.round(a.since)}h`}><Icon name="clock" size={10} /> stale</span>}
+          {isStale(a) && <span className="dash-al-stale" title={`Standing ${Math.round(a.since)}h`}><Icon name="clock" size={12} /> stale</span>}
           <span className="dash-al-time data">{dashAgo(a.since)}</span>
         </div>
         <div className="dash-al-txt">{a.alarm} <span className="tag">· {a.tag}</span></div>
@@ -56,7 +56,7 @@ function DashBuilding({ b }) {
     <div className="dash-bld" onClick={openBld}
       role="button" {...njActivate(openBld)} title={"Open " + b.name + " on the site plan"}>
       <div className="dash-bld-top">
-        <span className="dash-bld-name"><Icon name="building-2" size={15} color="var(--slate-500)" /> {b.name}</span>
+        <span className="dash-bld-name"><Icon name="building-2" size={16} color="var(--slate-500)" /> {b.name}</span>
         <span className="dash-bld-st" data-st={worst}><Dot level={worst} size={7} /> {worst === "ok" ? "Nominal" : worst === "high" ? "Warning" : "Critical"}</span>
       </div>
       <div className="dash-bld-depts">
@@ -124,8 +124,8 @@ function StartScreen() {
             <p className="pagehead-sub">Land-based RAS facility · 3 buildings · 9 departments · {window.njFmtTs ? window.njFmtTs(window.njClockNow()) : ""}</p>
           </div>
           <div className="pagehead-right">
-            <button className="btn btn-secondary" onClick={() => window.__njNavigate && window.__njNavigate("maneuver")}><Icon name="history" size={15} /> Maneuver History</button>
-            <button className="btn btn-primary" onClick={() => window.__njGoPlan ? window.__njGoPlan() : window.__njNavigate && window.__njNavigate("navigation")}><Icon name="map" size={15} /> Site Plan</button>
+            <button className="btn btn-secondary" onClick={() => window.__njNavigate && window.__njNavigate("maneuver")}><Icon name="history" size={16} /> Maneuver History</button>
+            <button className="btn btn-primary" onClick={() => window.__njGoPlan ? window.__njGoPlan() : window.__njNavigate && window.__njNavigate("navigation")}><Icon name="map" size={16} /> Site Plan</button>
           </div>
         </div>
       </div>
@@ -150,7 +150,7 @@ function StartScreen() {
 
       {/* Secondary: operational / administrative counts */}
       <div className="kpi-eyebrow">Operations</div>
-      <div className="kpi-row" style={{ marginBottom: 22 }}>
+      <div className="kpi-row" style={{ marginBottom: 20 }}>
         <KpiCard label="Active Alarms" value={String(ac.total)} delta={`${ac.critical} critical · ${ac.high} high`} deltaDir="down" icon="bell-ring" onClick={() => window.__njGoAlarms ? window.__njGoAlarms("Active", null) : window.__njNavigate && window.__njNavigate("alarms")} />
         <KpiCard label="Over Capacity" value={String(overCap.length)}
           delta={overCap.length ? `Tank ${worstCap.n} · ${Math.round(worstCap.biomass / worstCap.maxBiomass * 100)} % of max` : "all within limits"}
@@ -166,19 +166,19 @@ function StartScreen() {
         <div className="card dash-alarms">
           <div className="card-head">
             <div className="card-head-l">
-              <Icon name="bell-ring" size={17} color="var(--slate-600)" />
+              <Icon name="bell-ring" size={16} color="var(--slate-600)" />
               <span className="card-title">Active Alarms</span>
               <span className="dash-al-count">{ac.total}</span>
             </div>
             <div className="dash-al-legend">
               <span className="dal-k"><Dot level="critical" size={7} /> <span className="data">{ac.critical}</span> critical</span>
               <span className="dal-k"><Dot level="high" size={7} /> <span className="data">{ac.high}</span> high</span>
-              {ac.stale > 0 && <span className="dal-k dal-stale"><Icon name="clock" size={11} /> <span className="data">{ac.stale}</span> stale</span>}
+              {ac.stale > 0 && <span className="dal-k dal-stale"><Icon name="clock" size={12} /> <span className="data">{ac.stale}</span> stale</span>}
             </div>
           </div>
           <div className="dash-al-list">
             {feed.length ? feed.map((a) => <DashAlarmRow key={a.id} a={a} />)
-              : <div className="dash-empty"><Icon name="check-circle-2" size={22} color="var(--success)" /> No active alarms, all systems nominal.</div>}
+              : <NjEmpty size="row" reason="resolved" title="No active alarms, all systems nominal." />}
           </div>
           <div className="tbl-foot" style={{ justifyContent: "space-between" }}>
             <span className="caption">Tip: click an area to jump to its process screen</span>
@@ -189,8 +189,8 @@ function StartScreen() {
         {/* right top: facility rollup */}
         <div className="card dash-facility">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="map" size={17} color="var(--slate-600)" /><span className="card-title">Facility Status</span></div>
-            <button className="linkbtn" onClick={() => window.__njGoPlan && window.__njGoPlan()}>Site Plan <Icon name="arrow-up-right" size={13} /></button>
+            <div className="card-head-l"><Icon name="map" size={16} color="var(--slate-600)" /><span className="card-title">Facility Status</span></div>
+            <button className="linkbtn" onClick={() => window.__njGoPlan && window.__njGoPlan()}>Site Plan <Icon name="arrow-up-right" size={14} /></button>
           </div>
           <div className="dash-bld-list">
             {FACILITY.map((b) => <DashBuilding key={b.id} b={b} />)}
@@ -200,9 +200,9 @@ function StartScreen() {
         {/* right bottom: notes */}
         <div className="card dash-notes">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="sticky-note" size={17} color="var(--slate-600)" /><span className="card-title">Notes</span>
+            <div className="card-head-l"><Icon name="sticky-note" size={16} color="var(--slate-600)" /><span className="card-title">Notes</span>
               {newNoteIds.length > 0 && <span className="dash-al-count">{newNoteIds.length} new</span>}</div>
-            <button className="linkbtn" onClick={() => window.openNotes && window.openNotes()}>All notes <Icon name="arrow-up-right" size={13} /></button>
+            <button className="linkbtn" onClick={() => window.openNotes && window.openNotes()}>All notes <Icon name="arrow-up-right" size={14} /></button>
           </div>
           <div className="dnote-list">
             {recentNotes.length ? recentNotes.map((n) => (
@@ -212,7 +212,7 @@ function StartScreen() {
                 <div className="dnote-txt">{n.text}</div>
                 <div className="dnote-meta">{n.tag ? <span className="tag">{n.tag}</span> : <span className="dnote-scope">{n.area}</span>}<span className="dnote-by">{n.by} · {n.ts}</span></div>
               </button>
-            )) : <div className="dash-empty"><Icon name="check-circle-2" size={20} color="var(--slate-300)" /> No active notes.</div>}
+            )) : <NjEmpty size="row" reason="resolved" tone="neutral" icon="notebook-pen" title="No active notes." />}
           </div>
         </div>
 
@@ -225,8 +225,8 @@ function StartScreen() {
         {/* full-width bottom: recent maneuvers (table, consistent with Maneuver History) */}
         <div className="card maneuver-panel dash-maneuver">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="history" size={17} color="var(--slate-600)" /><span className="card-title">Maneuver History</span></div>
-            <button className="linkbtn" onClick={() => window.__njNavigate && window.__njNavigate("maneuver")}>View all <Icon name="arrow-up-right" size={13} /></button>
+            <div className="card-head-l"><Icon name="history" size={16} color="var(--slate-600)" /><span className="card-title">Maneuver History</span></div>
+            <button className="linkbtn" onClick={() => window.__njNavigate && window.__njNavigate("maneuver")}>View all <Icon name="arrow-up-right" size={14} /></button>
           </div>
           <table className="tbl dash-mvr-tbl">
             <thead>

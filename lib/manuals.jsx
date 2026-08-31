@@ -10,7 +10,7 @@ function ManBlocks({ blocks }) {
     if (b.t === "sub") return <h4 className="man-sub" key={i}>{b.x}</h4>;
     if (b.t === "ul") return <ul className="man-ul" key={i}>{b.x.map((it, j) => <li key={j}>{it}</li>)}</ul>;
     if (b.t === "steps") return <ol className="man-ol" key={i}>{b.x.map((it, j) => <li key={j}>{it}</li>)}</ol>;
-    if (b.t === "note") return <div className="man-note" key={i}><Icon name="info" size={15} color="var(--primary)" /><span>{b.x}</span></div>;
+    if (b.t === "note") return <div className="man-note" key={i}><Icon name="info" size={16} color="var(--primary)" /><span>{b.x}</span></div>;
     if (b.t === "defs") return (
       <dl className="man-defs" key={i}>
         {b.x.map((d, j) => <div className="man-def" key={j}><dt>{d[0]}</dt><dd>{d[1]}</dd></div>)}
@@ -62,9 +62,9 @@ function ManualDialog({ manual }) {
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="book-open" size={13} /> {manual.sections.length} sections</span>
+        <span className="dlg-foot-meta"><Icon name="book-open" size={14} /> {manual.sections.length} sections</span>
         <div style={{ display: "flex", gap: 10 }}>
-          <a className="btn btn-secondary" href={(window.__resources && window.__resources[manual.resId]) || manual.pdf} download><Icon name="download" size={15} /> Download PDF</a>
+          <a className="btn btn-secondary" href={(window.__resources && window.__resources[manual.resId]) || manual.pdf} download><Icon name="download" size={16} /> Download PDF</a>
           <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
         </div>
       </div>
@@ -74,7 +74,7 @@ function ManualDialog({ manual }) {
 
 // ── SCADA manual content ──────────────────────────────────────────────────────
 const SCADA_MANUAL = {
-  key: "scada", icon: "book-open", title: "SCADA Manual", rev: "2.0", resId: "njScadaPdf",
+  key: "scada", icon: "book-open", title: "SCADA Manual", rev: "2.1", resId: "njScadaPdf",
   pdf: "assets/manuals/Njord_SCADA_userguide_EN.pdf",
   subtitle: "Operating the Njord SCADA console, navigation, process objects, trends, reports, maneuver history and alarms.",
   sections: [
@@ -91,9 +91,14 @@ const SCADA_MANUAL = {
       { t: "sub", x: "Right-side docks" },
       { t: "p", x: "Process screens carry context docks that change per page, parameters, alarm limits and preconfigured trends for the system currently open. Expand them from the icon rail on the right edge." },
     ]},
+    { id: "prefs", title: "Preferences", blocks: [
+      { t: "p", x: "Preferences are per operator and per device: light or dark theme, table density, text size (Normal / Large / Extra large), default screen and units. They are reachable from the user menu at the bottom of the sidebar and in full-size form under Settings · General · Appearance, both write the same preference." },
+      { t: "note", x: "Settings holds the facility's record, users, roles, on-call groups, project configuration and alarm performance targets, one shared truth for everyone. Preferences only change what you see." },
+    ]},
     { id: "nav", title: "Site Plan", blocks: [
       { t: "p", x: "The Site Plan screen is a top-down view of the facility: buildings are footprints, departments are zones, and each system is a node showing only its name and status. Click a system node to open its process mimic." },
       { t: "p", x: "Every pipe on a mimic is tinted by the fluid it carries, process water, raw water, drain, sludge, glycol loop, brine loop, lye dosing, and gas lines (oxygen, air and CO₂ off-gas) are dashed. The legend strip under each mimic lists only the fluids that screen carries. Equipment status keeps its own colours (green running, gray stopped, red alarm), which always read louder than the pipework." },
+      { t: "p", x: "A department with many systems shows the first few and folds the rest behind Show n more, which is remembered per department. A system in alarm is always visible, the fold can never hide one." },
       { t: "p", x: "Within a process area, the department tab bar switches between the systems of that department. Flow arrows on a mimic show where process fluid comes from or goes to; bold arrows are shortcuts you can click to jump to the connected process page." },
     ]},
     { id: "objects", title: "Process objects", blocks: [
@@ -113,11 +118,28 @@ const SCADA_MANUAL = {
       { t: "sub", x: "Trend groups" },
       { t: "p", x: "A trend group is a saved collection of parameters you analyse together. Save the current pens as a group from the Pens panel, then reopen it later from the Groups library, where groups can be searched, loaded, duplicated, edited or deleted. A group is private to you or shared with the whole plant, and the creator is shown on every shared group." },
       { t: "sub", x: "Alarm linkage" },
+      { t: "sub", x: "Reading and scaling a pen" },
+      { t: "p", x: "Each pen in the Signals panel carries Min / Max / Avg for the window currently in view, recomputed as you pan or change the range, so an outlier can be judged without opening a second screen. The scale button on a pen reads Auto or its fixed range: set an explicit Range min / max for that pen, keep dynamic auto-scaling, or move it to its own axis when the Y axis is set to Separate." },
+      { t: "sub", x: "Browse signals" },
+      { t: "p", x: "Browse signals opens the full catalog as a system → equipment → parameter tree with a filter over both names and tags (typing expands every node that has a hit). Select several parameters at once, or Select all for one equipment; anything already plotted shows as checked and disabled. The Add dropdown remains for the quick single-parameter case." },
       { t: "p", x: "Alarms and trends are linked one to one. Investigating an alarm plots the process value that triggered it, centred on the alarm moment with a ±30 minute focus window, its threshold drawn as a dashed line. Alarm markers on a pen open a detail popover with a link back to the alarm row. Discrete alarms with no measured value open an event timeline instead of a chart." },
     ]},
     { id: "reports", title: "Reports", blocks: [
-      { t: "p", x: "Reporting combines logged data into key-figures tables for a chosen period and scope, Fish Calculation, Feed Report, Fish Summary and Key Numbers." },
-      { t: "p", x: "Pick a start and end date, review the daily rows with an expandable Sum / Average / Min / Max calculation section, download the data as CSV or Excel, or open it in the report viewer, a movable, printable document window that stays open while you navigate." },
+      { t: "p", x: "Reporting combines logged data into tables for a chosen period and scope. A facility can hold hundreds of report definitions, so the tab strip is your own pinned set, not the whole catalog: the reports you work with sit as tabs, everything else stays one click away behind Browse." },
+      { t: "p", x: "Browse reports searches the full catalog by name, category, subject or tag, groups results by category and filters by level (per tank, per department, facility-wide). Opening an unpinned report shows it as a temporary tab in italics; pin it to keep it. Recently opened reports are listed when the search is empty." },
+      { t: "p", x: "Every report declares its level, and the level drives the toolbar: a department report locks the tank selector to All tanks, a facility report locks both. Pick a start and end date, review the daily rows with an expandable Sum / Average / Min / Max section, Download the data as CSV or Excel, or open it in the report viewer, a movable, printable document window that stays open while you navigate." },
+      { t: "note", x: "Pinned tabs and recent reports are stored per operator, per device, the pinned set is a personal working view and never changes what other users see." },
+    ]},
+    { id: "dataentry", title: "Manual data entry", blocks: [
+      { t: "p", x: "Not every value comes from an instrument. Manual Data Entry holds the measurements an operator reads by hand, water samples, gauge readings, observations such as filter condition, organised by location in the left rail." },
+      { t: "p", x: "Add value on a measurement opens one dialog: the new reading, an optional comment, the expected range and the last three readings for comparison. A value outside its expected range is marked on the row and in the list header count. Numeric measurements can be sent to Trends straight from the confirmation." },
+      { t: "p", x: "The overflow menu on a measurement edits its details, shows the full value history, duplicates, moves it to another folder or deletes it. The menu on a location creates a measurement or sublocation there, renames, duplicates or deletes the location and everything inside it." },
+      { t: "note", x: "The phone records against the same measurement list, a reading taken at the tank is the reading the control room sees. The phone shows a keypad for it; the desktop does not." },
+    ]},
+    { id: "commissioning", title: "Commissioning and biofilter maturation", blocks: [
+      { t: "p", x: "Commissioning logs the daily water-quality round of a trial period as a spreadsheet: one row per day, one column per parameter and sample point, typed directly into the grid. Plant tags can be shown beside the manual readings for comparison, and calculated columns derive values from them (sensor deviation, CO₂ rise over a tank) with a formula you can read and check. The planned length can be extended, and a row can be added for a missed day or to prepare tomorrow's round." },
+      { t: "p", x: "The chart above the sheet plots one parameter at every sample point against its design basis; points outside the band are ringed and open that round." },
+      { t: "p", x: "Biofilter maturation covers the period before a department is stocked: log the measured nitrogen species and what was actually dosed. The estimate is stoichiometric, computed from the measured change, the reactor volume and the reagent purity, so it can be checked against the sack, and the round list flags doses the model expected but nobody recorded." },
     ]},
     { id: "maneuver", title: "Maneuver history", blocks: [
       { t: "p", x: "Every maneuver is logged at signal level so changes can be reviewed later." },
@@ -139,6 +161,11 @@ const SCADA_MANUAL = {
       { t: "sub", x: "Alarm list" },
       { t: "p", x: "Tabs switch between Active, All Alarms, Historical, Statistics, Deactivated and Rationalization. Sort by any column, select one or more rows (or the whole page) to Acknowledge, Block or set Out of service, and open an object popup for a pre-filtered, area-level view. Deactivated splits into Blocked (by operator, optionally with an auto-reactivate timer, or logic-controlled) and Out of service." },
       { t: "sub", x: "Statistics & on-call" },
+      { t: "sub", x: "Deactivating an alarm" },
+      { t: "p", x: "Blocking (shelving) is governed by the master record: a Critical alarm can never be blocked, and neither can an alarm whose record forbids shelving. Where the rule refuses, the product says so and offers Take out of service instead, which is the maintenance route and is logged as such. The Deactivated tab has its own search and a Blocked / Out of service filter; bulk Return to active only ever picks up rows that can actually be restored, a logic-controlled block is read-only." },
+      { t: "sub", x: "Master record, change history and review" },
+      { t: "p", x: "Editing a controlled field on the Rationalization register (priority, limits, delays, classification) asks for a reason, and every such change is written to the alarm's change history with the operator and timestamp; any entry can be reverted from there. The Master Alarm Report generates the controlled snapshot with a signature block. Critical and High alarms carry an annual review date, and Review overdue is both a KPI and a filter, any edit re-stamps the review date." },
+      { t: "p", x: "Where there is no round-the-clock on-site presence, remote alarms leave the facility on two independent paths, as NS 9416 requires. Independence counts paths, not channels: SMS and voice both ride GSM and therefore count once. The on-call editor refuses to save a Priority 1 tier served by fewer than two paths." },
       { t: "p", x: "The Statistics tab compares alarm activity across periods to surface repeat offenders. On-call management (in Settings) routes notifications by alarm group over SMS / call / e-mail, with escalation to higher-priority users and a resend interval until an alarm is acknowledged or returns to normal." },
     ]},
     { id: "users", title: "User administration", blocks: [
@@ -151,7 +178,16 @@ const SCADA_MANUAL = {
       ]},
     ]},
     { id: "mobile", title: "Mobile view", blocks: [
-      { t: "p", x: "On phones and tablets the console adopts a compact, mobile-first layout, the process flow view is replaced by equipment cards that keep controls and key information reachable on a small screen." },
+      { t: "p", x: "On phones the console adopts a compact, mobile-first layout: the process flow view is replaced by equipment cards that keep controls and key information reachable on a small screen, and actions open as bottom sheets under the thumb. It reads and writes the same data as the control room, never a separate mobile copy." },
+      { t: "sub", x: "What the phone is for" },
+      { t: "ul", x: [
+        "Field registration: manual data entry (including creating measurements and locations), mortality with the full cause list, welfare scoring, fish movement per tank, and biofilter maturation rounds.",
+        "Alarms: the active list, acknowledge, block or take out of service under the same rules as the desktop, and the full alarm and event log by day.",
+        "Analytics: trends with per-pen Min / Max / Avg and per-pen scale, the same signal tree for browsing, and raw trend data export.",
+        "Orientation: the control-room process diagram for a system, pinch to zoom. It is read-only on the phone, every control it carries is on the system screen.",
+        "A QR scanner for jumping straight to the equipment in front of you.",
+      ]},
+      { t: "note", x: "Some things stay in the control room on purpose: process diagrams are not editable on a phone, the welfare bubble chart and timeline need a wide screen, and reverting a change in an alarm's history is a control-room action." },
     ]},
   ],
 };

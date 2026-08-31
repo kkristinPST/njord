@@ -140,7 +140,7 @@ function TagDialog({ tag, existingPaths, seedPath }) {
   };
   return (
     <Dialog width={560}>
-      <DlgHeader icon={editing ? "pencil" : "plus"} name={editing ? "Edit tag" : "Add new tag"} onClose={closeDialog} />
+      <DlgHeader icon={editing ? "pencil" : "plus"} name={editing ? "Edit tag" : "New tag"} onClose={closeDialog} />
       <div className="dlg-body de-form">
         <DeField label="Folder path" hint="Type a new path to create a folder, or pick an existing one">
           <input className="de-input" list="de-paths" placeholder="Manual Measurements / DPT 1" value={f.path} onChange={(e) => set("path", e.target.value)} />
@@ -179,15 +179,17 @@ function TagDialog({ tag, existingPaths, seedPath }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>{editing ? "Save changes" : "Confirm"}</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Create"}</button>
       </div>
     </Dialog>
   );
 }
 
-/* ── Record value dialog (the core manual-entry action) ── */
+/* ── Add value dialog — the ONE manual-entry surface on the desktop (the phone has
+   MDeRecordSheet). Reached from the row, the tag detail dialog and the tag's overflow menu. ── */
 function RecordValueDialog({ tag }) {
   const numeric = deIsNumeric(tag);
+  const hist = (tag.history || []).slice(0, 3);
   const [value, setValue] = React.useState("");
   const [comment, setComment] = React.useState("");
   const num = parseFloat(value);
@@ -195,7 +197,7 @@ function RecordValueDialog({ tag }) {
   const valid = value.trim() !== "";
   const save = () => {
     deStore.record(tag.id, value.trim(), comment.trim());
-    njToast(`Added ${value.trim()}${tag.unit ? " " + tag.unit : ""} to ${tag.name}.`, "Trends", numeric ? () => njSendToTrend(tag.name, { name: tag.name, unit: tag.unit, value: num, group: "Manual" }) : null);
+    njToast(`Added ${value.trim()}${tag.unit ? " " + tag.unit : ""} to ${tag.name}.`, numeric ? "Trends" : null, numeric ? () => njSendToTrend(tag.name, { name: tag.name, unit: tag.unit, value: num, group: "Manual" }) : null);
     closeDialog();
   };
   return (
@@ -204,7 +206,7 @@ function RecordValueDialog({ tag }) {
       <div className="dlg-body de-rec">
         <div className="de-rec-meta">
           <div className="de-rec-path">{tag.path}</div>
-          <div className="de-rec-cur"><span className="de-rec-lbl">Last value</span><span className="data">{tag.value}{tag.unit ? <span className="de-u"> {tag.unit}</span> : null}</span></div>
+          <div className="de-rec-cur"><span className="de-rec-lbl">Last value</span><span className="data">{tag.value}{tag.unit ? <span className="de-u"> {tag.unit}</span> : null}</span>{hist[0] && <span className="de-rec-ts data">{hist[0].ts}</span>}</div>
         </div>
         <DeField label="New value">
           <div className="de-rec-inwrap">
@@ -215,10 +217,18 @@ function RecordValueDialog({ tag }) {
         {(tag.min != null || tag.max != null) && <div className="de-rec-range">Expected range {deFmtRange(tag)}</div>}
         {oor && <div className="pe-warn"><Icon name="alert-triangle" size={14} /> <span>Value is outside the expected range.</span></div>}
         <DeField label="Comment (optional)"><input className="de-input" placeholder="Add a note about this reading…" value={comment} onChange={(e) => setComment(e.target.value)} /></DeField>
+        {hist.length > 0 && (
+          <div className="de-rec-hist">
+            <span className="eyebrow">Recent readings</span>
+            {hist.map((h, i) => (
+              <div className="de-rec-hist-row" key={i}><span className="data de-rec-hist-v">{h.value}{tag.unit ? " " + tag.unit : ""}</span><span className="de-rec-hist-ts data">{h.ts}</span></div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={15} /> Add</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Add</button>
       </div>
     </Dialog>
   );
@@ -233,7 +243,7 @@ function TagDetailDialog({ tagId, existingPaths }) {
   const hist = tag.history || [];
   return (
     <Dialog width={560}>
-      <DlgHeader icon="file-text" name={tag.name} tag={tag.unit || undefined} onClose={closeDialog} />
+      <DlgHeader icon="clipboard-list" name={tag.name} tag={tag.unit || undefined} onClose={closeDialog} />
       <div className="dlg-body de-detail">
         <div className="de-detail-path">{tag.path}</div>
         <div className="de-detail-cur">
@@ -244,7 +254,7 @@ function TagDetailDialog({ tagId, existingPaths }) {
           <div className="de-detail-actions">
             {numeric && <TrendBtn id={tag.name} tag={tag.name} name={tag.name} unit={tag.unit} value={deNum(tag)} group="Manual" title="Send to Trends" />}
             <button className="btn btn-secondary btn-sm" onClick={() => openDialog(<TagDialog tag={tag} existingPaths={existingPaths} />)}><Icon name="pencil" size={14} /> Edit</button>
-            <button className="btn btn-primary btn-sm" onClick={() => openDialog(<RecordValueDialog tag={tag} />)}><Icon name="plus" size={14} /> Add value</button>
+            <button className="btn btn-primary btn-sm" onClick={() => openDialog(<RecordValueDialog tag={tag} />)}><Icon name="plus" size={14} /> Add</button>
           </div>
         </div>
         <div className="de-detail-grid">
@@ -256,7 +266,7 @@ function TagDetailDialog({ tagId, existingPaths }) {
         </div>
         <div className="de-hist-head"><span className="eyebrow">Value history</span><span className="de-hist-n data">{hist.length}</span></div>
         <div className="de-hist">
-          {hist.length === 0 && <div className="de-hist-empty">No readings recorded yet.</div>}
+          {hist.length === 0 && <NjInline align="left" icon="clock">No readings recorded yet.</NjInline>}
           {hist.map((h, i) => (
             <div className="de-hist-row" key={i}>
               <div className="de-hist-l">
@@ -293,14 +303,14 @@ function FolderDialog({ existingPaths, seedParent }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>Confirm</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Create</button>
       </div>
     </Dialog>
   );
 }
 
 function DeleteTagConfirm({ tag }) {
-  return <ConfirmDialog title="Delete tag" message={`Delete "${tag.name}" and its ${(tag.history || []).length} recorded value(s)?`} confirmLabel="Delete" danger
+  return <ConfirmDialog title="Delete tag" message={`Delete "${tag.name}" and its ${(tag.history || []).length} recorded value(s)?`} confirmLabel="Delete" tone="danger"
     onConfirm={() => { deStore.remove(tag.id); njToast(`Tag "${tag.name}" deleted.`); }} />;
 }
 
@@ -309,7 +319,7 @@ function DeleteFolderConfirm({ path, tagCount, subCount }) {
   if (tagCount) parts.push(`${tagCount} tag${tagCount === 1 ? "" : "s"}`);
   if (subCount) parts.push(`${subCount} subfolder${subCount === 1 ? "" : "s"}`);
   const detail = parts.length ? ` and everything inside it (${parts.join(" · ")})` : "";
-  return <ConfirmDialog title="Delete folder" message={`Delete the folder "${path}"${detail}? This cannot be undone.`} confirmLabel="Delete folder" danger
+  return <ConfirmDialog title="Delete folder" message={`Delete the folder "${path}"${detail}? This cannot be undone.`} confirmLabel="Delete" tone="danger"
     onConfirm={() => { deStore.removeFolderDeep(path); njToast(`Folder "${path}" deleted.`); }} />;
 }
 
@@ -335,7 +345,7 @@ function RenameFolderDialog({ src, existingPaths }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>Save</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Rename</button>
       </div>
     </Dialog>
   );
@@ -359,7 +369,7 @@ function DuplicateFolderDialog({ src, existingPaths }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="copy" size={14} /> Duplicate</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Duplicate</button>
       </div>
     </Dialog>
   );
@@ -381,7 +391,7 @@ function MoveTagDialog({ tag, existingPaths }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>Move</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Move</button>
       </div>
     </Dialog>
   );
@@ -407,84 +417,6 @@ function OverflowMenu({ items, onClose }) {
   );
 }
 
-/* ── Enter value drawer — the primary operator action ── */
-function EnterValueDrawer({ tag, queue, index }) {
-  const numeric = deIsNumeric(tag);
-  const [value, setValue] = React.useState("");
-  const [comment, setComment] = React.useState("");
-  const inRef = React.useRef(null);
-  React.useEffect(() => { if (inRef.current && !numeric) inRef.current.focus(); }, []);
-  const num = parseFloat(value);
-  const dec = tag.decimals == null ? 2 : tag.decimals;
-  const oor = numeric && value.trim() !== "" && !isNaN(num) && ((tag.min != null && num < tag.min) || (tag.max != null && num > tag.max));
-  const valid = value.trim() !== "";
-  const next = queue && index != null ? queue[index + 1] : null;
-  const commit = () => {
-    deStore.record(tag.id, value.trim(), comment.trim());
-    njToast(`Added ${value.trim()}${tag.unit ? " " + tag.unit : ""} to ${tag.name}.`);
-  };
-  const save = () => { commit(); closeDialog(); };
-  const saveNext = () => { commit(); closeDialog(); if (next) openDialog(<EnterValueDrawer tag={next} queue={queue} index={index + 1} />); };
-  const key = (k) => setValue((v) => {
-    if (k === "del") return v.slice(0, -1);
-    if (k === "." && v.includes(".")) return v;
-    if (k === "-") return v.startsWith("-") ? v.slice(1) : "-" + v;
-    return v + k;
-  });
-  const step = (d) => setValue((v) => { const base = v.trim() === "" || isNaN(parseFloat(v)) ? (tag.min != null ? tag.min : 0) : parseFloat(v); const s = dec > 0 ? Math.pow(10, -dec) : 1; return (base + d * (dec > 0 ? 1 : 1)).toFixed(dec > 0 ? dec : 0); });
-  const hist = (tag.history || []).slice(0, 3);
-  return (
-    <div className="de-drawer" role="dialog" aria-modal="true" aria-label={"Enter value for " + tag.name}>
-      <div className="de-drawer-head">
-        <div className="de-drawer-loc"><Icon name="folder" size={13} color="var(--slate-400)" /> {tag.path}</div>
-        <button className="dlg-x" onClick={closeDialog} aria-label="Close"><Icon name="x" size={20} /></button>
-      </div>
-      <div className="de-drawer-title">{tag.name}</div>
-      <div className="de-drawer-body">
-        <div className="de-ev-lastrow">
-          <span className="de-ev-lbl">LAST VALUE</span>
-          <span className="data de-ev-last">{tag.value}{tag.unit ? <span className="de-u"> {tag.unit}</span> : null}</span>
-          {hist[0] && <span className="de-ev-lastts data">{hist[0].ts}</span>}
-        </div>
-        <label className="de-ev-fieldlbl" htmlFor="de-ev-input">NEW VALUE</label>
-        <div className={"de-ev-field" + (oor ? " oor" : "")}>
-          {numeric && <button className="de-ev-step" onClick={() => step(-1)} aria-label="Decrease"><Icon name="minus" size={22} /></button>}
-          <input id="de-ev-input" ref={inRef} className="de-ev-input data" inputMode={numeric ? "decimal" : "text"} placeholder={numeric ? "0" : "Enter reading…"} value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && valid) (next ? saveNext() : save()); }} />
-          {tag.unit && <span className="de-ev-unit">{tag.unit}</span>}
-          {numeric && <button className="de-ev-step" onClick={() => step(1)} aria-label="Increase"><Icon name="plus" size={22} /></button>}
-        </div>
-        {(tag.min != null || tag.max != null) && <div className={"de-ev-range" + (oor ? " oor" : "")}>{oor ? <span><Icon name="alert-triangle" size={13} /> Outside expected range {deFmtRange(tag)}</span> : <span>Expected range {deFmtRange(tag)}</span>}</div>}
-        {numeric && (
-          <div className="de-keypad">
-            {["1","2","3","4","5","6","7","8","9",".","0","del"].map((k) => (
-              <button key={k} className={"de-key" + (k === "del" ? " de-key-del" : "")} onClick={() => key(k)} aria-label={k === "del" ? "Delete" : k}>
-                {k === "del" ? <Icon name="delete" size={20} /> : k}
-              </button>
-            ))}
-          </div>
-        )}
-        <label className="de-ev-fieldlbl" htmlFor="de-ev-comment">COMMENT (OPTIONAL)</label>
-        <input id="de-ev-comment" className="de-input" placeholder="e.g. sensor offline, manual dip sample…" value={comment} onChange={(e) => setComment(e.target.value)} />
-        {hist.length > 0 && (
-          <div className="de-ev-hist">
-            <div className="de-ev-hist-h">RECENT READINGS</div>
-            {hist.map((h, i) => (
-              <div className="de-ev-hist-row" key={i}><span className="data de-ev-hist-v">{h.value}{tag.unit ? " " + tag.unit : ""}</span><span className="de-ev-hist-ts data">{h.ts}</span></div>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="de-drawer-foot">
-        <button className="btn btn-secondary de-ev-cancel" onClick={closeDialog}>Cancel</button>
-        {next
-          ? <><button className="btn btn-secondary de-ev-save" disabled={!valid} onClick={save}>Save</button>
-             <button className="btn btn-primary de-ev-save" disabled={!valid} onClick={saveNext}>Save &amp; next <Icon name="arrow-right" size={16} /></button></>
-          : <button className="btn btn-primary de-ev-save" disabled={!valid} onClick={save}><Icon name="check" size={17} /> Save reading</button>}
-      </div>
-    </div>
-  );
-}
-
 /* ── measurement row (touch-first; one primary action + one overflow) ── */
 function MeasurementRow({ tag, paths, onEnter, showPath }) {
   const [menu, setMenu] = React.useState(false);
@@ -505,7 +437,7 @@ function MeasurementRow({ tag, paths, onEnter, showPath }) {
       <div className="de-meas-main">
         <div className="de-meas-name">{tag.name}</div>
         <div className="de-meas-meta">
-          {showPath && <span className="de-meas-path"><Icon name="folder" size={11} color="var(--slate-400)" /> {tag.path}</span>}
+          {showPath && <span className="de-meas-path"><Icon name="folder" size={12} color="var(--slate-400)" /> {tag.path}</span>}
           {last ? <span>Updated {last.ts}</span> : <span>No readings yet</span>}
         </div>
       </div>
@@ -515,9 +447,9 @@ function MeasurementRow({ tag, paths, onEnter, showPath }) {
           ? <span className="de-stat de-stat-warn"><Icon name="alert-triangle" size={12} /> Out of range</span>
           : (tag.min != null || tag.max != null) ? <span className="de-stat de-stat-ok"><span className="de-stat-dot" /> In range</span> : <span className="de-meas-range data">{deFmtRange(tag)}</span>}
       </div>
-      <button className="btn btn-primary de-enter-btn" onClick={() => onEnter(tag)}><Icon name="plus" size={17} /> Enter value</button>
+      <button className="btn btn-secondary btn-sm de-enter-btn" onClick={() => onEnter(tag)}><Icon name="plus" size={14} /> Add value</button>
       <div className="de-meas-morewrap">
-        <button className={"de-more" + (menu ? " open" : "")} aria-label="More actions" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}><Icon name="more-vertical" size={19} /></button>
+        <button className={"de-more" + (menu ? " open" : "")} aria-label="More actions" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((m) => !m)}><Icon name="more-vertical" size={20} /></button>
         {menu && <OverflowMenu items={items} onClose={() => setMenu(false)} />}
       </div>
     </div>
@@ -538,7 +470,7 @@ function LocationRow({ node, name, depth, count, active, hasKids, isCol, paths, 
   return (
     <div className={"de-loc" + (active ? " active" : "")} style={{ paddingLeft: 8 + depth * 16 }}>
       {hasKids
-        ? <button className="de-loc-caret" onClick={onToggle} aria-label={isCol ? "Expand" : "Collapse"}><Icon name={isCol ? "chevron-right" : "chevron-down"} size={15} /></button>
+        ? <button className="de-loc-caret" onClick={onToggle} aria-label={isCol ? "Expand" : "Collapse"}><Icon name={isCol ? "chevron-right" : "chevron-down"} size={16} /></button>
         : <span className="de-loc-caret de-loc-caret-empty" />}
       <button className="de-loc-btn" onClick={onSelect}>
         <Icon name={active ? "folder-open" : "folder"} size={16} />
@@ -593,7 +525,7 @@ function DataEntryScreen({ tab, onTab }) {
   else { visible = tags.filter((t) => t.path === active); grouped = false; showPath = false; }
   // stable ordering by path then name
   visible.sort((a, b) => (a.path + a.name).localeCompare(b.path + b.name));
-  const openEnter = (tag) => { const i = visible.findIndex((t) => t.id === tag.id); openDialog(<EnterValueDrawer tag={tag} queue={visible} index={i} />); };
+  const openEnter = (tag) => openDialog(<RecordValueDialog tag={tag} />);
   const subfolders = active ? childFolders(active) : [];
   const oorCount = visible.filter(deOutOfRange).length;
 
@@ -635,29 +567,32 @@ function DataEntryScreen({ tab, onTab }) {
               <span className="de-panel-count">· {visible.length} {visible.length === 1 ? "measurement" : "measurements"}{oorCount > 0 && <span className="de-panel-oor"><Icon name="alert-triangle" size={12} /> {oorCount} out of range</span>}</span>
             </div>
             <div className="de-panel-tools">
-              <div className="field de-search"><Icon name="search" size={15} color="var(--slate-400)" /><input placeholder="Search all tags…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-              <button className="btn btn-secondary" onClick={() => openDialog(<TagDialog existingPaths={paths} seedPath={active || ""} />)}><Icon name="plus" size={15} /> New tag</button>
+              <div className="field de-search"><Icon name="search" size={16} color="var(--slate-400)" /><input placeholder="Search all tags…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+              <button className="btn btn-secondary" onClick={() => openDialog(<TagDialog existingPaths={paths} seedPath={active || ""} />)}><Icon name="plus" size={16} /> New tag</button>
             </div>
           </div>
 
           {subfolders.length > 0 && (
             <div className="de-subchips">
-              {subfolders.map((sf) => <button key={sf} className="de-subchip" onClick={() => setActive(sf)}><Icon name="folder" size={13} /> {sf.slice(sf.lastIndexOf(SEP) + SEP.length)} <span className="data">{directCount(sf)}</span></button>)}
+              {subfolders.map((sf) => <button key={sf} className="de-subchip" onClick={() => setActive(sf)}><Icon name="folder" size={14} /> {sf.slice(sf.lastIndexOf(SEP) + SEP.length)} <span className="data">{directCount(sf)}</span></button>)}
             </div>
           )}
 
           <div className="de-panel-scroll">
             {visible.length === 0 && (
-              <div className="de-empty2">
-                <Icon name={query ? "search-x" : "clipboard-list"} size={30} color="var(--slate-300)" />
-                <p>{query ? "No measurements match your search." : subfolders.length ? "No measurements here: open a subfolder above." : "No measurements in this location yet."}</p>
-                {!query && <button className="btn btn-primary" onClick={() => openDialog(<TagDialog existingPaths={paths} seedPath={active || ""} />)}><Icon name="plus" size={15} /> New tag</button>}
-              </div>
+              query
+                ? <NjEmpty size="card" reason="search" title={"No measurements match “" + query + "”"}
+                    body="Search covers the tag, the name and the location."
+                    action={<button className="btn btn-secondary" onClick={() => setQ("")}>Clear search</button>} />
+                : <NjEmpty size="card" icon="clipboard-list"
+                    title={subfolders.length ? "Nothing measured at this level" : "No measurements in this location yet"}
+                    body={subfolders.length ? "Open a subfolder above to reach its measurement points." : "Create the first tag for this location to start logging readings against it."}
+                    action={!subfolders.length ? <button className="btn btn-primary" onClick={() => openDialog(<TagDialog existingPaths={paths} seedPath={active || ""} />)}><Icon name="plus" size={16} /> New tag</button> : null} />
             )}
             {grouped
               ? groupOrder.map((p) => (
                   <div className="de-mgroup" key={p}>
-                    <div className="de-mgroup-h"><Icon name="folder" size={13} color="var(--slate-400)" /> {p} <span className="data">{byPath[p].length}</span></div>
+                    <div className="de-mgroup-h"><Icon name="folder" size={14} color="var(--slate-400)" /> {p} <span className="data">{byPath[p].length}</span></div>
                     {byPath[p].map((t) => <MeasurementRow key={t.id} tag={t} paths={paths} onEnter={openEnter} showPath={false} />)}
                   </div>
                 ))
@@ -670,3 +605,5 @@ function DataEntryScreen({ tab, onTab }) {
 }
 
 window.DataEntryScreen = DataEntryScreen;
+// exported so the mobile app records against the SAME manual-measurement store (nj_manual_tags_v1)
+Object.assign(window, { deStore, useManualTags, useManualFolders, deNum, deIsNumeric, deOutOfRange, deFmtRange, DE_DEPTS, DE_BUILDINGS });

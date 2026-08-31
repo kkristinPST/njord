@@ -75,9 +75,47 @@
   /* radii */
   --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-pill: 999px;
 
-  /* spacing */
-  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
-  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px; --sp-12: 48px;
+  /* TYPE ROLES. Pick the role by WHAT THE TEXT DOES, then take its size — never map a number to
+     a number. font-size and line-height travel together; the -ls companion carries the tracking
+     where it is non-zero. Consume as `font: var(--t-body)` (+ `letter-spacing: var(--t-h1-ls)`)
+     or via the semantic classes at the foot of this file. */
+  --t-display:       600 32px/40px var(--font-mono); --t-display-ls: -1px;
+  --t-metric:        400 24px/32px var(--font-mono); --t-metric-ls: -0.5px;
+  --t-h1:            700 24px/32px var(--font-sans); --t-h1-ls: -0.2px;
+  --t-title:         700 20px/28px var(--font-sans); --t-title-ls: -0.2px;
+  --t-readout:       600 20px/28px var(--font-mono); --t-readout-ls: -0.5px;
+  --t-h2:            700 18px/24px var(--font-sans);
+  --t-card-title:    700 16px/24px var(--font-sans);
+  --t-body-strong:   600 14px/20px var(--font-sans);
+  --t-body:          400 14px/20px var(--font-sans);
+  --t-section-label: 700 12px/16px var(--font-sans); --t-section-label-ls: 0.5px;
+  --t-small:         400 12px/16px var(--font-sans);
+  --t-caption:       400 12px/16px var(--font-sans);
+  --t-data:          400 12px/16px var(--font-mono);
+  --t-tag:           400 12px/16px var(--font-mono); --t-tag-ls: 0.3px;
+  --t-eyebrow:       700 12px/16px var(--font-sans); --t-eyebrow-ls: 0.8px;
+  --t-badge:         700 10px/14px var(--font-sans); --t-badge-ls: 0.5px;
+  --t-axis:          400  8px/12px var(--font-sans);
+  /* mobile re-tunes nine roles for the 393px viewport — do NOT round these onto the desktop
+     roles, and never fork them into a mobile-only token file. */
+  --t-m-screen-title: 800 24px/26px var(--font-sans); --t-m-screen-title-ls: -0.5px;
+  --t-m-vital-value:  600 30px/30px var(--font-mono); --t-m-vital-value-ls: -1px;
+  --t-m-read-value:   600 26px/30px var(--font-mono); --t-m-read-value-ls: -0.5px;
+  --t-m-row-title:    600 14px/18px var(--font-sans);
+  --t-m-alarm-title:  600 14px/18px var(--font-sans);
+  --t-m-row-sub:      400 12px/16px var(--font-sans);
+  --t-m-eyebrow:      800 10px/14px var(--font-sans); --t-m-eyebrow-ls: 1px;
+  --t-m-badge:        800 10px/14px var(--font-sans); --t-m-badge-ls: 0.5px;
+  --t-m-tab-label:    600 10px/14px var(--font-sans); --t-m-tab-label-ls: 0.1px;
+
+  /* spacing — the step NAME is its pixel value. This REPLACES an ordinal scale where the number
+     was an index (--sp-1:4px … --sp-12:48px); six names overlapped and every one meant something
+     4x larger. That scale had ZERO call sites in the app, so this is a definition swap, not a
+     migration. If it ever needs migrating again: map by VALUE, never by name. */
+  --sp-2: 2px;   --sp-4: 4px;   --sp-6: 6px;   --sp-8: 8px;
+  --sp-10: 10px; --sp-12: 12px; --sp-14: 14px; --sp-16: 16px;
+  --sp-20: 20px; --sp-24: 24px; --sp-28: 28px; --sp-32: 32px;
+  --sp-40: 40px; --sp-48: 48px; --sp-56: 56px; --sp-72: 72px;
 
   --fg: var(--ink); --fg-muted: var(--slate-600); --fg-subtle: var(--slate-400);
   --border: var(--slate-200); --bg: var(--slate-50); --surface: var(--white); --surface-2: var(--slate-50);
@@ -310,7 +348,7 @@
 
 /* legacy tabs: separate bordered buttons */
 [data-theme="legacy"] .segmented { background: transparent; border: none; padding: 0; gap: 8px; }
-[data-theme="legacy"] .seg { background: #fff; border: 1px solid #9AA3AE; border-radius: 4px; color: #1F2733; box-shadow: none; font-weight: 700; padding: 7px 18px; }
+[data-theme="legacy"] .seg { background: #fff; border: 1px solid #9AA3AE; border-radius: 4px; color: #1F2733; box-shadow: none; font-weight: 700; padding: 8px 16px; }
 [data-theme="legacy"] .seg:hover { background: #F1F3F5; }
 [data-theme="legacy"] .seg.active { background: #fff; border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); color: #1F2733; }
 
@@ -372,7 +410,7 @@
 [data-theme="legacy"] .tbl tr.row-hl[data-almstate] > td:first-child { box-shadow: inset 4px 0 0 var(--primary) !important; }
 
 /* legacy feeding cards: centered bold tank header */
-[data-theme="legacy"] .ff-title { text-align: center; font-size: 22px; }
+[data-theme="legacy"] .ff-title { text-align: center; font-size: 20px; line-height: 28px; letter-spacing: -0.2px; }
 [data-theme="legacy"] .ff-feeder { text-align: center; }
 
 /* legacy inputs/fields square */
@@ -381,14 +419,20 @@
 
 
 /* ---- semantic text helpers ---- */
-.eyebrow { font-family: var(--font-sans); font-weight: 700; font-size: 11px; line-height: 15px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--slate-600); }
-.h1 { font-family: var(--font-sans); font-weight: 700; font-size: 24px; line-height: 32px; letter-spacing: -0.2px; color: var(--fg); margin: 0; }
-.h2 { font-family: var(--font-sans); font-weight: 700; font-size: 18px; line-height: 24px; color: var(--fg); margin: 0; }
-.section-label { font-family: var(--font-sans); font-weight: 700; font-size: 12px; line-height: 16px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--fg); }
-.body { font-family: var(--font-sans); font-weight: 400; font-size: 14px; line-height: 20px; color: var(--slate-600); }
-.body-strong { font-family: var(--font-sans); font-weight: 600; font-size: 14px; line-height: 20px; color: var(--fg); }
-.small { font-family: var(--font-sans); font-weight: 400; font-size: 12px; line-height: 16px; color: var(--slate-600); }
-.caption { font-family: var(--font-sans); font-weight: 400; font-size: 11.5px; line-height: 15px; color: var(--slate-400); }
-.metric { font-family: var(--font-mono); font-weight: 400; font-size: 24px; line-height: 32px; color: var(--fg); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
-.data { font-family: var(--font-mono); font-weight: 400; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; }
-.tag { font-family: var(--font-mono); font-weight: 400; font-size: 12px; line-height: 16px; color: var(--slate-600); letter-spacing: 0.3px; }
+.eyebrow { font: var(--t-eyebrow); letter-spacing: var(--t-eyebrow-ls); text-transform: uppercase; color: var(--slate-600); }
+.h1 { font: var(--t-h1); letter-spacing: var(--t-h1-ls); color: var(--fg); margin: 0; }
+.h2 { font: var(--t-h2); color: var(--fg); margin: 0; }
+.section-label { font: var(--t-section-label); letter-spacing: var(--t-section-label-ls); text-transform: uppercase; color: var(--fg); }
+.body { font: var(--t-body); color: var(--slate-600); }
+.body-strong { font: var(--t-body-strong); color: var(--fg); }
+.small { font: var(--t-small); color: var(--slate-600); }
+.caption { font: var(--t-caption); color: var(--slate-400); }
+.metric { font: var(--t-metric); letter-spacing: var(--t-metric-ls); color: var(--fg); font-variant-numeric: tabular-nums; }
+.data { font: var(--t-data); font-variant-numeric: tabular-nums; }
+.tag { font: var(--t-tag); letter-spacing: var(--t-tag-ls); color: var(--slate-600); }
+/* roles the app was missing entirely. .card-title already lives in app.css and matches 16/24. */
+.t-display { font: var(--t-display); letter-spacing: var(--t-display-ls); color: var(--fg); font-variant-numeric: tabular-nums; }
+.t-title { font: var(--t-title); letter-spacing: var(--t-title-ls); color: var(--fg); margin: 0; }
+.t-readout { font: var(--t-readout); letter-spacing: var(--t-readout-ls); color: var(--fg); font-variant-numeric: tabular-nums; }
+.t-badge { font: var(--t-badge); letter-spacing: var(--t-badge-ls); text-transform: uppercase; }
+.t-axis { font: var(--t-axis); color: var(--slate-400); }

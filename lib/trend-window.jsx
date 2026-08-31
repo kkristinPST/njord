@@ -72,7 +72,7 @@ function TwinAddMenu({ anchorRef, activeIds, onAdd, onClose }) {
       <div className="twin-pop" role="menu" style={style}>
         <div className="twin-pop-head">Add parameter</div>
         <div className="twin-pop-body">
-          {names.length === 0 && <div className="twin-pop-empty">All catalogued parameters are already plotted.</div>}
+          {names.length === 0 && <NjInline>All catalogued parameters are already plotted.</NjInline>}
           {names.map((g) => (
             <div className="twin-pop-group" key={g}>
               <div className="twin-pop-grouph">{g}</div>
@@ -97,8 +97,8 @@ function TwinPenChip({ pen, current, focused, onFocus, onToggle, onRemove }) {
       <span className="twin-chip-sw" style={{ background: pen.hidden ? "var(--slate-300)" : pen.color }}></span>
       <span className="twin-chip-name">{pen.name}</span>
       <span className="twin-chip-val data">{current.toFixed(dec)}<span className="twin-chip-u"> {pen.unit}</span></span>
-      <button className="twin-chip-btn" title={pen.hidden ? "Show" : "Hide"} onClick={(e) => { e.stopPropagation(); onToggle(); }}><Icon name={pen.hidden ? "eye-off" : "eye"} size={13} /></button>
-      <button className="twin-chip-btn" title="Remove" onClick={(e) => { e.stopPropagation(); onRemove(); }}><Icon name="x" size={13} /></button>
+      <button className="twin-chip-btn" title={pen.hidden ? "Show" : "Hide"} onClick={(e) => { e.stopPropagation(); onToggle(); }}><Icon name={pen.hidden ? "eye-off" : "eye"} size={14} /></button>
+      <button className="twin-chip-btn" title="Remove" onClick={(e) => { e.stopPropagation(); onRemove(); }}><Icon name="x" size={14} /></button>
     </div>
   );
 }
@@ -180,16 +180,16 @@ function TrendWindow() {
         <div className="twin-bar-r">
           {!win.min && (
             <div className="twin-navgrp">
-              <button className="twin-ic twin-nav" title="Earlier window" disabled={focused} onClick={() => store.prevWindow()}><Icon name="chevron-left" size={15} /></button>
+              <button className="twin-ic twin-nav" title="Earlier window" disabled={focused} onClick={() => store.prevWindow()}><Icon name="chevron-left" size={16} /></button>
               <div className="segmented twin-range">
                 {ranges.map((r) => <button key={r} className={"seg" + (!focused && r === range ? " active" : "")} onClick={() => store.setRange(r)}>{r}</button>)}
               </div>
-              <button className="twin-ic twin-nav" title="Later window" disabled={focused || !store.rangeOffset} onClick={() => store.nextWindow()}><Icon name="chevron-right" size={15} /></button>
+              <button className="twin-ic twin-nav" title="Later window" disabled={focused || !store.rangeOffset} onClick={() => store.nextWindow()}><Icon name="chevron-right" size={16} /></button>
             </div>
           )}
           {!win.min && <button className={"twin-ic" + (store.axisMode === "separate" ? " on" : "")} title={store.axisMode === "separate" ? "Separate Y axis per signal" : "Single Y axis (focused signal)"} onClick={() => store.setAxisMode(store.axisMode === "separate" ? "focus" : "separate")}><Icon name="align-left" size={16} /></button>}
-          {!win.min && <button className={"twin-ic" + (store.showMarkers ? " on" : "")} title="Show/hide alarm markers" onClick={() => store.toggleMarkers()}><Icon name={store.showMarkers ? "bell-ring" : "bell-off"} size={15} /></button>}
-          <button className="twin-ic" title="Open full Analytics workspace" onClick={() => { trendWin.close(); if (window.__njNavigate) window.__njNavigate("analytics"); }}><Icon name="maximize-2" size={15} /></button>
+          {!win.min && <button className={"twin-ic" + (store.showMarkers ? " on" : "")} title="Show/hide alarm markers" onClick={() => store.toggleMarkers()}><Icon name={store.showMarkers ? "bell-ring" : "bell-off"} size={16} /></button>}
+          <button className="twin-ic" title="Open full Analytics workspace" onClick={() => { trendWin.close(); if (window.__njNavigate) window.__njNavigate("analytics"); }}><Icon name="maximize-2" size={16} /></button>
           <button className="twin-ic" title={win.min ? "Expand" : "Minimize"} onClick={() => win.toggleMin()}><Icon name={win.min ? "chevron-up" : "minus"} size={16} /></button>
           <button className="twin-ic" title="Close" onClick={() => win.close()}><Icon name="x" size={16} /></button>
         </div>
@@ -199,20 +199,17 @@ function TrendWindow() {
         <div className="twin-body">
           {focused && (
             <div className="twin-focus">
-              <Icon name="crosshair" size={13} />
+              <Icon name="crosshair" size={14} />
               <span className="twin-focus-txt">Centered {fmtClock(store.centerTs)} · ±{store.windowMin < 60 ? store.windowMin + "m" : (store.windowMin / 60) + "h"}</span>
-              <button className="twin-focus-x" title="Clear focus" onClick={() => store.clearFocus()}><Icon name="x" size={13} /></button>
+              <button className="twin-focus-x" title="Clear focus" onClick={() => store.clearFocus()}><Icon name="x" size={14} /></button>
             </div>
           )}
           <div className="twin-chart" style={{ height: focused ? chartH - 30 : chartH }}>
             {visCount > 0
               ? <MultiTrendChart series={series} view={view} focus={store.focus} markers={markers} showMarkers={store.showMarkers} axisMode={store.axisMode} height={focused ? chartH - 30 : chartH} onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} />
               : (
-                <div className="twin-empty">
-                  <span className="twin-empty-icn"><Icon name="line-chart" size={26} /></span>
-                  <div className="body-strong">No signals plotted</div>
-                  <p className="caption" style={{ margin: 0, maxWidth: 280 }}>Click any value on the process diagram to start trending it here, the window stays open while you add more.</p>
-                </div>
+                <NjEmpty size="compact" className="fill" icon="line-chart" title="No signals plotted"
+                  body="Click any value on the process diagram to start trending it here, the window stays open while you add more." />
               )}
           </div>
           <div className="twin-pens">
@@ -221,10 +218,10 @@ function TrendWindow() {
               <div className="twin-pens-head-r">
                 <button className="btn btn-secondary btn-sm twin-undo" onClick={() => { const l = store.undo(); if (l) njToast("Undone: " + l + "."); }}
                   disabled={!store.hist.length} title={store.hist.length ? "Undo last change to the signal set (" + store.hist.length + " step" + (store.hist.length === 1 ? "" : "s") + ")" : "Nothing to undo"}
-                  aria-label="Undo last change to the signal set"><Icon name="undo-2" size={13} /></button>
-                <button className="btn btn-secondary btn-sm" onClick={() => store.clear()} disabled={!pens.length}><Icon name="eraser" size={13} /> Clear</button>
+                  aria-label="Undo last change to the signal set"><Icon name="undo-2" size={14} /></button>
+                <button className="btn btn-secondary btn-sm" onClick={() => store.clear()} disabled={!pens.length}><Icon name="eraser" size={14} /> Clear</button>
                 <div style={{ position: "relative" }}>
-                  <button ref={addBtnRef} className="btn btn-secondary btn-sm" onClick={() => setAddOpen((m) => !m)}><Icon name="plus" size={13} /> Add</button>
+                  <button ref={addBtnRef} className="btn btn-secondary btn-sm" onClick={() => setAddOpen((m) => !m)}><Icon name="plus" size={14} /> Add</button>
                   {addOpen && <TwinAddMenu anchorRef={addBtnRef} activeIds={pens.map((p) => p.id)} onAdd={(t) => store.add(resolveTrendPen(t))} onClose={() => setAddOpen(false)} />}
                 </div>
               </div>
@@ -237,7 +234,7 @@ function TrendWindow() {
               ))}
             </div>
           </div>
-          <div className="twin-resize" onPointerDown={startResize} title="Resize"><Icon name="move-diagonal-2" size={13} /></div>
+          <div className="twin-resize" onPointerDown={startResize} title="Resize"><Icon name="move-diagonal-2" size={14} /></div>
         </div>
       )}
     </div>

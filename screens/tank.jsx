@@ -63,7 +63,7 @@ function ReadoutBtn({ label, value, unit, accent, tag, name, spec }) {
       <span className="ro-trendwrap" onClick={(e) => e.stopPropagation()}>
         <TrendBtn id={tag} tag={tag} name={label} unit={unit} value={value} group={"Fish Tank " + name} />
       </span>
-      <Icon name="arrow-up-right" size={13} color="var(--slate-300)" className="ro-open" />
+      <Icon name="maximize-2" size={14} color="var(--slate-300)" className="ro-open" />
     </div>
   );
 }
@@ -141,13 +141,13 @@ function TankPanel({ t, onParams }) {
       <div className="tank-fish">
         <div className="tfish"><span className="tfish-l">Biomass</span><span className="data tfish-v">{t.biomass}<span className="u"> kg</span></span></div>
         <div className="tfish"><span className="tfish-l">Avg weight</span><span className="data tfish-v">{t.avgWt.toFixed(1)}<span className="u"> g</span></span></div>
-        <div className="tfish"><span className="tfish-l">Population</span><span className="data tfish-v">{t.population.toLocaleString()}</span></div>
+        <div className="tfish"><span className="tfish-l">Population</span><span className="data tfish-v">{t.population.toLocaleString("nb-NO")}</span></div>
       </div>
 
       <TankCapacity t={t} />
 
       <button className="btn btn-secondary tank-params-btn" onClick={() => onParams(t.n)}>
-        <Icon name="sliders-horizontal" size={15} /> Parameters
+        <Icon name="sliders-horizontal" size={16} /> Parameters
       </button>
     </div>
   );
@@ -171,7 +171,7 @@ const TANK_PANELS = [
 function PumpStat({ tag, label, value, unit, glyph, alarm }) {
   return (
     <div className="pump-stat">
-      <span className={"pump-glyph" + (alarm ? " alarm" : "")}><Icon name={glyph} size={22} /></span>
+      <span className={"pump-glyph" + (alarm ? " alarm" : "")}><Icon name={glyph} size={24} /></span>
       <div className="pump-meta">
         <span className="tag">{tag}</span>
         <span className="caption">{label}</span>
@@ -202,13 +202,13 @@ function TankScreen() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
       </div>
 
       <div className="tank-stack">
         <div className="card">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="gauge" size={17} color="var(--slate-600)" /><span className="card-title">Tank Vitals</span>
+            <div className="card-head-l"><Icon name="gauge" size={16} color="var(--slate-600)" /><span className="card-title">Tank Vitals</span>
               <span className="caption">All tanks on one scale · O₂ saturation, water level, pump sump</span></div>
           </div>
           <div className="card-body tv-body">
@@ -241,7 +241,7 @@ function TankScreen() {
       {/* per-tank parameter drawer: same dock pattern as process screens */}
       {dockTank != null && <div className="dock-drawer-scrim" onClick={() => setDockTank(null)} />}
       <div className={"dock-drawer" + (dockTank != null ? " open" : "")} aria-hidden={dockTank == null}>
-        <button className="dock-drawer-x" title="Close" onClick={() => setDockTank(null)}><Icon name="x" size={18} /></button>
+        <button className="dock-drawer-x" title="Close" onClick={() => setDockTank(null)}><Icon name="x" size={20} /></button>
         {tank && Dock && <Dock tank={tank} tanks={TANK_PANELS} onSwitch={setDockTank} />}
       </div>
     </AppShell>

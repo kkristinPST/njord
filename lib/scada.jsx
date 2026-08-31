@@ -146,7 +146,7 @@ function ParamRow({ r, tag, group, override, onApply }) {
         <span className="pl">{r.l}</span>
         <span className="param-row-r">
           {trend}
-          <button className="pv box pv-edit" onClick={edit} title="Edit value">{disp}<Icon name="pencil" size={11} /></button>
+          <button className="pv box pv-edit" onClick={edit} title="Edit value">{disp}<Icon name="pencil" size={12} /></button>
         </span>
       </div>
     );
@@ -187,7 +187,7 @@ function ParamTabs({ tabs, params, title = "Parameters", tags, dock = false }) {
       {tabs.map((t) => <button key={t} className={"seg" + (t === tab ? " active" : "")} onClick={() => setTab(t)}>{t}</button>)}
     </div>
   );
-  const head = <div className="card-head-l"><Icon name="sliders-horizontal" size={17} color="var(--slate-600)" /><span className="card-title">{title}</span></div>;
+  const head = <div className="card-head-l"><Icon name="sliders-horizontal" size={16} color="var(--slate-600)" /><span className="card-title">{title}</span></div>;
   const body = <ParamList rows={rows} tag={tags ? tags[tab] : undefined} key={tab} />;
   if (dock) {
     return (
@@ -251,7 +251,7 @@ function ScadaLegend({ note = "Tap a value's trend icon → send to Trends", flu
       <span className="ci"><span className="rasm-leg-chip man">M</span> Manual</span>
       {fluids && <span className="ras-leg-div" aria-hidden="true" />}
       <FluidLegend of={fluids} />
-      <span className="ci" style={{ marginLeft: "auto", color: "var(--slate-500)" }}><Icon name="line-chart" size={13} /> {note}</span>
+      <span className="ci" style={{ marginLeft: "auto", color: "var(--slate-500)" }}><Icon name="line-chart" size={14} /> {note}</span>
     </div>
   );
 }
@@ -278,14 +278,14 @@ function SystemShell({ title, active, statusLevel = "ok", metaIcon = "git-merge"
       </div>
       <div className="tank-toolbar">
         {actions}
-        {param && <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={15} /> Parameters</button>}
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
-        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={15} /> SCADA view</button>
+        {param && <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={16} /> Parameters</button>}
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={16} /> SCADA view</button>
       </div>
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name={mimicIcon} size={17} color="var(--slate-600)" /><span className="card-title">{mimicTitle}</span></div>
+          <div className="card-head-l"><Icon name={mimicIcon} size={16} color="var(--slate-600)" /><span className="card-title">{mimicTitle}</span></div>
           {mimicCaption && <span className="caption">{mimicCaption}</span>}
         </div>
         <div className="card-body rasm-body">{mimic}</div>
@@ -295,7 +295,7 @@ function SystemShell({ title, active, statusLevel = "ok", metaIcon = "git-merge"
       {param && dock && <div className="dock-drawer-scrim" onClick={() => setDock(false)} />}
       {param && (
         <div className={"dock-drawer" + (dock ? " open" : "")} aria-hidden={!dock}>
-          <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={18} /></button>
+          <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={20} /></button>
           {React.isValidElement(param) ? React.cloneElement(param, { dock: true, title: param.props.title || paramTitle || (title + " · parameters") }) : param}
         </div>
       )}
@@ -408,9 +408,9 @@ function ScadaZoom({ children, min = 0.6, max = 6, step = 1.4 }) {
         {children}
       </div>
       <div className="scz-ctrls" role="group" aria-label="Zoom controls">
-        <button className="scz-btn" title="Zoom out" aria-label="Zoom out" onClick={() => zoomAround(1 / step)}><Icon name="minus" size={18} /></button>
+        <button className="scz-btn" title="Zoom out" aria-label="Zoom out" onClick={() => zoomAround(1 / step)}><Icon name="minus" size={20} /></button>
         <button className="scz-pct" title="Reset zoom" aria-label="Reset zoom" onClick={reset}>{Math.round(t.s * 100)}%</button>
-        <button className="scz-btn" title="Zoom in" aria-label="Zoom in" onClick={() => zoomAround(step)}><Icon name="plus" size={18} /></button>
+        <button className="scz-btn" title="Zoom in" aria-label="Zoom in" onClick={() => zoomAround(step)}><Icon name="plus" size={20} /></button>
       </div>
     </div>
   );

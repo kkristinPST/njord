@@ -22,15 +22,58 @@ function njDeptTabLabels(dept) {
 // The in-page "Viewing Building/DPT" strip that used to sit here was a second, duplicated
 // navigator — removed. Do not reintroduce it: the tab strip is for systems within the
 // department, the top bar for the department itself.
+// A department can own 20+ systems (Building 2 · Support systems has 22), so the strip shows
+// the first DEPT_TAB_CAP — always including the active one — and folds the rest into a menu.
+const DEPT_TAB_CAP = 6;
 function DeptTabs({ active }) {
   const { dept } = useCtx();
   const tabs = njDeptTabLabels(dept);
+  const [menu, setMenu] = React.useState(false);
+  const [alignRight, setAlignRight] = React.useState(true);
+  const wrap = React.useRef(null);
+  const btn = React.useRef(null);
+  // the strip wraps on narrow content, which puts this button at the LEFT edge — a fixed
+  // right:0 anchor then hangs the menu off-screen. Pick the side that has room, at open time.
+  const openMenu = () => {
+    const r = btn.current && btn.current.getBoundingClientRect();
+    if (r) setAlignRight(r.left + 214 > window.innerWidth - 12);
+    setMenu((m) => !m);
+  };
+  React.useEffect(() => {
+    if (!menu) return;
+    const away = (e) => { if (wrap.current && !wrap.current.contains(e.target)) setMenu(false); };
+    const esc = (e) => { if (e.key === "Escape") setMenu(false); };
+    document.addEventListener("mousedown", away); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
+  }, [menu]);
+  const folded = tabs.length > DEPT_TAB_CAP + 1;
+  let head = tabs, rest = [];
+  if (folded) {
+    head = tabs.slice(0, DEPT_TAB_CAP);
+    rest = tabs.slice(DEPT_TAB_CAP);
+    if (rest.includes(active)) { head = head.slice(0, DEPT_TAB_CAP - 1).concat(active); rest = tabs.filter((t) => !head.includes(t)); }
+  }
   return (
     <div className="deptnav">
-      <div className="segmented-wrap">
+      <div className="segmented-wrap" ref={wrap}>
         <div className="segmented">
-          {tabs.map((t) => <button key={t} className={"seg" + (t === active ? " active" : "")} onClick={() => njDeptNav(t)}>{t}</button>)}
+          {head.map((t) => <button key={t} className={"seg" + (t === active ? " active" : "")} onClick={() => njDeptNav(t)}>{t}</button>)}
         </div>
+        {folded && (
+          <div className="dtab-more-wrap">
+            <button ref={btn} className="btn btn-secondary btn-sm" aria-expanded={menu} onClick={openMenu}
+              title={"All " + tabs.length + " systems in " + dept.name}>
+              <Icon name="chevron-down" size={14} /> {rest.length} more
+            </button>
+            {menu && (
+              <div className="dtab-menu" role="menu" style={alignRight ? { right: 0 } : { left: 0, right: "auto" }}>
+                {rest.map((t) => (
+                  <button key={t} className="dtab-menu-item" role="menuitem" onClick={() => { setMenu(false); njDeptNav(t); }}>{t}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -66,14 +109,14 @@ function RASScreen({ active = "RAS" }) {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={15} /> Parameters</button>
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
-        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={15} /> SCADA view</button>
+        <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={16} /> Parameters</button>
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={16} /> SCADA view</button>
       </div>
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="git-merge" size={17} color="var(--slate-600)" /><span className="card-title">RAS Process · {dptName}</span></div>
+          <div className="card-head-l"><Icon name="git-merge" size={16} color="var(--slate-600)" /><span className="card-title">RAS Process · {dptName}</span></div>
           <span className="caption">Click equipment for controls · tap a value's trend icon to send it to Trends</span>
         </div>
         <div className="card-body rasm-body"><Mimic /></div>
@@ -83,7 +126,7 @@ function RASScreen({ active = "RAS" }) {
       {/* parameter dock: slide-in drawer */}
       {dock && <div className="dock-drawer-scrim" onClick={() => setDock(false)} />}
       <div className={"dock-drawer" + (dock ? " open" : "")} aria-hidden={!dock}>
-        <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={18} /></button>
+        <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={20} /></button>
         <RasDock />
       </div>
 
@@ -120,7 +163,7 @@ function SystemComingSoon({ label }) {
       </div>
       <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "72px 24px", textAlign: "center" }}>
         <span style={{ width: 56, height: 56, borderRadius: "var(--r-lg)", background: "var(--slate-100)", color: "var(--slate-400)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon name="git-merge" size={26} />
+          <Icon name="git-merge" size={24} />
         </span>
         <div className="body-strong">{label} is queued for redesign</div>
         <p className="body" style={{ maxWidth: 360, margin: 0 }}>This system view will follow in the next Navigation batch.</p>

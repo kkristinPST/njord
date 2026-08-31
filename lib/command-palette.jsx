@@ -97,13 +97,13 @@ function CommandPalette() {
     <div className="cmdk-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <div className="cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
         <div className="cmdk-in">
-          <Icon name="search" size={18} color="var(--slate-400)" />
+          <Icon name="search" size={20} color="var(--slate-400)" />
           <input ref={inputRef} className="cmdk-input" placeholder="Search screens, systems, alarms, parameters…"
             value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown} />
           <span className="cmdk-esc">esc</span>
         </div>
         <div className="cmdk-list" ref={listRef}>
-          {results.length === 0 && <div className="cmdk-empty">No matches for “{q}”</div>}
+          {results.length === 0 && <NjInline icon="search-x">No matches for “{q}”</NjInline>}
           {results.map((it, i) => {
             const head = it.kind !== lastKind ? it.kind : null; lastKind = it.kind;
             return (

@@ -28,10 +28,15 @@ const OUT_DIR = path.join(ROOT, "bundle");
 // Load order is load-bearing: later files reference globals the earlier ones define.
 const JS_FILES = [
   "lib/icon.jsx",
+  "lib/facility.jsx",
+  "lib/mimic-registry.jsx",
+  "lib/mortality-causes.jsx",
+  "lib/alarm-log.jsx",
   "lib/chrome.jsx",
   "lib/alarmstore.jsx",
   "lib/alarm-governance.jsx",
   "lib/dialogs.jsx",
+  "lib/states.jsx",
   "lib/manuals.jsx",
   "lib/notes.jsx",
   "lib/trends.jsx",
@@ -48,6 +53,7 @@ const JS_FILES = [
   "screens/alarm-rationalization.jsx",
   "screens/reports.jsx",
   "screens/settings.jsx",
+  "screens/oncall-delivery.jsx",
   "screens/fish-welfare.jsx",
   "screens/fish-biology.jsx",
   "screens/feeding-dialogs.jsx",
@@ -91,6 +97,7 @@ const CSS_FILES = [
   "lib/app.css",
   "lib/screens.css",
   "lib/dialogs.css",
+  "lib/states.css",
   "lib/responsive.css",
 ];
 

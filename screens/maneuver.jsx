@@ -26,7 +26,7 @@ function MvrChange({ from, to }) {
   return (
     <span className="mvr-arrow">
       <span className="mvr-chip">{from}</span>
-      <Icon name="arrow-right" size={13} color="var(--slate-400)" />
+      <Icon name="arrow-right" size={14} color="var(--slate-400)" />
       <span className="mvr-chip strong">{to}</span>
     </span>
   );
@@ -68,13 +68,13 @@ function ManeuverHistoryScreen() {
       <div className="pagehead">
         <div className="pagehead-row">
           <div>
-            <p className="pagehead-sub">Operator action &amp; setpoint audit trail · per ISA-18.2 / IEC 62682</p>
+            <p className="pagehead-sub">Operator action &amp; setpoint audit trail</p>
           </div>
           <div className="pagehead-right"><MvrSourceTabs active={src} onPick={setSrc} /></div>
         </div>
       </div>
 
-      <div className="kpi-row" style={{ marginBottom: 22 }}>
+      <div className="kpi-row" style={{ marginBottom: 20 }}>
         <KpiCard label="Maneuvers · 24h"   value="128" delta="96 operator · 32 automatic" deltaDir="flat" icon="history" />
         <KpiCard label="Systems Touched"   value="11"  delta="of 24 in operation"         deltaDir="flat" icon="building-2" />
         <KpiCard label="With Comment"      value="74 %" delta="95 of 128 maneuvers"       deltaDir="flat" icon="message-square" />
@@ -89,11 +89,11 @@ function ManeuverHistoryScreen() {
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="calendar" size={15} color="var(--slate-500)" /> Time Period</span>
+            <span className="lbl"><Icon name="calendar" size={16} color="var(--slate-500)" /> Time Period</span>
             <span className="fbar-pair">
-              <span className="dateinput">01-06-2026 00:00 <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+              <span className="dateinput">01-06-2026 00:00 <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
               <Icon name="arrow-right" size={14} color="var(--slate-400)" />
-              <span className="dateinput">01-06-2026 23:59 <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+              <span className="dateinput">01-06-2026 23:59 <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
             </span>
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
@@ -120,13 +120,15 @@ function ManeuverHistoryScreen() {
                 <td><MvrComment text={r.cm} /></td>
                 <td>
                   {r.op === "System"
-                    ? <span className="evt returned"><Icon name="cpu" size={13} color="var(--slate-400)" /> System</span>
+                    ? <span className="evt returned"><Icon name="cpu" size={14} color="var(--slate-400)" /> System</span>
                     : <span className="small td-strong">{r.op}</span>}
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan="7"><div className="tbl-empty">No maneuvers match the current filters.</div></td></tr>
+              <NjEmptyRow colSpan={7} reason={ql ? "search" : "filtered"}
+                title={ql ? "No maneuvers match “" + q + "”" : "No maneuvers match the current filters"}
+                action={<button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setSrc("All"); }}>Clear filters</button>} />
             )}
           </tbody>
         </table>

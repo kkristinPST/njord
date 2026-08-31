@@ -51,7 +51,7 @@ function consBars(input, period, offset) {
 const consSum = (bars) => bars.reduce((s, b) => s + b.v, 0);
 function consFmt(v, unit) {
   const d = unit === "m³" || unit === "L" ? 0 : 0;
-  return Math.round(v).toLocaleString(undefined, { maximumFractionDigits: d });
+  return Math.round(v).toLocaleString("nb-NO", { maximumFractionDigits: d });
 }
 
 function ConsSpark({ bars, color }) {
@@ -76,7 +76,7 @@ function ConsCard({ input, period, selected, onSelect }) {
     <button className={"card cons-card" + (selected ? " sel" : "")} onClick={() => onSelect(input.key)}
       aria-pressed={selected} title={"Chart " + input.label + " over the selected period"}>
       <div className="cons-card-head">
-        <Icon name={input.icon} size={15} color="var(--slate-500)" />
+        <Icon name={input.icon} size={16} color="var(--slate-500)" />
         <span className="cons-card-l">{input.label}</span>
         {input.est && <span className="cons-est" title="Derived by integrating a flow reading — not a counter">EST.</span>}
       </div>
@@ -154,7 +154,7 @@ function ConsumptionScreen() {
               ))}
             </div>
             <button className="btn btn-secondary" title="Export this sheet as a spreadsheet"
-              onClick={() => njToast("Consumption sheet exported · " + period.label, "download")}><Icon name="download" size={15} /> Export</button>
+              onClick={() => njToast("Consumption sheet exported · " + period.label, "download")}><Icon name="download" size={16} /> Download</button>
           </div>
         </div>
       </div>
@@ -166,22 +166,22 @@ function ConsumptionScreen() {
       <div className="card">
         <div className="card-head">
           <div className="card-head-l">
-            <Icon name={selInput.icon} size={17} color="var(--slate-600)" />
+            <Icon name={selInput.icon} size={16} color="var(--slate-600)" />
             <span className="card-title">{selInput.label} per {period.step === "h" ? "hour" : "day"}</span>
           </div>
           <span className="caption">{selInput.unit} · {period.foot}</span>
         </div>
         <div className="card-body">
           <ConsChart input={selInput} period={period} />
-          <p className="cons-note"><Icon name="info" size={13} color="var(--slate-400)" /> {selInput.methodLong}
-            {selInput.route && <button className="linkbtn cons-route" onClick={() => window.__njNavigate && window.__njNavigate(selInput.route)}>{selInput.routeLabel} <Icon name="arrow-up-right" size={13} /></button>}
+          <p className="cons-note"><Icon name="info" size={14} color="var(--slate-400)" /> {selInput.methodLong}
+            {selInput.route && <button className="linkbtn cons-route" onClick={() => window.__njNavigate && window.__njNavigate(selInput.route)}>{selInput.routeLabel} <Icon name="arrow-up-right" size={14} /></button>}
           </p>
         </div>
       </div>
 
       <div className="card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="table-2" size={17} color="var(--slate-600)" /><span className="card-title">Sheet</span></div>
+          <div className="card-head-l"><Icon name="table-2" size={16} color="var(--slate-600)" /><span className="card-title">Sheet</span></div>
           <span className="caption">{period.label} · {period.foot}</span>
         </div>
         <table className="tbl cons-tbl">
@@ -240,9 +240,9 @@ function DashConsumption() {
   return (
     <div className="card dash-consumption">
       <div className="card-head">
-        <div className="card-head-l"><Icon name="package" size={17} color="var(--slate-600)" /><span className="card-title">Consumption</span>
+        <div className="card-head-l"><Icon name="package" size={16} color="var(--slate-600)" /><span className="card-title">Consumption</span>
           <span className="caption cons-dash-per">Last 7 days</span></div>
-        <button className="linkbtn" onClick={() => window.__njNavigate && window.__njNavigate("consumption")}>Full sheet <Icon name="arrow-up-right" size={13} /></button>
+        <button className="linkbtn" onClick={() => window.__njNavigate && window.__njNavigate("consumption")}>Full sheet <Icon name="arrow-up-right" size={14} /></button>
       </div>
       <div className="cons-dash-row">
         {CONS_INPUTS.map((i) => {
@@ -253,7 +253,7 @@ function DashConsumption() {
           return (
             <button key={i.key} className="cons-dash-cell" onClick={() => window.__njNavigate && window.__njNavigate("consumption")}
               title={i.label + " · " + i.method}>
-              <span className="cons-dash-l"><Icon name={i.icon} size={13} color="var(--slate-400)" /> {i.label}</span>
+              <span className="cons-dash-l"><Icon name={i.icon} size={14} color="var(--slate-400)" /> {i.label}</span>
               <span className="cons-dash-v"><span className="data">{i.est ? "≈" : ""}{consFmt(total, i.unit)}</span><span className="u"> {i.unit}</span></span>
               <span className="cons-dash-d" data-dir={dPct >= 0 ? "up" : "down"}>{dPct >= 0 ? "+" : "−"}{Math.abs(dPct).toFixed(1)} %</span>
               <ConsSpark bars={bars} color={i.color} />

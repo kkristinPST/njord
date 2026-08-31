@@ -345,7 +345,7 @@ function CmLogDialog({ deptId, deptLabel, entry }) {
       <div className="dlg-foot">
         <span className="cm-foot-meta data">{count} value{count === 1 ? "" : "s"}</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={15} /> {editing ? "Save changes" : "Log round"}</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Log round"}</button>
       </div>
     </Dialog>
   );
@@ -357,7 +357,7 @@ function CmDayDialog({ deptId, deptLabel, date }) {
   const row = cmStore.row(deptId, date);
   if (!row) return <Dialog width={520}><DlgHeader name="Round" onClose={closeDialog} /><div className="dlg-body">This round no longer exists.</div></Dialog>;
   return (
-    <Dialog width={840}>
+    <Dialog width={840} className="dlg-tall">
       <DlgHeader icon="clipboard-list" name={"Round · " + cmFmt(row.date)} tag={"Day " + row.day} onClose={closeDialog} />
       <div className="dlg-body cm-day">
         <div className="cm-day-meta">
@@ -365,6 +365,7 @@ function CmDayDialog({ deptId, deptLabel, date }) {
           <span><span className="eyebrow">Sampled</span> <span className="data">{row.time}</span></span>
           <span><span className="eyebrow">Logged by</span> {row.by}</span>
         </div>
+        <div className="cm-day-scroll">
         <table className="tbl cm-tbl cm-daytbl">
           <thead><tr><th className="cm-th-p">Parameter</th>{CM_LOCS.map((l) => <th key={l.id} className="cm-th-v" title={l.full || l.label}>{l.label}</th>)}</tr></thead>
           <tbody>
@@ -388,6 +389,7 @@ function CmDayDialog({ deptId, deptLabel, date }) {
             })}
           </tbody>
         </table>
+        </div>
         <div className="cm-day-note">
           <span className="eyebrow">Comment and observations</span>
           <p>{row.note || <span className="cm-none">No comment recorded for this round.</span>}</p>
@@ -395,7 +397,7 @@ function CmDayDialog({ deptId, deptLabel, date }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
-        <button className="btn btn-primary" onClick={() => { closeDialog(); openDialog(<CmLogDialog deptId={deptId} deptLabel={deptLabel} entry={row} />); }}><Icon name="pencil" size={15} /> Edit round</button>
+        <button className="btn btn-primary" onClick={() => { closeDialog(); openDialog(<CmLogDialog deptId={deptId} deptLabel={deptLabel} entry={row} />); }}><Icon name="pencil" size={16} /> Edit round</button>
       </div>
     </Dialog>
   );
@@ -431,9 +433,9 @@ function CmCell({ value, dec, oor, editing, text, onStart, onCommit, onNav, labe
         {text
           ? (value ? <span className="cm-celltext">{value}</span> : <span className="cm-cellempty">—</span>)
           : (value == null ? <span className="cm-cellempty">—</span> : Number(value).toFixed(dec))}
-        {oor && <Icon name={oor === "high" ? "arrow-up" : "arrow-down"} size={11} />}
+        {oor && <Icon name={oor === "high" ? "arrow-up" : "arrow-down"} size={12} />}
       </span>
-      <Icon name="pencil" size={11} />
+      <Icon name="pencil" size={12} />
     </button>
   );
 }
@@ -471,7 +473,7 @@ function CmTagsDialog({ sel, onApply }) {
         <span className="cm-foot-meta data">{pick.size} of {CM_AUTO.length}</span>
         <button className="btn btn-secondary" onClick={() => setPick(new Set(CM_TAGS_DEFAULT))}>Reset</button>
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" onClick={() => { onApply(CM_AUTO.filter((a) => pick.has(a.id)).map((a) => a.id)); closeDialog(); }}><Icon name="check" size={15} /> Apply</button>
+        <button className="btn btn-primary" onClick={() => { onApply(CM_AUTO.filter((a) => pick.has(a.id)).map((a) => a.id)); closeDialog(); }}><Icon name="check" size={16} /> Apply</button>
       </div>
     </Dialog>
   );
@@ -513,7 +515,7 @@ function CmCalcDialog({ cols, sample, seed, onApply }) {
             ))}
             {!list.length && <p className="cm-none">No calculated columns yet.</p>}
           </div>
-          <button className="btn btn-secondary cm-calc-new" onClick={() => setForm({ ...blank })}><Icon name="plus" size={15} /> New column</button>
+          <button className="btn btn-secondary cm-calc-new" onClick={() => setForm({ ...blank })}><Icon name="plus" size={16} /> New column</button>
         </div>
       )}
       {form && (
@@ -531,8 +533,8 @@ function CmCalcDialog({ cols, sample, seed, onApply }) {
           </label>
           <div className="cm-calc-status">
             {err
-              ? <span className="cm-calc-err"><Icon name="alert-triangle" size={13} /> {err}</span>
-              : <span className="cm-calc-ok"><Icon name="check" size={13} /> Valid{sample ? <> · on {cmFmt(sample.date)} this reads <span className="data">{preview == null ? "—" : preview.toFixed(Number(form.dec))}</span> {form.unit}</> : null}</span>}
+              ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> {err}</span>
+              : <span className="cm-calc-ok"><Icon name="check" size={14} /> Valid{sample ? <> · on {cmFmt(sample.date)} this reads <span className="data">{preview == null ? "—" : preview.toFixed(Number(form.dec))}</span> {form.unit}</> : null}</span>}
             <span className="cm-calc-fns data">avg( ) sum( ) min( ) max( ) abs( ) + − × ÷ ( )</span>
           </div>
           <div className="cm-calc-sect"><span className="eyebrow">Insert a value</span><input className="de-input cm-calc-search" placeholder="Search parameters and tags…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search values" /></div>
@@ -557,13 +559,13 @@ function CmCalcDialog({ cols, sample, seed, onApply }) {
         {form
           ? <React.Fragment>
               <button className="btn btn-secondary" onClick={() => setForm(null)}>Back</button>
-              <button className="btn btn-primary" disabled={!!err || !form.expr.trim()} onClick={saveForm}><Icon name="check" size={15} /> Save column</button>
+              <button className="btn btn-primary" disabled={!!err || !form.expr.trim()} onClick={saveForm}><Icon name="check" size={16} /> Save</button>
             </React.Fragment>
           : <React.Fragment>
               <span className="cm-foot-meta data">{list.length} column{list.length === 1 ? "" : "s"}</span>
               <button className="btn btn-secondary" onClick={() => setList(CM_CALC_DEFAULT)}>Reset</button>
               <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => { onApply(list); closeDialog(); }}><Icon name="check" size={15} /> Apply</button>
+              <button className="btn btn-primary" onClick={() => { onApply(list); closeDialog(); }}><Icon name="check" size={16} /> Apply</button>
             </React.Fragment>}
       </div>
     </Dialog>
@@ -583,12 +585,12 @@ function CmPeriodDialog({ length }) {
         <label className="de-field"><span className="de-field-l">Planned length, days</span>
           <input className="de-input data" inputMode="numeric" value={v} onChange={(e) => setV(e.target.value)} />
         </label>
-        <p className="cm-calc-status">{isNaN(n) || n < CM_ELAPSED ? <span className="cm-calc-err"><Icon name="alert-triangle" size={13} /> Cannot be shorter than the {CM_ELAPSED} days already elapsed.</span>
-          : <span className="cm-calc-ok"><Icon name="check" size={13} /> Ends {cmFmt(cmKeyOf(cmDateOf(n)))} · {n - CM_ELAPSED} day{n - CM_ELAPSED === 1 ? "" : "s"} remaining</span>}</p>
+        <p className="cm-calc-status">{isNaN(n) || n < CM_ELAPSED ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Cannot be shorter than the {CM_ELAPSED} days already elapsed.</span>
+          : <span className="cm-calc-ok"><Icon name="check" size={14} /> Ends {cmFmt(cmKeyOf(cmDateOf(n)))} · {n - CM_ELAPSED} day{n - CM_ELAPSED === 1 ? "" : "s"} remaining</span>}</p>
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!ok} onClick={() => { cmStore.setLength(n); njToast(`Commissioning period set to ${n} days · ends ${cmFmt(cmKeyOf(cmDateOf(n)))}`, "calendar-range"); closeDialog(); }}><Icon name="check" size={15} /> Save period</button>
+        <button className="btn btn-primary" disabled={!ok} onClick={() => { cmStore.setLength(n); njToast(`Commissioning period set to ${n} days · ends ${cmFmt(cmKeyOf(cmDateOf(n)))}`, "calendar-range"); closeDialog(); }}><Icon name="check" size={16} /> Save period</button>
       </div>
     </Dialog>
   );
@@ -615,11 +617,11 @@ function CmAddRowDialog({ deptId, deptLabel, length, onAdded }) {
           <input className="de-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
         <p className="cm-calc-status">
-          {dup ? <span className="cm-calc-err"><Icon name="alert-triangle" size={13} /> {cmFmt(date)} is already on the sheet.</span>
-            : !date || isNaN(day) ? <span className="cm-calc-err"><Icon name="alert-triangle" size={13} /> Pick a date.</span>
-            : day < 1 ? <span className="cm-calc-err"><Icon name="alert-triangle" size={13} /> Before the trial period started.</span>
-            : day > length ? <span className="cm-calc-err"><Icon name="alert-triangle" size={13} /> Past the planned period — extend it first.</span>
-            : <span className="cm-calc-ok"><Icon name="check" size={13} /> Day {day} of {length}{day > CM_ELAPSED ? " · not yet reached" : ""}</span>}
+          {dup ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> {cmFmt(date)} is already on the sheet.</span>
+            : !date || isNaN(day) ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Pick a date.</span>
+            : day < 1 ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Before the trial period started.</span>
+            : day > length ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Past the planned period — extend it first.</span>
+            : <span className="cm-calc-ok"><Icon name="check" size={14} /> Day {day} of {length}{day > CM_ELAPSED ? " · not yet reached" : ""}</span>}
         </p>
         {missed.length > 0 && (
           <div className="cm-calc-sect"><span className="eyebrow">Missed days</span>
@@ -629,7 +631,7 @@ function CmAddRowDialog({ deptId, deptLabel, length, onAdded }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!ok} onClick={() => { cmStore.setField(deptId, date, "by", CM_USER); onAdded(date); njToast(`Row added · ${cmFmt(date)} · day ${day}`, "calendar-plus"); closeDialog(); }}><Icon name="plus" size={15} /> Add row</button>
+        <button className="btn btn-primary" disabled={!ok} onClick={() => { cmStore.setField(deptId, date, "by", CM_USER); onAdded(date); njToast(`Row added · ${cmFmt(date)} · day ${day}`, "calendar-plus"); closeDialog(); }}><Icon name="plus" size={16} /> Add row</button>
       </div>
     </Dialog>
   );
@@ -872,14 +874,14 @@ function CommissioningScreen({ tab, onTab }) {
             </select>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-            <button className="btn btn-secondary" onClick={() => openDialog(<CmAddRowDialog deptId={deptId} deptLabel={deptLabel} length={length} onAdded={(d) => { if (cmDayOf(d) <= CM_ELAPSED - range && range !== 0) setRange(0); setFlash((s) => new Set(s).add(d)); setEdit({ date: d, col: p.locs[0] }); }} />)}><Icon name="calendar-plus" size={15} /> Add row</button>
-            <ExportMenu label="Download data" icon="cloud-download" describe={(fmt) => "Download started: commissioning log · " + deptLabel + " will save as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
-            <button className="btn btn-primary" onClick={() => openDialog(<CmLogDialog deptId={deptId} deptLabel={deptLabel} />)}><Icon name="plus" size={15} /> Log water quality</button>
+            <button className="btn btn-secondary" onClick={() => openDialog(<CmAddRowDialog deptId={deptId} deptLabel={deptLabel} length={length} onAdded={(d) => { if (cmDayOf(d) <= CM_ELAPSED - range && range !== 0) setRange(0); setFlash((s) => new Set(s).add(d)); setEdit({ date: d, col: p.locs[0] }); }} />)}><Icon name="calendar-plus" size={16} /> Add row</button>
+            <ExportMenu describe={(fmt) => "Download started: commissioning log · " + deptLabel + " will save as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <button className="btn btn-primary" onClick={() => openDialog(<CmLogDialog deptId={deptId} deptLabel={deptLabel} />)}><Icon name="plus" size={16} /> Log water quality</button>
           </div>
         </div>
 
         <div className="cm-gridhint">
-          <Icon name="table-2" size={13} color="var(--slate-400)" />
+          <Icon name="table-2" size={14} color="var(--slate-400)" />
           <span>Click any cell to edit it. <strong>Tab</strong> moves across, <strong>Enter</strong> down, <strong>Esc</strong> cancels. Use <strong>Log water quality</strong> for a full round, or open a day to see every parameter.</span>
           <span className="mb-groups">
             <button className={"mb-gchip" + (showTags ? " on" : "")} aria-pressed={showTags} disabled={!tagSel.length}
@@ -967,9 +969,9 @@ function CommissioningScreen({ tab, onTab }) {
                     {autoCols.map((a) => <td key={a.id} className="cm-td-auto data">{r.ghost ? <span className="cm-cellempty">—</span> : cmAutoVal(a, r.day, deptSeed).toFixed(a.dec)}</td>)}
                     {calcOn.map((c) => { const v = cmCalcVal(c, r, deptSeed); return <td key={c.id} className="cm-td-auto cm-td-calc data">{v == null ? <span className="cm-cellempty">—</span> : v.toFixed(c.dec)}</td>; })}
                     <td className="cm-td-open">
-                      <button className="cm-openbtn" title="Open full round" aria-label={`Open full round for ${cmFmt(r.date)}`}
-                        onClick={() => openDialog(<CmDayDialog deptId={deptId} deptLabel={deptLabel} date={r.date} />)}>
-                        <Icon name="panel-right-open" size={15} />
+                      <button className="cm-openbtn" title="Edit round" aria-label={`Edit the round for ${cmFmt(r.date)}`}
+                        onClick={() => openDialog(<CmLogDialog deptId={deptId} deptLabel={deptLabel} entry={cmStore.row(deptId, r.date) || r} />)}>
+                        <Icon name="pencil" size={16} />
                       </button>
                     </td>
                   </tr>

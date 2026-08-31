@@ -268,7 +268,7 @@ function ScLegend({ fluids }) {
       <span className="ci"><span className="rasm-leg-chip man">M</span> Manual</span>
       {fluids && <span className="ras-leg-div" aria-hidden="true" />}
       <FluidLegend of={fluids} />
-      <span className="ci" style={{ marginLeft: "auto", color: "var(--slate-500)" }}><Icon name="line-chart" size={13} /> Tap a value's trend icon → send to Trends</span>
+      <span className="ci" style={{ marginLeft: "auto", color: "var(--slate-500)" }}><Icon name="line-chart" size={14} /> Tap a value's trend icon → send to Trends</span>
     </div>
   );
 }
@@ -295,13 +295,13 @@ function ScSystemScreen({ label, icon, metaLabel, mimicTitle, Mimic, fluids }) {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
-        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={15} /> SCADA view</button>
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={16} /> SCADA view</button>
       </div>
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name={icon} size={17} color="var(--slate-600)" /><span className="card-title">{mimicTitle} · {building.name}</span></div>
+          <div className="card-head-l"><Icon name={icon} size={16} color="var(--slate-600)" /><span className="card-title">{mimicTitle} · {building.name}</span></div>
           <span className="caption">Click equipment for controls · tap a value's trend icon to send it to Trends</span>
         </div>
         <div className="card-body rasm-body"><Mimic /></div>
@@ -328,7 +328,7 @@ function LyeDosingScreen() { return <ScSystemScreen label="Lye Dosing" icon="fla
 function SeawaterExchangeScreen() { return <ScSystemScreen label="Seawater Exchange" icon="waves" metaLabel="seawater / glycol heat exchange" mimicTitle="Seawater Exchange" Mimic={SweMimic} fluids={["brine", "glycol"]} />; }
 function FishBarrierScreen() { return <ScSystemScreen label="Fish Barrier" icon="shield" metaLabel="escape barrier · return water" mimicTitle="Fish Barrier" Mimic={FbMimic} fluids={["proc", "drain"]} />; }
 
-Object.assign(window, { LyeDosingScreen, SeawaterExchangeScreen, FishBarrierScreen });
+Object.assign(window, { LyeDosingScreen, SeawaterExchangeScreen, FishBarrierScreen, LyeMimic, SweMimic, FbMimic });
 window.__njSystemScreens = Object.assign(window.__njSystemScreens || {}, {
   "Lye Dosing": LyeDosingScreen,
   "Seawater Exchange": SeawaterExchangeScreen,

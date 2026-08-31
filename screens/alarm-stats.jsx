@@ -185,10 +185,10 @@ function PerformanceCard({ data }) {
     <div className="card as-perf">
       <div className="card-head">
         <div className="card-head-l">
-          <Icon name="activity" size={17} color="var(--slate-600)" />
+          <Icon name="activity" size={16} color="var(--slate-600)" />
           <span className="card-title">Operator Load &amp; Performance</span>
         </div>
-        <span className="caption">per ISA-18.2 / IEC 62682 §16 · flood threshold {p.thr} alarms / 10 min</span>
+        <span className="caption">Flood threshold {p.thr} alarms / 10 min</span>
       </div>
       <div className="card-body">
         <div className="as-perf-row">
@@ -215,7 +215,7 @@ function PerformanceCard({ data }) {
             ))}
           </div>
         </div>
-        <p className="as-perf-foot"><Icon name="info" size={13} color="var(--slate-400)" /> Metrics without a target are reported, not graded. <button className="linkbtn" onClick={goTargets}>Set targets</button></p>
+        <p className="as-perf-foot"><Icon name="info" size={14} color="var(--slate-400)" /> Metrics without a target are reported, not graded. <button className="linkbtn" onClick={goTargets}>Set targets</button></p>
       </div>
     </div>
   );
@@ -242,7 +242,7 @@ function Donut({ segments, total }) {
       </svg>
       <div className="donut-center">
         <span className="lbl">Total</span>
-        <span className="val">{total.toLocaleString()}</span>
+        <span className="val">{total.toLocaleString("nb-NO")}</span>
       </div>
     </div>
   );
@@ -253,7 +253,7 @@ function CategoryCard({ data, caption }) {
     <div className="card chart-card">
       <div className="card-head">
         <div className="card-head-l">
-          <Icon name="chart-pie" size={17} color="var(--slate-600)" />
+          <Icon name="chart-pie" size={16} color="var(--slate-600)" />
           <span className="card-title">Alarms by Category</span>
         </div>
         <span className="caption">{caption}</span>
@@ -296,7 +296,7 @@ function PerDayCard({ data }) {
     <div className="card chart-card">
       <div className="card-head">
         <div className="card-head-l">
-          <Icon name="bar-chart-2" size={17} color="var(--slate-600)" />
+          <Icon name="bar-chart-2" size={16} color="var(--slate-600)" />
           <span className="card-title">Alarms per {data.bucket}</span>
         </div>
         <span className="caption">activations · by priority</span>
@@ -366,7 +366,7 @@ function PriorityBar({ b, total }) {
   );
 }
 
-function LocationTable({ data, q }) {
+function LocationTable({ data, q, onClear }) {
   const [open, setOpen] = React.useState({});
   const ql = (q || "").trim().toLowerCase();
   const locs = data.locations.filter((l) => !ql || l.name.toLowerCase().includes(ql) || l.children.some((c) => c.name.toLowerCase().includes(ql)));
@@ -384,7 +384,7 @@ function LocationTable({ data, q }) {
         {locs.map((loc, i) => (
           <React.Fragment key={loc.name}>
             <tr className="row-expandable" onClick={() => setOpen((o) => ({ ...o, [loc.name]: !o[loc.name] }))}>
-              <td><span className={"exp-chev" + (open[loc.name] ? " open" : "")}><Icon name="chevron-right" size={15} /></span></td>
+              <td><span className={"exp-chev" + (open[loc.name] ? " open" : "")}><Icon name="chevron-right" size={16} /></span></td>
               <td className="td-strong">{loc.name}</td>
               <td><PriorityBar b={loc.b} total={loc.total} /></td>
               <td><span className="data td-strong">{loc.total}</span></td>
@@ -399,13 +399,14 @@ function LocationTable({ data, q }) {
             ))}
           </React.Fragment>
         ))}
-        {locs.length === 0 && <tr><td colSpan={4}><div className="tbl-empty">No locations match the filter.</div></td></tr>}
+        {locs.length === 0 && <NjEmptyRow colSpan={4} reason="search" title="No locations match the filter"
+          action={onClear ? <button className="btn btn-secondary btn-sm" onClick={onClear}>Clear search</button> : null} />}
       </tbody>
     </table>
   );
 }
 
-function TopAlarmsTable({ data, q, limit }) {
+function TopAlarmsTable({ data, q, onClear, limit }) {
   const ql = (q || "").trim().toLowerCase();
   let rows = data.list.filter((r) => !ql || (r.alarm + " " + r.tag + " " + r.loc).toLowerCase().includes(ql));
   if (limit) rows = rows.slice(0, limit);
@@ -438,7 +439,8 @@ function TopAlarmsTable({ data, q, limit }) {
             </td>
           </tr>
         ))}
-        {rows.length === 0 && <tr><td colSpan={6}><div className="tbl-empty">No alarms match the filter.</div></td></tr>}
+        {rows.length === 0 && <NjEmptyRow colSpan={6} reason="search" title="No alarms match the filter"
+          action={onClear ? <button className="btn btn-secondary btn-sm" onClick={onClear}>Clear search</button> : null} />}
       </tbody>
     </table>
   );
@@ -454,7 +456,7 @@ function AlarmOverview({ data }) {
     <div className="card">
       <div className="card-head">
         <div className="card-head-l">
-          <Icon name="layers" size={17} color="var(--slate-600)" />
+          <Icon name="layers" size={16} color="var(--slate-600)" />
           <span className="card-title">Alarm Overview</span>
         </div>
         <div className="segmented">
@@ -463,7 +465,7 @@ function AlarmOverview({ data }) {
       </div>
       {view === "Alarm Register" && (
         <div className="as-note">
-          <Icon name="info" size={13} color="var(--slate-400)" />
+          <Icon name="info" size={14} color="var(--slate-400)" />
           <span>Every configured alarm ranked by how often it activates: use it to find bad actors. Individual events are in <button className="linkbtn" onClick={() => window.__njAlarmTab("Historical")}>Historical</button>.</span>
         </div>
       )}
@@ -476,9 +478,9 @@ function AlarmOverview({ data }) {
           <ExportMenu describe={(fmt) => "Export started: " + view.toLowerCase() + " will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
         </div>
       </div>
-      {view === "Alarms per Location" && <LocationTable data={data} q={q} />}
-      {view === "Top Alarms" && <TopAlarmsTable data={data} q={q} limit={10} />}
-      {view === "Alarm Register" && <AsRegister data={data} q={q} />}
+      {view === "Alarms per Location" && <LocationTable data={data} q={q} onClear={() => setQ("")} />}
+      {view === "Top Alarms" && <TopAlarmsTable data={data} q={q} limit={10} onClear={() => setQ("")} />}
+      {view === "Alarm Register" && <AsRegister data={data} q={q} onClear={() => setQ("")} />}
     </div>
   );
 }
@@ -509,7 +511,7 @@ function AsSortTh({ col, sort, onSort }) {
   );
 }
 
-function AsRegister({ data, q }) {
+function AsRegister({ data, q, onClear }) {
   const [sort, setSort] = React.useState({ k: "n", dir: "desc" });
   const [pageSize, setPageSize] = React.useState(25);
   const [page, setPage] = React.useState(1);
@@ -543,13 +545,14 @@ function AsRegister({ data, q }) {
                 <td><span className="tag">{r.tag}</span></td>
                 <td><AreaLink area={r.loc + " " + r.sub} /></td>
                 <td><Badge level={r.level} /></td>
-                <td><span className="as-ev"><Icon name={AS_EV_ICON[r.ev] || "dot"} size={13} color="var(--slate-400)" /> {r.ev}</span></td>
+                <td><span className="as-ev"><Icon name={AS_EV_ICON[r.ev] || "dot"} size={14} color="var(--slate-400)" /> {r.ev}</span></td>
                 <td><span className="data" style={{ color: "var(--slate-600)" }}>{r.last}</span></td>
-                <td className="num"><span className="data td-strong">{r.n.toLocaleString()}</span></td>
-                <td className="num"><span className="data" style={{ color: "var(--slate-500)" }}>{r.total.toLocaleString()}</span></td>
+                <td className="num"><span className="data td-strong">{r.n.toLocaleString("nb-NO")}</span></td>
+                <td className="num"><span className="data" style={{ color: "var(--slate-500)" }}>{r.total.toLocaleString("nb-NO")}</span></td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={AS_COLS.length}><div className="tbl-empty">No alarms match the filter.</div></td></tr>}
+            {rows.length === 0 && <NjEmptyRow colSpan={AS_COLS.length} reason="search" title="No alarms match the filter"
+              action={onClear ? <button className="btn btn-secondary btn-sm" onClick={onClear}>Clear search</button> : null} />}
           </tbody>
         </table>
       </div>
@@ -596,7 +599,7 @@ function AsSummary({ data, prev }) {
   const diff = prev == null ? null : data.total - prev;
   return (
     <div className="kpi-row" style={{ marginBottom: 16 }}>
-      <KpiCard label="Total Activations" value={data.total.toLocaleString()}
+      <KpiCard label="Total Activations" value={data.total.toLocaleString("nb-NO")}
         delta={diff == null ? "selected range" : `${diff >= 0 ? "+" : "−"}${Math.abs(diff)} vs previous period`}
         deltaDir={diff == null ? "flat" : diff > 0 ? "down" : "up"} icon="bell-ring" />
       <KpiCard label="Critical" value={String(critN)} delta={((critN / (data.total || 1)) * 100).toFixed(1) + " % of total"} deltaDir="flat" icon="alert-octagon" />
@@ -641,6 +644,8 @@ function AlarmStatisticsScreen() {
   // other (and cap at today — this is a historical register, there is nothing to count ahead of
   // now), and Search stays disabled with the reason shown, rather than applying a negative span.
   const rangeBad = f.to < f.from;
+  // applying a range is a query against the alarm historian, so it gets a skeleton
+  const loadingStats = useNjLoading([applied]);
   return (
     <AppShell active="alarms" title="Alarms" crumbs={["Statistics"]} statusLevel="critical" scope="facility">
       <div className="pagehead">
@@ -655,7 +660,7 @@ function AlarmStatisticsScreen() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="filterbar">
           <span className="fbar-group">
-            <span className="lbl"><Icon name="calendar" size={15} color="var(--slate-500)" /> Time range</span>
+            <span className="lbl"><Icon name="calendar" size={16} color="var(--slate-500)" /> Time range</span>
             <div className="segmented">
               {AS_PRESETS.map((p) => (
                 <button key={p.k} className={"seg" + (applied.preset === p.k && !dirty ? " active" : "")} onClick={() => pickPreset(p)}>{p.label}</button>
@@ -674,7 +679,7 @@ function AlarmStatisticsScreen() {
           </span>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="clock" size={15} color="var(--slate-500)" /> Time of day</span>
+            <span className="lbl"><Icon name="clock" size={16} color="var(--slate-500)" /> Time of day</span>
             <span className="fbar-pair">
               <span className="dateinput"><input type="time" aria-label="Time of day from" value={f.t0} onChange={set("t0")} /></span>
               <Icon name="arrow-right" size={14} color="var(--slate-400)" />
@@ -683,27 +688,40 @@ function AlarmStatisticsScreen() {
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
             <button className="btn btn-secondary" disabled={!dirty} onClick={() => setF(applied)}>Reset</button>
-            <button className="btn btn-primary" disabled={!dirty || rangeBad} onClick={() => setApplied({ ...f })}><Icon name="search" size={15} /> Search</button>
+            <button className="btn btn-primary" disabled={!dirty || rangeBad} onClick={() => setApplied({ ...f })}><Icon name="search" size={16} /> Search</button>
             <ExportMenu describe={(fmt) => "Export started: alarm statistics will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
         <div className="as-range">
-          <Icon name="info" size={13} color="var(--slate-400)" />
-          <span>{data.total.toLocaleString()} activations · {asDate(new Date(applied.from))} → {asDate(new Date(applied.to))} · {span} days · {applied.t0}–{applied.t1}{data.bucketDays > 1 ? " · grouped by " + data.bucket.toLowerCase() : ""}</span>
+          <Icon name="info" size={14} color="var(--slate-400)" />
+          <span>{data.total.toLocaleString("nb-NO")} activations · {asDate(new Date(applied.from))} → {asDate(new Date(applied.to))} · {span} days · {applied.t0}–{applied.t1}{data.bucketDays > 1 ? " · grouped by " + data.bucket.toLowerCase() : ""}</span>
           {dirty && <span className="as-dirty">{rangeBad ? "End date is before the start date" : "Filter changed: press Search to apply"}</span>}
         </div>
       </div>
 
-      <AsSummary data={data} prev={prev} />
+      {loadingStats ? (
+        <React.Fragment>
+          <div className="kpi-row" style={{ marginBottom: 16 }}>
+            {[0, 1, 2, 3].map((i) => <div className="card" key={i} style={{ padding: "16px 20px" }}><NjSkeleton variant="text" lines={2} /></div>)}
+          </div>
+          <div className="card" style={{ padding: "20px" }}>
+            <NjSkeleton variant="chart" height={220} note={"Querying the alarm historian · " + span + (span === 1 ? " day" : " days") + "…"} />
+          </div>
+        </React.Fragment>
+      ) : (
+        <React.Fragment>
+          <AsSummary data={data} prev={prev} />
 
-      <PerformanceCard data={data} />
+          <PerformanceCard data={data} />
 
-      <div className="stat-charts">
-        <CategoryCard data={data} caption={span + (span === 1 ? " day" : " days")} />
-        <PerDayCard data={data} />
-      </div>
+          <div className="stat-charts">
+            <CategoryCard data={data} caption={span + (span === 1 ? " day" : " days")} />
+            <PerDayCard data={data} />
+          </div>
 
-      <AlarmOverview data={data} />
+          <AlarmOverview data={data} />
+        </React.Fragment>
+      )}
     </AppShell>
   );
 }
@@ -720,12 +738,9 @@ function AlarmTabPlaceholder({ tab }) {
           <div className="pagehead-right"><AlarmTabs active={tab} /></div>
         </div>
       </div>
-      <div className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: "72px 24px", textAlign: "center" }}>
-        <span style={{ width: 56, height: 56, borderRadius: "var(--r-lg)", background: "var(--slate-100)", color: "var(--slate-400)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon name="bell-off" size={26} />
-        </span>
-        <div className="body-strong">{tab} view is queued for redesign</div>
-        <p className="body" style={{ maxWidth: 360, margin: 0 }}>Switch to Historical, All Alarms or Statistics from the tabs above.</p>
+      <div className="card">
+        <NjEmpty icon="bell-off" title={tab + " view is queued for redesign"}
+          body="Switch to Historical, All Alarms or Statistics from the tabs above." />
       </div>
     </AppShell>
   );

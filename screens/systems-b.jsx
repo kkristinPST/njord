@@ -276,4 +276,4 @@ window.__njSystemScreens = Object.assign(window.__njSystemScreens || {}, {
   "Sorting": SortingScreen,
   "Hatchery": HatcheryScreen,
 });
-Object.assign(window, { SortingScreen, HatcheryScreen });
+Object.assign(window, { SortingScreen, HatcheryScreen, SortingMimic, HatcheryMimic });

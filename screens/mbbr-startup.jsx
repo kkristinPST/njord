@@ -7,8 +7,9 @@
 // the dosed figure with its estimate underneath — so plan vs actual reads without scrolling.
 
 // CmCell, cmFmt, cmKeyOf, cmDayOf, cmHash, cmRng and CM_USER come from commissioning.jsx,
-// which the build loads first. They were aliased off `window` here back when every file was
-// its own <script>; in the concatenated bundle that alias re-declared them and broke the parse.
+// which the build loads first. They used to be aliased here with `const { … } = window` back
+// when every file was its own <script>; in the concatenated bundle that alias re-declared them
+// as lexicals and broke the parse. The names are top-level globals — reference them directly.
 
 const MB_KEY = "nj_mbbr_startup_v1";
 const MB_TODAY = new Date(2026, 2, 4);
@@ -282,7 +283,7 @@ function MbLogDialog({ deptId, deptLabel, entry, strat = "nahco3" }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" onClick={save}><Icon name="check" size={15} /> {editing ? "Save changes" : "Log round"}</button>
+        <button className="btn btn-primary" onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Log round"}</button>
       </div>
     </Dialog>
   );
@@ -420,14 +421,14 @@ function MbbrStartupScreen({ tab, onTab }) {
             </select>
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-            <button className="btn btn-secondary" onClick={() => openDialog(<MbProcedureDialog circ={circ} />)}><Icon name="list-checks" size={15} /> Startup procedure</button>
-            <ExportMenu label="Download data" icon="cloud-download" describe={(fmt) => "Download started: MBBR startup log · " + deptLabel + " will save as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
-            <button className="btn btn-primary" onClick={() => openDialog(<MbLogDialog deptId={deptId} deptLabel={deptLabel} strat={strat} />)}><Icon name="plus" size={15} /> Log round</button>
+            <button className="btn btn-secondary" onClick={() => openDialog(<MbProcedureDialog circ={circ} />)}><Icon name="list-checks" size={16} /> Startup procedure</button>
+            <ExportMenu label="Download" describe={(fmt) => "Download started: MBBR startup log · " + deptLabel + " will save as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <button className="btn btn-primary" onClick={() => openDialog(<MbLogDialog deptId={deptId} deptLabel={deptLabel} strat={strat} />)}><Icon name="plus" size={16} /> Log round</button>
           </div>
         </div>
 
         <div className="cm-gridhint">
-          <Icon name="table-2" size={13} color="var(--slate-400)" />
+          <Icon name="table-2" size={14} color="var(--slate-400)" />
           <span>Click any cell to edit it. <strong>Tab</strong> moves across, <strong>Enter</strong> down. Each chemical column shows what was <strong>dosed</strong>, with the model's estimate underneath.</span>
           <span className="mb-groups">
             {[{ k: "n", label: "Nitrogen" }, { k: "wq", label: "Sample" }, { k: "dose", label: "Dosing" }, { k: "auto", label: "Plant tags" }].map((g) => (
@@ -523,7 +524,7 @@ function MbbrStartupScreen({ tab, onTab }) {
                     <td className="cm-td-open">
                       <button className="cm-openbtn" title="Edit full round" aria-label={`Edit full round for ${cmFmt(r.date)}`}
                         onClick={() => openDialog(<MbLogDialog deptId={deptId} deptLabel={deptLabel} strat={strat} entry={mbStore.row(deptId, r.date) || mbStore.blank(r.date)} />)}>
-                        <Icon name="panel-right-open" size={15} />
+                        <Icon name="maximize-2" size={16} />
                       </button>
                     </td>
                   </tr>
@@ -537,4 +538,7 @@ function MbbrStartupScreen({ tab, onTab }) {
   );
 }
 
-Object.assign(window, { MbbrStartupScreen, mbStore });
+// exported so the mobile Biofilter Maturation screen logs rounds against the SAME store and the
+// SAME stoichiometric estimate — never a mobile dose model.
+Object.assign(window, { MbbrStartupScreen, mbStore, useMbbr, mbDepts, mbChems, mbEstimate, mbDayOf, mbWeek, mbOut,
+  MB_N, MB_WQ, MB_MEAS, MB_TODAY_KEY, MB_PH_STRAT, MB_VOL });

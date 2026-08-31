@@ -138,7 +138,7 @@ function NoteComposer({ fixedEquip, onSaved }) {
         <textarea className="oos-input note-ta" rows={4} value={text} onChange={(e) => setText(e.target.value)} placeholder="Describe the deviation or information…" />
       </label>
       <div className="note-form-foot">
-        <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="plus" size={15} /> Save note</button>
+        <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="plus" size={16} /> Save note</button>
       </div>
     </div>
   );
@@ -169,24 +169,24 @@ function NoteDetail({ n, onBack }) {
   const store = notesStore;
   return (
     <div className="note-detail">
-      <button className="note-back" onClick={onBack}><Icon name="arrow-left" size={15} /> Back to notes</button>
+      <button className="note-back" onClick={onBack}><Icon name="arrow-left" size={16} /> Back to notes</button>
       {n.archived && (
         <div className="note-detail-head">
-          <span className="note-archived-chip"><Icon name="archive" size={11} /> Archived</span>
+          <span className="note-archived-chip"><Icon name="archive" size={12} /> Archived</span>
         </div>
       )}
       {n.header && <h3 className="note-detail-title">{n.header}</h3>}
       <div className="note-detail-body"><p>{n.text}</p></div>
       <div className="note-detail-foot">
         {n.tag
-          ? <button className="note-eqlink" onClick={() => window.openEquipment && window.openEquipment(n.tag)}><Icon name="box" size={13} /> {n.name} <span className="tag">{n.tag}</span></button>
-          : (n.area ? <span className="note-scope"><Icon name="map-pin" size={13} /> {n.area}</span> : <span />)}
-        <span className="note-meta"><Icon name="user" size={13} /> {n.by} · {n.ts}</span>
+          ? <button className="note-eqlink" onClick={() => window.openEquipment && window.openEquipment(n.tag)}><Icon name="box" size={14} /> {n.name} <span className="tag">{n.tag}</span></button>
+          : (n.area ? <span className="note-scope"><Icon name="map-pin" size={14} /> {n.area}</span> : <span />)}
+        <span className="note-meta"><Icon name="user" size={14} /> {n.by} · {n.ts}</span>
       </div>
       <div className="note-detail-actions">
         {n.archived
-          ? <button className="btn btn-secondary btn-sm" onClick={() => { store.setArchived(n.id, false); onBack(); }}><Icon name="rotate-ccw" size={13} /> Restore</button>
-          : <button className="btn btn-secondary btn-sm" onClick={() => { store.setArchived(n.id, true); onBack(); }}><Icon name="archive" size={13} /> Archive</button>}
+          ? <button className="btn btn-secondary btn-sm" onClick={() => { store.setArchived(n.id, false); onBack(); }}><Icon name="rotate-ccw" size={14} /> Restore</button>
+          : <button className="btn btn-secondary btn-sm" onClick={() => { store.setArchived(n.id, true); onBack(); }}><Icon name="archive" size={14} /> Archive</button>}
       </div>
     </div>
   );
@@ -224,7 +224,7 @@ function NotesDialog() {
               <div className="segmented notes-tabs">
                 {tabs.map((t) => (
                   <button key={t.id} className={"seg" + (t.id === sub ? " active" : "")} onClick={() => goSub(t.id)}>
-                    <Icon name={t.icon} size={13} /> {t.label}{t.n != null && t.n > 0 ? <span className="note-badge">{t.n}</span> : null}
+                    <Icon name={t.icon} size={14} /> {t.label}{t.n != null && t.n > 0 ? <span className="note-badge">{t.n}</span> : null}
                   </button>
                 ))}
               </div>
@@ -238,7 +238,9 @@ function NotesDialog() {
             {sub === "new"
               ? <NoteComposer onSaved={() => goSub("active")} />
               : (list.length === 0
-                  ? <div className="notes-empty"><Icon name="notebook-pen" size={26} color="var(--slate-300)" /><span>No {sub} notes{ql ? " match your search" : ""}.</span></div>
+                  ? <NjEmpty size="compact" reason={ql ? "search" : "empty"} icon="notebook-pen"
+                      title={ql ? "No " + sub + " notes match your search" : "No " + sub + " notes"}
+                      body={ql ? "Search covers the note text, its tag and its author." : "Notes written here stay with the equipment or area they are filed against."} />
                   : <div className="notes-list">
                       {list.map((n) => <NoteRow key={n.id} n={n} isNew={newSet.has(n.id)} onOpen={() => setOpenId(n.id)} />)}
                     </div>)}
@@ -246,7 +248,7 @@ function NotesDialog() {
         )}
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="notebook-pen" size={13} /> {store.rows.length} notes</span>
+        <span className="dlg-foot-meta"><Icon name="notebook-pen" size={14} /> {store.rows.length} notes</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
       </div>
     </Dialog>

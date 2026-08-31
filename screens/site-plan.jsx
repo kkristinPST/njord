@@ -35,20 +35,49 @@ function PlanNode({ bId, dId, label, icon, status }) {
   );
 }
 
+// A department can carry 20+ systems. The zone shows the first PLAN_CAP and folds the rest —
+// but ANY system in alarm is always visible, whatever its position: the plan exists to surface
+// them, so a fold that could hide one would be worse than no fold at all.
+const PLAN_CAP = 5;
+const PLAN_EXP_LS = "nj_plan_expand_v1";
+function planExpLoad() { try { const v = JSON.parse(localStorage.getItem(PLAN_EXP_LS)); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
+function planExpSave(m) { try { localStorage.setItem(PLAN_EXP_LS, JSON.stringify(m)); } catch (e) {} }
+
 function DeptZone({ bId, dept }) {
   const worst = planWorst(dept.systems);
+  const all = dept.systems;
+  const [open, setOpen] = React.useState(() => !!planExpLoad()[dept.id]);
+  const toggle = () => setOpen((o) => { const n = !o; const m = planExpLoad(); if (n) m[dept.id] = 1; else delete m[dept.id]; planExpSave(m); return n; });
+  const alerting = all.filter((s) => planSev(s.status) !== "ok");
+  // fold as soon as anything would be cut — "Show 1 more" is still worth the row
+  const foldable = all.length > PLAN_CAP;
+  const shown = !foldable || open ? all
+    : (() => {
+      const keep = new Set(alerting); // every alarm stays, even past the cap
+      for (const s of all) { if (keep.size >= PLAN_CAP) break; keep.add(s); }
+      return all.filter((s) => keep.has(s));
+    })();
+  const hidden = all.length - shown.length;
   return (
     <div className="zone" data-worst={worst}>
       <div className="zone-head">
         <span className="zone-id">{dept.name}</span>
         <span className="zone-sub">{dept.sub}</span>
-        <span className="zone-count">{dept.systems.length}</span>
+        <span className="zone-count">{all.length}</span>
       </div>
       <div className="zone-grid">
-        {dept.systems.map((s, i) => (
+        {shown.map((s, i) => (
           <PlanNode key={i} bId={bId} dId={dept.id} label={s.label} icon={s.icon} status={s.status} />
         ))}
       </div>
+      {foldable && (
+        <button className="zone-more" onClick={toggle} aria-expanded={open}>
+          <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
+          {open ? "Show fewer" : "Show " + hidden + " more"}
+          {!open && <span className="zone-more-note">all nominal</span>}
+          {open && <span className="zone-more-note">{all.length} systems</span>}
+        </button>
+      )}
     </div>
   );
 }

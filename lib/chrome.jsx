@@ -87,75 +87,8 @@ function Card({ title, icon, action, children, style, bodyStyle, headRight }) {
 }
 
 // ---- Sidebar ----
-// ---- Facility model: Building → Department → System (single source of truth) ----
-const FACILITY = [
-  { id: "b1", name: "Building 1", depts: [
-    { id: "b1-d1", name: "DPT1", sub: "Post-Smolt", systems: [
-      { label: "Fish Tank", icon: "waves", status: "ok" },
-      { label: "RAS", icon: "git-merge", status: "ok" },
-      { label: "Feeding", icon: "utensils", status: "warning" },
-    ]},
-    { id: "b1-d2", name: "DPT2", sub: "Post-Smolt", systems: [
-      { label: "Fish Tank", icon: "waves", status: "ok" },
-      { label: "RAS", icon: "git-merge", status: "ok" },
-      { label: "Feeding", icon: "utensils", status: "ok" },
-    ]},
-    { id: "b1-sup", name: "Support systems", sub: "Shared", systems: [
-      { label: "Hatchery", icon: "egg", status: "ok" },
-      { label: "HMI", icon: "monitor", status: "ok" },
-      { label: "Sorting", icon: "filter", status: "ok" },
-      { label: "Water Treatment", icon: "droplets", status: "ok" },
-      { label: "Sludge Treatment", icon: "recycle", status: "ok" },
-    ]},
-  ]},
-  { id: "b2", name: "Building 2", depts: [
-    { id: "b2-d3", name: "DPT3", sub: "Grow-out", systems: [
-      { label: "Fish Tank", icon: "waves", status: "ok" },
-      { label: "MBBR", icon: "layers", status: "ok" },
-      { label: "Pump Sump", icon: "arrow-down-to-line", status: "critical" },
-      { label: "Energy Plant", icon: "zap", status: "ok" },
-      { label: "Feeding", icon: "utensils", status: "ok" },
-    ]},
-    { id: "b2-d4", name: "DPT4", sub: "Grow-out", systems: [
-      { label: "Fish Tank", icon: "waves", status: "ok" },
-      { label: "MBBR", icon: "layers", status: "ok" },
-      { label: "Pump Sump", icon: "arrow-down-to-line", status: "ok" },
-      { label: "Energy Plant", icon: "zap", status: "ok" },
-      { label: "Feeding", icon: "utensils", status: "ok" },
-    ]},
-    { id: "b2-sup", name: "Support systems", sub: "Shared", systems: [
-      { label: "Water Treatment", icon: "droplets", status: "ok" },
-      { label: "Fish Barrier", icon: "shield", status: "ok" },
-      { label: "Lye Dosing", icon: "flask-conical", status: "warning" },
-      { label: "Dead Fish", icon: "skull", status: "ok" },
-      { label: "Seawater Exchange", icon: "waves", status: "ok" },
-      { label: "HyFlow Feeding", icon: "utensils", status: "ok" },
-    ]},
-  ]},
-  { id: "b3", name: "Building 3", depts: [
-    { id: "b3-d1", name: "DPT1", sub: "Hatchery", systems: [
-      { label: "Hatchery", icon: "egg", status: "ok" },
-      { label: "Energy Plant", icon: "zap", status: "ok" },
-    ]},
-    { id: "b3-d2", name: "DPT2", sub: "Start-Feeding", systems: [
-      { label: "Fish Tank", icon: "waves", status: "ok" },
-      { label: "Overview", icon: "workflow", status: "ok" },
-      { label: "Energy Plant", icon: "zap", status: "ok" },
-      { label: "Feeding", icon: "utensils", status: "ok" },
-    ]},
-    { id: "b3-com", name: "Common", sub: "Shared", systems: [
-      { label: "Technical", icon: "wrench", status: "ok" },
-    ]},
-  ]},
-];
-
-// ---- Facility utilities ("Other"): cross-facility, not scoped to a building/department ----
-// Reached from the Site Plan "Other" group; each opens a top-level route (not a dept sub-route).
-const FACILITY_OTHER = [
-  { label: "Consumption Overview", icon: "package", route: "consumption", status: "ok" },
-  { label: "Energy Consumption", icon: "bar-chart-3", route: "energy", status: "ok" },
-  { label: "Heat Pumps", icon: "thermometer-snowflake", route: "heatpumps", status: "ok" },
-];
+// Facility model (FACILITY, FACILITY_OTHER, FACILITY_BATCHES, tank register) lives in
+// lib/facility.jsx so the desktop app and mobile can share ONE source of truth.
 
 // tiny external store so TopBar + Sidebar share the selected context without prop threading
 const ctxStore = {

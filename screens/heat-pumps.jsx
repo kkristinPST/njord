@@ -30,7 +30,7 @@ function HeatPumpsScreen() {
             <p className="pagehead-sub">{HP_UNITS.length} units · {running} running · facility utility, outside the building hierarchy</p>
           </div>
           <div className="pagehead-right">
-            <button className="btn btn-secondary" title="Back to the site plan" onClick={() => window.__njGoPlan && window.__njGoPlan()}><Icon name="map" size={15} /> Site Plan</button>
+            <button className="btn btn-secondary" title="Back to the site plan" onClick={() => window.__njGoPlan && window.__njGoPlan()}><Icon name="map" size={16} /> Site Plan</button>
           </div>
         </div>
       </div>

@@ -1,4 +1,16 @@
 // icon.jsx — Lucide wrapper (imperative, React-safe)
+//
+// THE ICON SCALE. Every `size` must be one of these — the design system specifies line icons on a
+// 16px grid, and before this was written the app used 13 different sizes (10,11,13,15,17,19,22,23,26)
+// picked per call site, so two icons in the same row could differ by a pixel for no reason.
+//   12  micro-mark — inside a chip, badge or pill (stale pill, DISCRETE badge, checkbox tick)
+//   14  inline with body text (14/20) — table-cell actions, link arrows, meta lines, small buttons
+//   16  DEFAULT UI icon — buttons, menu items, card heads, inputs, sidebar rail
+//   20  prominent — dialog close, top-bar icon buttons, sidebar nav, mobile tab bar, steppers
+//   24  hero / glyph — empty-state tiles, confirm-dialog glyph, equipment glyphs
+//   28  mobile screen hero only
+// Do not introduce a value between these to make something fit; pick the neighbouring tier.
+//
 // Two things matter for performance here, because the app renders hundreds of icons per screen:
 //   1. the effect is keyed on [name, strokeWidth] — without a dependency array it re-ran on EVERY
 //      render of every icon;

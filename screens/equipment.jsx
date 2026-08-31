@@ -102,7 +102,7 @@ function EquipmentDialog({ equip }) {
 
       <div className="eq-tabs">
         <div className="segmented eq-tabstrip">
-          {tabDefs.map((t) => <button key={t.id} className={"seg" + (t.id === tab ? " active" : "")} onClick={() => setTab(t.id)}><Icon name={t.icon} size={13} /> {t.id}</button>)}
+          {tabDefs.map((t) => <button key={t.id} className={"seg" + (t.id === tab ? " active" : "")} onClick={() => setTab(t.id)}><Icon name={t.icon} size={14} /> {t.id}</button>)}
         </div>
       </div>
 
@@ -130,7 +130,7 @@ function EquipmentDialog({ equip }) {
                       <span className="eq-sp-l">{s.l}</span>
                       <span className="eq-sp-r">
                         <span className={"data eq-sp-v" + (changed ? " changed" : "")}>{dec(sp[s.key])}<span className="u"> {s.u}</span></span>
-                        <button className="btn btn-ghost btn-sm" onClick={() => adjust(s)}><Icon name="pencil" size={13} /> Adjust</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => adjust(s)}><Icon name="pencil" size={14} /> Adjust</button>
                       </span>
                     </div>
                   );
@@ -173,10 +173,10 @@ function EquipmentDialog({ equip }) {
                       </div>
                       <div className="eq-lim-chips">
                         <button className="lim-chip hi" onClick={() => editLimit(l, i, "hi")}>
-                          <span className="lim-chip-k">HI</span><span className="data">{dec(lim["hi" + i])}</span><Icon name="pencil" size={11} />
+                          <span className="lim-chip-k">HI</span><span className="data">{dec(lim["hi" + i])}</span><Icon name="pencil" size={12} />
                         </button>
                         <button className="lim-chip lo" onClick={() => editLimit(l, i, "lo")}>
-                          <span className="lim-chip-k">LO</span><span className="data">{dec(lim["lo" + i])}</span><Icon name="pencil" size={11} />
+                          <span className="lim-chip-k">LO</span><span className="data">{dec(lim["lo" + i])}</span><Icon name="pencil" size={12} />
                         </button>
                       </div>
                     </div>
@@ -192,7 +192,7 @@ function EquipmentDialog({ equip }) {
       </div>
 
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="user" size={13} /> Last change · E. Sørensen · 13:48</span>
+        <span className="dlg-foot-meta"><Icon name="user" size={14} /> Last change · E. Sørensen · 13:48</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
       </div>
     </Dialog>

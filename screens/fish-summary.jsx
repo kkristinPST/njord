@@ -34,9 +34,9 @@ function FsKpiRow({ tanks }) {
   const avgW = totBio * 1000 / totPop;
   const avgDens = tanks.reduce((s, t) => s + fsDensity(t), 0) / tanks.length;
   return (
-    <div className="kpi-row" style={{ marginBottom: 18 }}>
+    <div className="kpi-row" style={{ marginBottom: 16 }}>
       <KpiCard label="Total Biomass" value={(totBio / 1000).toFixed(1)} unit="t" delta="+1.2 24h" deltaDir="up" icon="fish" />
-      <KpiCard label="Population" value={totPop.toLocaleString()} delta="−312 24h" deltaDir="down" icon="hash" />
+      <KpiCard label="Population" value={totPop.toLocaleString("nb-NO")} delta="−312 24h" deltaDir="down" icon="hash" />
       <KpiCard label="Avg Weight" value={avgW.toFixed(2)} unit="g" delta="+0.06 24h" deltaDir="up" icon="scale" />
       <KpiCard label="Avg Density" value={avgDens.toFixed(2)} unit="kg/m³" delta="+0.04 24h" deltaDir="up" icon="layers" />
     </div>
@@ -75,10 +75,10 @@ function FsTable({ tanks }) {
               <td className="lbl">
                 <span className="fs-tank"><Dot level={st} size={8} /> <span className="td-strong">Tank {t.n}</span> <span className="tag fs-tag">{t.tag}</span></span>
               </td>
-              <td className="num">{t.pop.toLocaleString()}</td>
+              <td className="num">{t.pop.toLocaleString("nb-NO")}</td>
               <td className="num">{t.avgW.toFixed(2)}</td>
               <td className="num">{t.cv.toFixed(1)} %</td>
-              <td className="num td-strong">{Math.round(fsBiomass(t)).toLocaleString()}</td>
+              <td className="num td-strong">{Math.round(fsBiomass(t)).toLocaleString("nb-NO")}</td>
               <td className="num">{fsDensity(t).toFixed(2)}</td>
               <td className="num">{t.feed.toFixed(1)}</td>
               <td className="num">{t.fcr.toFixed(2)}</td>
@@ -89,10 +89,10 @@ function FsTable({ tanks }) {
         })}
         <tr className="calc">
           <td className="lbl td-strong">Department</td>
-          <td className="num td-strong">{totPop.toLocaleString()}</td>
+          <td className="num td-strong">{totPop.toLocaleString("nb-NO")}</td>
           <td className="num">—</td>
           <td className="num">—</td>
-          <td className="num td-strong">{Math.round(totBio).toLocaleString()}</td>
+          <td className="num td-strong">{Math.round(totBio).toLocaleString("nb-NO")}</td>
           <td className="num">{avgDens.toFixed(2)}</td>
           <td className="num td-strong">{totFeed.toFixed(1)}</td>
           <td className="num">{avgFcr.toFixed(2)}</td>
@@ -109,7 +109,7 @@ function FsDistribution() {
   return (
     <div className="card fs-dist">
       <div className="card-head">
-        <div className="card-head-l"><Icon name="bar-chart-3" size={17} color="var(--slate-600)" /><span className="card-title">Size Distribution</span></div>
+        <div className="card-head-l"><Icon name="bar-chart-3" size={16} color="var(--slate-600)" /><span className="card-title">Size Distribution</span></div>
         <span className="caption">by weight · g</span>
       </div>
       <div className="fs-dist-body">
@@ -146,8 +146,8 @@ function FishSummaryView() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <ExportMenu label="Export" describe={(fmt) => "Export started: fish summary will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
-        <button className="btn btn-secondary"><Icon name="file-text" size={15} /> Fish report</button>
+        <ExportMenu describe={(fmt) => "Export started: fish summary will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+        <button className="btn btn-secondary"><Icon name="file-text" size={16} /> Fish report</button>
       </div>
 
       <FsKpiRow tanks={FS_TANKS} />
@@ -155,7 +155,7 @@ function FishSummaryView() {
       <div className="fs-stack">
         <div className="card">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="fish" size={17} color="var(--slate-600)" /><span className="card-title">Biology by Tank · {dept.name}</span></div>
+            <div className="card-head-l"><Icon name="fish" size={16} color="var(--slate-600)" /><span className="card-title">Biology by Tank · {dept.name}</span></div>
             <span className="caption">live · 01 Jun, 13:53</span>
           </div>
           <div className="fs-tbl-scroll">

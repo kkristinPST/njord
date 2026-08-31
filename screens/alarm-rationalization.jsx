@@ -94,10 +94,10 @@ function RatnCell({ row, col, onCommit }) {
           <button className="ratn-cellbtn ratn-modbtn" title="Change history for this alarm" onClick={() => openRatnHistory(row)}>
             <span className="ratn-mod"><span className="ratn-mod-at">{row.modifiedAt}</span><span className="ratn-mod-by">{row.modifiedBy}</span></span>
             {n > 0 && <span className="ratn-histn" title={n + " recorded change" + (n > 1 ? "s" : "")}>{n}</span>}
-            <Icon name="history" size={11} />
+            <Icon name="history" size={12} />
           </button>
         )
-        : <button className="ratn-cellbtn ratn-modbtn" title="Change history for this alarm" onClick={() => openRatnHistory(row)}><span className="ratn-empty">—</span><Icon name="history" size={11} /></button>;
+        : <button className="ratn-cellbtn ratn-modbtn" title="Change history for this alarm" onClick={() => openRatnHistory(row)}><span className="ratn-empty">—</span><Icon name="history" size={12} /></button>;
     }
     // ch. 13 — the date the alarm was last REASONED about. Only Critical and High carry a stated
     // cadence, so only they can read as due; everything else states the date and nothing more.
@@ -151,7 +151,7 @@ function RatnCell({ row, col, onCommit }) {
     else display = raw ? <span className="ratn-enumv">{raw}</span> : <span className="ratn-empty ratn-add">+ set</span>;
     return (
       <button className={"ratn-cellbtn" + (col.type === "longtext" ? " ltcell" : "")} onClick={() => setEditing(true)} title="Click to edit">
-        {display}<Icon name="pencil" size={11} />
+        {display}<Icon name="pencil" size={12} />
       </button>
     );
   }
@@ -212,7 +212,7 @@ function RatnChangeNoteDialog({ label, field, from, to, count, onSave }) {
           <div className="ratn-note-diff">
             <span className="ratn-note-f">{RATN_FIELD_ALL_LABEL[field] || field}</span>
             <span className="ratn-note-from data">{njFmtHistVal(from)}</span>
-            <Icon name="arrow-right" size={13} color="var(--slate-400)" />
+            <Icon name="arrow-right" size={14} color="var(--slate-400)" />
             <span className="ratn-note-to data">{njFmtHistVal(to)}</span>
           </div>
         )}
@@ -228,7 +228,7 @@ function RatnChangeNoteDialog({ label, field, from, to, count, onSave }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!ok} onClick={save}><Icon name="check" size={15} /> Save change</button>
+        <button className="btn btn-primary" disabled={!ok} onClick={save}><Icon name="check" size={16} /> Save</button>
       </div>
     </Dialog>
   );
@@ -248,9 +248,8 @@ function RatnHistoryDialog({ row, onRevert }) {
           <span className="caption">{row.area} · last reviewed {row.reviewedAt || "never"}</span>
         </div>
         {list.length === 0 ? (
-          <div className="ratn-hist-empty"><Icon name="file-clock" size={22} color="var(--slate-300)" />
-            <span>No changes recorded in this session.</span>
-            <p className="caption">Changes made before the register moved into NJORD live in the commissioning documentation.</p></div>
+          <NjEmpty size="compact" icon="file-clock" title="No changes recorded in this session"
+            body="Changes made before the register moved into NJORD live in the commissioning documentation." />
         ) : (
           <ol className="ratn-hist-list">
             {list.map((e, i) => (
@@ -270,7 +269,7 @@ function RatnHistoryDialog({ row, onRevert }) {
         )}
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="shield" size={13} /> Controlled fields are attributed; descriptive edits are logged without a reason</span>
+        <span className="dlg-foot-meta"><Icon name="shield" size={14} /> Controlled fields are attributed; descriptive edits are logged without a reason</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
       </div>
     </Dialog>
@@ -290,10 +289,10 @@ function RatnReportDialog({ stats, review, changes }) {
       <div className="dlg-body ratn-rep">
         <p className="ratn-bed-intro">The controlled snapshot of the master alarm database: every configured alarm with its seven rationalization parameters, its review date, and the attributed change record behind it. Issued for signature by PSTech and the customer.</p>
         <div className="ratn-rep-facts">
-          <div className="ratn-rep-f"><span className="ratn-rep-l">Alarms</span><span className="ratn-rep-v data">{stats.total.toLocaleString()}</span></div>
-          <div className="ratn-rep-f"><span className="ratn-rep-l">Rationalized</span><span className="ratn-rep-v data">{stats.rationalized.toLocaleString()} <span className="ratn-kpi-pct">{Math.round((stats.rationalized / stats.total) * 100)}%</span></span></div>
-          <div className="ratn-rep-f"><span className="ratn-rep-l">Review overdue</span><span className="ratn-rep-v data">{review.toLocaleString()}</span></div>
-          <div className="ratn-rep-f"><span className="ratn-rep-l">Recorded changes</span><span className="ratn-rep-v data">{changes.toLocaleString()}</span></div>
+          <div className="ratn-rep-f"><span className="ratn-rep-l">Alarms</span><span className="ratn-rep-v data">{stats.total.toLocaleString("nb-NO")}</span></div>
+          <div className="ratn-rep-f"><span className="ratn-rep-l">Rationalized</span><span className="ratn-rep-v data">{stats.rationalized.toLocaleString("nb-NO")} <span className="ratn-kpi-pct">{Math.round((stats.rationalized / stats.total) * 100)}%</span></span></div>
+          <div className="ratn-rep-f"><span className="ratn-rep-l">Review overdue</span><span className="ratn-rep-v data">{review.toLocaleString("nb-NO")}</span></div>
+          <div className="ratn-rep-f"><span className="ratn-rep-l">Recorded changes</span><span className="ratn-rep-v data">{changes.toLocaleString("nb-NO")}</span></div>
         </div>
         <span className="oc-field-l">Include</span>
         <div className="segmented ratn-rep-seg">
@@ -310,7 +309,7 @@ function RatnReportDialog({ stats, review, changes }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" onClick={() => { closeDialog(); njToast("Master Alarm Report generated · " + RATN_TODAY + " · pending signature.", "View", () => njToast("Document store is not connected in this build.")); }}><Icon name="download" size={15} /> Generate report</button>
+        <button className="btn btn-primary" onClick={() => { closeDialog(); njToast("Master Alarm Report generated · " + RATN_TODAY + " · pending signature.", "View", () => njToast("Document store is not connected in this build.")); }}><Icon name="download" size={16} /> Generate report</button>
       </div>
     </Dialog>
   );
@@ -417,7 +416,7 @@ function RatnBulkEditDialog({ count, onApply }) {
       <div className="dlg-foot">
         <span className="ratn-bed-foot-hint">{enabled.length ? `${enabled.length} field${enabled.length > 1 ? "s" : ""} → ${count} alarm${count > 1 ? "s" : ""}` : "Select at least one field"}</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!canApply} onClick={apply}>Apply changes</button>
+        <button className="btn btn-primary" disabled={!canApply} onClick={apply}><Icon name="check" size={16} /> Apply</button>
       </div>
     </Dialog>
   );
@@ -626,7 +625,7 @@ function AlarmRationalizationScreen() {
       <div className="pagehead">
         <div className="pagehead-row">
           <div>
-            <p className="pagehead-sub">Master alarm record · {stats.total.toLocaleString()} configured alarms · controlled fields are attributed and reversible · per ISA-18.2 §7</p>
+            <p className="pagehead-sub">Master alarm record · {stats.total.toLocaleString("nb-NO")} configured alarms · controlled fields are attributed and reversible</p>
           </div>
           <div className="pagehead-right"><AlarmTabs active="Rationalization" /></div>
         </div>
@@ -637,28 +636,28 @@ function AlarmRationalizationScreen() {
           <div className="card ratn-kpis">
             <div className="ratn-kpi">
               <span className="ratn-kpi-l">Total alarms</span>
-              <span className="ratn-kpi-v data">{stats.total.toLocaleString()}</span>
+              <span className="ratn-kpi-v data">{stats.total.toLocaleString("nb-NO")}</span>
             </div>
             <div className="ratn-kpi">
               <span className="ratn-kpi-l"><span className="ratn-kpi-dot" style={{ background: "var(--success)" }} />Rationalized</span>
-              <span className="ratn-kpi-v data">{stats.rationalized.toLocaleString()} <span className="ratn-kpi-pct">{Math.round((stats.rationalized / stats.total) * 100)}%</span></span>
+              <span className="ratn-kpi-v data">{stats.rationalized.toLocaleString("nb-NO")} <span className="ratn-kpi-pct">{Math.round((stats.rationalized / stats.total) * 100)}%</span></span>
             </div>
             <div className="ratn-kpi">
               <span className="ratn-kpi-l"><span className="ratn-kpi-dot" style={{ background: "var(--slate-300)" }} />Not configured</span>
-              <span className="ratn-kpi-v data">{stats["not-configured"].toLocaleString()}</span>
+              <span className="ratn-kpi-v data">{stats["not-configured"].toLocaleString("nb-NO")}</span>
             </div>
             <div className="ratn-kpi">
               <span className="ratn-kpi-l"><span className="ratn-kpi-dot" style={{ background: "var(--warning)" }} />Re-evaluate</span>
-              <span className="ratn-kpi-v data">{stats["re-evaluate"].toLocaleString()}</span>
+              <span className="ratn-kpi-v data">{stats["re-evaluate"].toLocaleString("nb-NO")}</span>
             </div>
             <div className="ratn-kpi ratn-kpi-risk">
-              <span className="ratn-kpi-l"><Icon name="alert-triangle" size={13} color="var(--critical)" />High/critical open</span>
-              <span className="ratn-kpi-v data">{stats.riskOpen.toLocaleString()}</span>
+              <span className="ratn-kpi-l"><Icon name="alert-triangle" size={14} color="var(--critical)" />High/critical open</span>
+              <span className="ratn-kpi-v data">{stats.riskOpen.toLocaleString("nb-NO")}</span>
             </div>
             <button className={"ratn-kpi ratn-kpi-rev" + (revF === "due" ? " on" : "")} onClick={() => setRevF(revF === "due" ? "all" : "due")}
               title="Critical and High alarms not reasoned about in the last 12 months (ch. 13)">
-              <span className="ratn-kpi-l"><Icon name="calendar-clock" size={13} color="var(--warning-text)" />Review overdue</span>
-              <span className="ratn-kpi-v data">{stats.reviewDue.toLocaleString()}</span>
+              <span className="ratn-kpi-l"><Icon name="calendar-clock" size={14} color="var(--warning-text)" />Review overdue</span>
+              <span className="ratn-kpi-v data">{stats.reviewDue.toLocaleString("nb-NO")}</span>
             </button>
           </div>
           <div className="card ratn-progress">
@@ -691,7 +690,7 @@ function AlarmRationalizationScreen() {
           </span>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="sliders-horizontal" size={15} color="var(--slate-500)" /> Priority</span>
+            <span className="lbl"><Icon name="sliders-horizontal" size={16} color="var(--slate-500)" /> Priority</span>
             <span className="chips">
               {RATN_PRIOS.map(([lvl, lbl]) => {
                 const on = prioF === lvl;
@@ -701,7 +700,7 @@ function AlarmRationalizationScreen() {
           </span>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="calendar-clock" size={15} color="var(--slate-500)" /> Annual review</span>
+            <span className="lbl"><Icon name="calendar-clock" size={16} color="var(--slate-500)" /> Annual review</span>
             <span className="ratn-statusseg">
               {[["all", "All"], ["due", "Overdue"], ["indate", "In date"]].map(([v, l]) => (
                 <button key={v} className={"ratn-sf" + (revF === v ? " on" : "")} onClick={() => setRevF(v)}
@@ -710,8 +709,8 @@ function AlarmRationalizationScreen() {
             </span>
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10, position: "relative" }}>
-            <button className="btn btn-secondary" onClick={() => setShowOverview((s) => !s)}><Icon name={showOverview ? "eye-off" : "eye"} size={15} /> {showOverview ? "Hide" : "Show"} overview</button>
-            <button className="btn btn-secondary" onClick={() => setColMenu((m) => !m)}><Icon name="columns-3" size={15} /> Columns</button>
+            <button className="btn btn-secondary" onClick={() => setShowOverview((s) => !s)}><Icon name={showOverview ? "eye-off" : "eye"} size={16} /> {showOverview ? "Hide" : "Show"} overview</button>
+            <button className="btn btn-secondary" onClick={() => setColMenu((m) => !m)}><Icon name="columns-3" size={16} /> Columns</button>
             {colMenu && (
               <React.Fragment>
                 <div className="ratn-bm-scrim" onClick={() => setColMenu(false)} />
@@ -727,27 +726,27 @@ function AlarmRationalizationScreen() {
                 </div>
               </React.Fragment>
             )}
-            <button className="btn btn-secondary" onClick={() => openDialog(<RatnReportDialog stats={stats} review={stats.reviewDue} changes={njRatnHistory.total()} />)} title="Master Alarm Report — the signed snapshot of the register (ch. 7)"><Icon name="file-text" size={15} /> Report</button>
-            <button className="btn btn-secondary" onClick={() => njToast("Import: select an .xlsx/.csv file to merge into the register.", "Choose file", () => njToast("No file selected (demo)."))}><Icon name="upload" size={15} /> Import</button>
-            <ExportMenu primary describe={(fmt) => `Export started: ${filtered.length.toLocaleString()} alarms (current filter) will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
+            <button className="btn btn-secondary" onClick={() => openDialog(<RatnReportDialog stats={stats} review={stats.reviewDue} changes={njRatnHistory.total()} />)} title="Master Alarm Report — the signed snapshot of the register (ch. 7)"><Icon name="file-text" size={16} /> Report</button>
+            <button className="btn btn-secondary" onClick={() => njToast("Import: select an .xlsx/.csv file to merge into the register.", "Choose file", () => njToast("No file selected (demo)."))}><Icon name="upload" size={16} /> Import</button>
+            <ExportMenu primary describe={(fmt) => `Export started: ${filtered.length.toLocaleString("nb-NO")} alarms (current filter) will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
           </div>
         </div>
 
         {/* bulk bar */}
         <BulkBar count={selInFiltered} onClear={sel.clear}>
           <RatnBulkEdit count={selInFiltered} onApply={bulkSet} />
-          <ExportMenu label="Export selected" btnClass="bb-btn" describe={(fmt) => `Export started: ${selInFiltered} selected alarm${selInFiltered > 1 ? "s" : ""} will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
+          <ExportMenu label="Download selected" btnClass="bb-btn" describe={(fmt) => `Export started: ${selInFiltered} selected alarm${selInFiltered > 1 ? "s" : ""} will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
         </BulkBar>
 
         {/* select-all-matching banner */}
         {allPageOn && !allFilteredSelected && filtered.length > pageRows.length && (
           <div className="ratn-selall">
             All {selOnPage.length} on this page selected.
-            <button className="linkbtn" onClick={() => sel.setAll(filteredIds, true)}>Select all {filtered.length.toLocaleString()} matching</button>
+            <button className="linkbtn" onClick={() => sel.setAll(filteredIds, true)}>Select all {filtered.length.toLocaleString("nb-NO")} matching</button>
           </div>
         )}
         {allFilteredSelected && filtered.length > pageRows.length && (
-          <div className="ratn-selall">All {filtered.length.toLocaleString()} matching alarms selected. <button className="linkbtn" onClick={sel.clear}>Clear selection</button></div>
+          <div className="ratn-selall">All {filtered.length.toLocaleString("nb-NO")} matching alarms selected. <button className="linkbtn" onClick={sel.clear}>Clear selection</button></div>
         )}
 
         <div className="ratn-scroll">
@@ -773,7 +772,11 @@ function AlarmRationalizationScreen() {
                   flashed={justEdited.has(r.id)} onToggle={toggleRow} onEdit={editRow} />
               ))}
               {pageRows.length === 0 && (
-                <tr><td colSpan={visibleCols.length + 1} style={{ textAlign: "center", padding: "44px 0", color: "var(--slate-400)" }}>No alarms match the current filter.</td></tr>
+                <NjEmptyRow colSpan={visibleCols.length + 1} reason={q.trim() ? "search" : "filtered"}
+                title={q.trim() ? "No alarms match “" + q.trim() + "”" : "No alarms match the current filter"}
+                action={<button className="btn btn-secondary btn-sm"
+                  onClick={() => { setQ(""); setStatusF("all"); setRevF("all"); setPrioF(null); }}>
+                  {q.trim() && statusF === "all" && revF === "all" && !prioF ? "Clear search" : "Clear filters"}</button>} />
               )}
             </tbody>
           </table>
@@ -788,7 +791,7 @@ function AlarmRationalizationScreen() {
               </select>
             </span>
           </span>
-          <span className="small">{filtered.length ? `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, filtered.length).toLocaleString()}` : 0} of {filtered.length.toLocaleString()} {filtered.length !== all.length ? `(filtered from ${all.length.toLocaleString()})` : "alarms"}</span>
+          <span className="small">{filtered.length ? `${(start + 1).toLocaleString("nb-NO")}–${Math.min(start + pageSize, filtered.length).toLocaleString("nb-NO")}` : 0} of {filtered.length.toLocaleString("nb-NO")} {filtered.length !== all.length ? `(filtered from ${all.length.toLocaleString("nb-NO")})` : "alarms"}</span>
           <RatnPager page={curPage} totalPages={totalPages} onGo={setPage} />
         </div>
       </div>

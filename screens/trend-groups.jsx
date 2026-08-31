@@ -9,7 +9,7 @@ function TgVisTag({ visibility }) {
   const shared = visibility === "shared";
   return (
     <span className={"tg-vis" + (shared ? " shared" : " private")}>
-      <Icon name={shared ? "users" : "lock"} size={11} />{shared ? "Shared" : "Private"}
+      <Icon name={shared ? "users" : "lock"} size={12} />{shared ? "Shared" : "Private"}
     </span>
   );
 }
@@ -65,7 +65,7 @@ function TrendGroupEditor({ group, seedPens }) {
 
   return (
     <Dialog width={620}>
-      <DlgHeader icon="folder-plus" name={group ? "Edit Trend Group" : "New Trend Group"} onClose={closeDialog} />
+      <DlgHeader icon={group ? "pencil" : "folder-plus"} name={group ? "Edit Trend Group" : "New Trend Group"} onClose={closeDialog} />
       <div className="dlg-body tg-editor">
         <div className="tg-ed-row">
           <label className="tg-field">
@@ -77,10 +77,10 @@ function TrendGroupEditor({ group, seedPens }) {
             <span className="tg-field-l">Visibility</span>
             <div className="tg-vis-seg">
               <button className={"tg-vis-opt" + (visibility === "private" ? " on" : "")} onClick={() => setVisibility("private")}>
-                <Icon name="lock" size={13} /> Private
+                <Icon name="lock" size={14} /> Private
               </button>
               <button className={"tg-vis-opt" + (visibility === "shared" ? " on" : "")} onClick={() => setVisibility("shared")}>
-                <Icon name="users" size={13} /> Shared
+                <Icon name="users" size={14} /> Shared
               </button>
             </div>
           </div>
@@ -95,12 +95,12 @@ function TrendGroupEditor({ group, seedPens }) {
           <div className="tg-ed-params-head">
             <span className="tg-field-l">Parameters <span className="tg-count data">{sel.size}</span></span>
             <div className="tg-search">
-              <Icon name="search" size={15} color="var(--slate-400)" />
+              <Icon name="search" size={16} color="var(--slate-400)" />
               <input placeholder="Filter parameters…" value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
           </div>
           <div className="tg-ed-list">
-            {groupNames.length === 0 && <div className="tg-ed-empty">No parameters match “{q}”.</div>}
+            {groupNames.length === 0 && <NjInline icon="search-x">No parameters match “{q}”.</NjInline>}
             {groupNames.map((gn) => (
               <div className="tg-ed-group" key={gn}>
                 <div className="tg-ed-grouph">{gn}</div>
@@ -124,7 +124,7 @@ function TrendGroupEditor({ group, seedPens }) {
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
           <button className="btn btn-primary" disabled={!canSave} onClick={onSave}>
-            <Icon name="check" size={15} /> {group ? "Save changes" : "Save group"}
+            <Icon name="check" size={16} /> {group ? "Save" : "Create"}
           </button>
         </div>
       </div>
@@ -162,16 +162,16 @@ function TrendGroupCard({ g, onLoad, onEdit, onDuplicate, onDelete }) {
           <span>Delete “{g.name}”?</span>
           <div className="tg-card-confirm-btns">
             <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDel(false)}>Cancel</button>
-            <button className="btn btn-danger btn-sm" onClick={() => { onDelete(g); }}><Icon name="trash-2" size={13} /> Delete</button>
+            <button className="btn btn-danger btn-sm" onClick={() => { onDelete(g); }}><Icon name="trash-2" size={14} /> Delete</button>
           </div>
         </div>
       ) : (
         <div className="tg-card-actions">
           <button className="btn btn-primary btn-sm" onClick={() => onLoad(g)}><Icon name="line-chart" size={14} /> Load</button>
           <span className="tg-card-actions-r">
-            {owner && <button className="tg-icnbtn" title="Edit group" onClick={() => onEdit(g)}><Icon name="pencil" size={15} /></button>}
-            <button className="tg-icnbtn" title="Duplicate as a starting point" onClick={() => onDuplicate(g)}><Icon name="copy" size={15} /></button>
-            {owner && <button className="tg-icnbtn tg-icnbtn-del" title="Delete group" onClick={() => setConfirmDel(true)}><Icon name="trash-2" size={15} /></button>}
+            {owner && <button className="tg-icnbtn" title="Edit group" onClick={() => onEdit(g)}><Icon name="pencil" size={16} /></button>}
+            <button className="tg-icnbtn" title="Duplicate as a starting point" onClick={() => onDuplicate(g)}><Icon name="copy" size={16} /></button>
+            {owner && <button className="tg-icnbtn tg-icnbtn-del" title="Delete group" onClick={() => setConfirmDel(true)}><Icon name="trash-2" size={16} /></button>}
           </span>
         </div>
       )}
@@ -187,7 +187,7 @@ function TrendGroupRow({ g, onLoad, onEdit, onDuplicate, onDelete }) {
   return (
     <div className="tg-row">
       <button className="tg-row-main" onClick={() => onLoad(g)} title="Load this group">
-        <span className="tg-row-icn"><Icon name={g.visibility === "shared" ? "users" : "lock"} size={15} /></span>
+        <span className="tg-row-icn"><Icon name={g.visibility === "shared" ? "users" : "lock"} size={16} /></span>
         <span className="tg-row-txt">
           <span className="tg-row-name">{g.name}</span>
           <span className="tg-row-sub">{tgOwnerLine(g)} <span className="tg-card-dot">·</span> <span className="data">{n}</span> param{n !== 1 ? "s" : ""} <span className="tg-card-dot">·</span> {g.updated}</span>
@@ -197,14 +197,14 @@ function TrendGroupRow({ g, onLoad, onEdit, onDuplicate, onDelete }) {
         <span className="tg-row-confirm">
           <span className="tg-row-confirm-l">Delete?</span>
           <button className="btn btn-secondary btn-sm" onClick={() => setConfirmDel(false)}>Cancel</button>
-          <button className="btn btn-danger btn-sm" onClick={() => onDelete(g)}><Icon name="trash-2" size={13} /></button>
+          <button className="btn btn-danger btn-sm" onClick={() => onDelete(g)}><Icon name="trash-2" size={14} /></button>
         </span>
       ) : (
         <span className="tg-row-actions">
           <button className="btn btn-primary btn-sm" onClick={() => onLoad(g)}><Icon name="line-chart" size={14} /> Load</button>
-          {owner && <button className="tg-icnbtn" title="Edit group" onClick={() => onEdit(g)}><Icon name="pencil" size={15} /></button>}
-          <button className="tg-icnbtn" title="Duplicate as a starting point" onClick={() => onDuplicate(g)}><Icon name="copy" size={15} /></button>
-          {owner && <button className="tg-icnbtn tg-icnbtn-del" title="Delete group" onClick={() => setConfirmDel(true)}><Icon name="trash-2" size={15} /></button>}
+          {owner && <button className="tg-icnbtn" title="Edit group" onClick={() => onEdit(g)}><Icon name="pencil" size={16} /></button>}
+          <button className="tg-icnbtn" title="Duplicate as a starting point" onClick={() => onDuplicate(g)}><Icon name="copy" size={16} /></button>
+          {owner && <button className="tg-icnbtn tg-icnbtn-del" title="Delete group" onClick={() => setConfirmDel(true)}><Icon name="trash-2" size={16} /></button>}
         </span>
       )}
     </div>
@@ -255,18 +255,16 @@ function TrendGroupsLibrary() {
       </div>
       <div className="dlg-body tg-lib-body">
         {filtered.length === 0 ? (
-          <div className="tg-lib-empty">
-            <span className="tg-lib-empty-icn"><Icon name="folder-open" size={26} /></span>
-            <div className="body-strong">{gs.groups.length === 0 ? "No Trend Groups yet" : "No groups match your search"}</div>
-            <p className="body" style={{ maxWidth: 340, margin: 0 }}>
-              {gs.groups.length === 0
-                ? "Plot the parameters you analyse together, then save them as a group to reopen in one click."
-                : "Try a different search or scope."}
-            </p>
-            <button className="btn btn-secondary btn-sm" onClick={() => openDialog(<TrendGroupEditor seedPens={pens} />)}>
-              <Icon name="plus" size={14} /> New group{pens.length ? ` from current ${pens.length} signals` : ""}
-            </button>
-          </div>
+          gs.groups.length === 0 ? (
+            <NjEmpty size="card" icon="folder-open" title="No Trend Groups yet"
+              body="Plot the parameters you analyse together, then save them as a group to reopen in one click."
+              action={<button className="btn btn-primary btn-sm" onClick={() => openDialog(<TrendGroupEditor seedPens={pens} />)}>
+                <Icon name="plus" size={14} /> New group{pens.length ? ` from current ${pens.length} signals` : ""}</button>} />
+          ) : (
+            <NjEmpty size="card" reason="search" title="No groups match your search"
+              body="Try a different search, or widen the scope to groups shared by others."
+              action={<button className="btn btn-secondary btn-sm" onClick={() => setQ("")}>Clear search</button>} />
+          )
         ) : (
           view === "list" ? (
             <div className="tg-lib-list">

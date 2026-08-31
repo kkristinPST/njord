@@ -4,7 +4,7 @@
 // chart on the event with a configurable ± window and the crossed threshold. Discrete alarms
 // (no analog value) open an Event Timeline instead of an empty chart.
 
-function AddParamMenu({ active, onAdd, onClose }) {
+function AddParamMenu({ active, onAdd, onClose, onBrowse }) {
   const have = new Set(active.map((p) => p.id));
   const groups = {};
   TREND_CATALOG.forEach((c) => { if (!have.has(c.tag)) (groups[c.group] = groups[c.group] || []).push(c); });
@@ -15,7 +15,7 @@ function AddParamMenu({ active, onAdd, onClose }) {
       <div className="an-pop" role="menu">
         <div className="an-pop-head">Add parameter to view</div>
         <div className="an-pop-body">
-          {names.length === 0 && <div className="an-pop-empty">All catalogued parameters are already plotted.</div>}
+          {names.length === 0 && <NjInline>All catalogued parameters are already plotted.</NjInline>}
           {names.map((g) => (
             <div className="an-pop-group" key={g}>
               <div className="an-pop-grouph">{g}</div>
@@ -28,32 +28,174 @@ function AddParamMenu({ active, onAdd, onClose }) {
             </div>
           ))}
         </div>
+        <button className="an-pop-browse" onClick={() => { onClose(); onBrowse(); }}>
+          <Icon name="folder-tree" size={14} /> Browse all signals…
+          <span className="an-pop-browse-n data">{TREND_CATALOG.length}</span>
+        </button>
       </div>
     </React.Fragment>
   );
 }
 
-function PenRow({ pen, current, focused, onFocus, onToggle, onRemove }) {
-  const dec = Math.abs(pen.base) < 5 ? 2 : Math.abs(pen.base) < 50 ? 1 : 0;
+// ── signal picker (tree + filter) ──────────────────────────────────────────────────────────
+// The Add dropdown is fine for a handful of well-known parameters; a facility has thousands of
+// signals, so browsing is a TREE — system → equipment → parameter — with a filter that searches
+// names AND tags, and multi-select so a whole equipment can be plotted in one go.
+// trendEquip / trendTree live in lib/trends.jsx — mobile browses the same derivation.
+function TrendSignalPicker() {
+  const store = useTrends();
+  const [q, setQ] = React.useState("");
+  const [open, setOpen] = React.useState(() => new Set());
+  const [sel, setSel] = React.useState(() => new Set());
+  const plotted = new Set(store.pens.map((p) => p.id));
+  const term = q.trim().toLowerCase();
+  const hit = (c) => !term || c.name.toLowerCase().includes(term) || c.tag.toLowerCase().includes(term) || c.group.toLowerCase().includes(term);
+  const tree = React.useMemo(trendTree, []);
+  const shown = tree.map((g) => ({
+    group: g.group,
+    equips: g.equips.map((e) => ({ eq: e.eq, items: e.items.filter(hit) })).filter((e) => e.items.length),
+  })).filter((g) => g.equips.length);
+  const nMatch = shown.reduce((a, g) => a + g.equips.reduce((b, e) => b + e.items.length, 0), 0);
+  // a filter should reveal its hits, not make the operator expand ten folders to find them
+  const isOpen = (k) => (term ? true : open.has(k));
+  const toggleOpen = (k) => setOpen((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const toggleSel = (tag) => setSel((s) => { const n = new Set(s); if (n.has(tag)) n.delete(tag); else n.add(tag); return n; });
+  const selectEquip = (items) => {
+    const free = items.filter((c) => !plotted.has(c.tag)).map((c) => c.tag);
+    const allOn = free.every((t) => sel.has(t));
+    setSel((s) => { const n = new Set(s); free.forEach((t) => { if (allOn) n.delete(t); else n.add(t); }); return n; });
+  };
+  const apply = () => {
+    const tags = [...sel];
+    tags.forEach((t) => store.add(resolveTrendPen(t)));
+    closeDialog();
+    if (tags.length) njToast(tags.length === 1 ? "1 signal added to the trend view." : tags.length + " signals added to the trend view.");
+  };
   return (
-    <div className={"an-pen" + (focused ? " focus" : "") + (pen.hidden ? " hidden" : "")} onClick={onFocus} role="button" title="Focus this signal" {...njActivate(onFocus)}>
-      <span className="an-pen-swatch" style={{ background: pen.hidden ? "var(--slate-300)" : pen.color }}></span>
-      <div className="an-pen-meta">
-        <div className="an-pen-name">{pen.name}</div>
-        <div className="an-pen-tag">{pen.tag}<span className="an-pen-group"> · {pen.group}</span></div>
+    <Dialog width={720}>
+      <DlgHeader icon="folder-tree" name="Browse signals" tag={TREND_CATALOG.length + " catalogued"} onClose={closeDialog} />
+      <div className="tsp-bar">
+        <div className="field" style={{ flex: 1 }}>
+          <Icon name="search" size={16} color="var(--slate-400)" />
+          <input autoFocus placeholder="Filter signal name or tag…" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <span className="tsp-count small">{term ? nMatch + " of " + TREND_CATALOG.length + " match" : TREND_CATALOG.length + " signals"}</span>
       </div>
-      <div className="an-pen-val">
-        <span className="data" style={{ color: pen.hidden ? "var(--slate-400)" : "var(--fg)" }}>{current.toFixed(dec)}</span>
-        <span className="an-pen-unit">{pen.unit}</span>
+      <div className="tsp-tree">
+        {shown.length === 0 && <NjEmpty size="compact" icon="search-x" title="No signal matches this filter" body="Try the equipment tag, or part of the parameter name." />}
+        {shown.map((g) => (
+          <div className="tsp-group" key={g.group}>
+            <button className="tsp-node tsp-l1" onClick={() => toggleOpen(g.group)} aria-expanded={isOpen(g.group)}>
+              <Icon name={isOpen(g.group) ? "chevron-down" : "chevron-right"} size={14} />
+              <Icon name={isOpen(g.group) ? "folder-open" : "folder"} size={14} color="var(--slate-500)" />
+              <span className="tsp-node-lbl">{g.group}</span>
+              <span className="tsp-node-n data">{g.equips.reduce((a, e) => a + e.items.length, 0)}</span>
+            </button>
+            {isOpen(g.group) && g.equips.map((e) => {
+              const k = g.group + "/" + e.eq;
+              return (
+                <div key={k}>
+                  <div className="tsp-node tsp-l2">
+                    <button className="tsp-node-btn" onClick={() => toggleOpen(k)} aria-expanded={isOpen(k)}>
+                      <Icon name={isOpen(k) ? "chevron-down" : "chevron-right"} size={14} />
+                      <Icon name="box" size={14} color="var(--slate-500)" />
+                      <span className="tsp-node-lbl data">{e.eq}</span>
+                      <span className="tsp-node-n data">{e.items.length}</span>
+                    </button>
+                    <button className="tsp-node-all" onClick={() => selectEquip(e.items)}
+                      disabled={e.items.every((c) => plotted.has(c.tag))}>Select all</button>
+                  </div>
+                  {isOpen(k) && e.items.map((c) => {
+                    const on = plotted.has(c.tag);
+                    return (
+                      <label className={"tsp-leaf" + (on ? " plotted" : "")} key={c.tag}>
+                        <input type="checkbox" checked={on || sel.has(c.tag)} disabled={on} onChange={() => toggleSel(c.tag)} />
+                        <span className="tsp-leaf-name">{c.name}</span>
+                        <span className="tsp-leaf-tag data">{c.tag}</span>
+                        <span className="tsp-leaf-unit">{c.unit}</span>
+                        {on && <span className="tsp-leaf-on">plotted</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
-      <div className="an-pen-actions">
-        <button className="an-pen-btn" title={pen.hidden ? "Show signal" : "Hide signal"} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
-          <Icon name={pen.hidden ? "eye-off" : "eye"} size={15} />
+      <div className="dlg-foot tsp-foot">
+        <span className="small">{sel.size ? sel.size + (sel.size === 1 ? " signal selected" : " signals selected") : "Select the signals to plot"}</span>
+        <div className="tsp-foot-r">
+          <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
+          <button className="btn btn-primary" disabled={!sel.size} onClick={apply}><Icon name="plus" size={16} /> {sel.size ? "Add " + sel.size + " to view" : "Add to view"}</button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+function openTrendSignalPicker() { openDialog(<TrendSignalPicker />); }
+
+function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
+  const store = trendStore;
+  const [scale, setScale] = React.useState(false);
+  const dec = Math.abs(pen.base) < 5 ? 2 : Math.abs(pen.base) < 50 ? 1 : 0;
+  const dyn = pen.dyn !== false;
+  const axisSel = store.axisSel || [];
+  const sepOn = axisSel.includes(pen.id);
+  const num = (v) => (v == null || isNaN(v) ? "—" : v.toFixed(dec));
+  return (
+    <div className={"an-pen" + (focused ? " focus" : "") + (pen.hidden ? " hidden" : "")}>
+      <div className="an-pen-main" onClick={onFocus} role="button" title="Focus this signal" {...njActivate(onFocus)}>
+        <span className="an-pen-swatch" style={{ background: pen.hidden ? "var(--slate-300)" : pen.color }}></span>
+        <div className="an-pen-meta">
+          <div className="an-pen-name">{pen.name}</div>
+          <div className="an-pen-tag">{pen.tag}<span className="an-pen-group"> · {pen.group}</span></div>
+        </div>
+        <div className="an-pen-val">
+          <span className="data" style={{ color: pen.hidden ? "var(--slate-400)" : "var(--fg)" }}>{current.toFixed(dec)}</span>
+          <span className="an-pen-unit">{pen.unit}</span>
+        </div>
+        <div className="an-pen-actions">
+          <button className="an-pen-btn" title={pen.hidden ? "Show signal" : "Hide signal"} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+            <Icon name={pen.hidden ? "eye-off" : "eye"} size={16} />
+          </button>
+          <button className="an-pen-btn" title="Remove signal" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+      </div>
+      {/* min / max / average over the window in view — the legacy pen table's three stat columns */}
+      <div className="an-pen-stats">
+        <span className="an-pen-stat"><i>Min</i><b className="data">{num(stats && stats.min)}</b></span>
+        <span className="an-pen-stat"><i>Max</i><b className="data">{num(stats && stats.max)}</b></span>
+        <span className="an-pen-stat"><i>Avg</i><b className="data">{num(stats && stats.avg)}</b></span>
+        <button className={"an-pen-scalebtn" + (scale ? " on" : "")} onClick={() => setScale((s) => !s)}
+          title="Vertical scale for this signal" aria-expanded={scale}>
+          <Icon name="ruler" size={13} /> {dyn ? "Auto" : num(pen.rMin) + "–" + num(pen.rMax)}
+          <Icon name={scale ? "chevron-up" : "chevron-down"} size={12} />
         </button>
-        <button className="an-pen-btn" title="Remove signal" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
-          <Icon name="x" size={15} />
-        </button>
       </div>
+      {scale && (
+        <div className="an-pen-scale">
+          <label className="an-pen-chk">
+            <input type="checkbox" checked={dyn} onChange={() => store.setPenDyn(pen.id, !dyn)} />
+            <span>Dynamic scale<i>fit the data in view</i></span>
+          </label>
+          <div className="an-pen-rng">
+            <label><span>Range min</span>
+              <input type="number" className="an-pen-num" value={pen.rMin != null ? pen.rMin : ""} disabled={dyn}
+                onChange={(e) => store.setPenRange(pen.id, parseFloat(e.target.value), pen.rMax)} /></label>
+            <label><span>Range max</span>
+              <input type="number" className="an-pen-num" value={pen.rMax != null ? pen.rMax : ""} disabled={dyn}
+                onChange={(e) => store.setPenRange(pen.id, pen.rMin, parseFloat(e.target.value))} /></label>
+          </div>
+          <label className="an-pen-chk">
+            <input type="checkbox" checked={sepOn} disabled={store.axisMode !== "separate"}
+              onChange={() => store.toggleAxisPen(pen.id, 5, sepOn, axisSel)} />
+            <span>Separate axis<i>{store.axisMode === "separate" ? "own labelled gutter" : "set Y axis to Separate first"}</i></span>
+          </label>
+        </div>
+      )}
     </div>
   );
 }
@@ -67,7 +209,7 @@ function AnAlarmRow({ m, centered, onCenter }) {
       <div className="an-almrow-main">
         <div className="an-almrow-top">
           {m.discrete
-            ? <span className="an-almrow-badge disc"><Icon name="zap" size={10} /> DISCRETE</span>
+            ? <span className="an-almrow-badge disc"><Icon name="zap" size={12} /> DISCRETE</span>
             : <span className="an-almrow-badge" style={{ background: sev.bg, color: sev.text }}>{(sev.label || m.level).toUpperCase()}</span>}
           <span className="an-almrow-time data">{fmtDayClock(m.ts)}</span>
         </div>
@@ -104,12 +246,12 @@ function EventTimeline({ alarm, onOpen, onRelated }) {
   return (
     <div className="an-evtl">
       <div className="an-evtl-head">
-        <span className="an-evtl-icn"><Icon name="zap" size={18} /></span>
+        <span className="an-evtl-icn"><Icon name="zap" size={20} /></span>
         <div>
           <div className="body-strong">Event timeline · {alarm.area}</div>
           <p className="caption" style={{ margin: "2px 0 0" }}>{alarm.tag} · discrete signal, no associated process value. Showing the sequence of events around {fmtClock(window.alarmTs(alarm))}.</p>
         </div>
-        <button className="btn btn-secondary btn-sm" style={{ marginLeft: "auto" }} onClick={() => onOpen(alarm)}><Icon name="external-link" size={13} /> Open alarm</button>
+        <button className="btn btn-secondary btn-sm" style={{ marginLeft: "auto" }} onClick={() => onOpen(alarm)}><Icon name="external-link" size={14} /> Open alarm</button>
       </div>
       <div className="an-evtl-list">
         {rows.map((r, i) => (
@@ -123,7 +265,7 @@ function EventTimeline({ alarm, onOpen, onRelated }) {
       </div>
       {sibling && (
         <div className="an-evtl-foot">
-          <Icon name="info" size={13} color="var(--slate-400)" />
+          <Icon name="info" size={14} color="var(--slate-400)" />
           <span>Related analog signal on this equipment: <b>{sibling.meas.name}</b></span>
           <button className="linkbtn" onClick={() => onRelated(sibling)}>Add to trend →</button>
         </div>
@@ -158,7 +300,7 @@ function TrendRangeBar() {
         <span className="an-rb-l">Start date</span>
         <NjDateTime value={new Date(start).getTime()} onChange={(ms) => setStart(toInput(ms))} />
       </div>
-      <span className="an-rb-sep"><Icon name="arrow-right" size={15} color="var(--slate-400)" /></span>
+      <span className="an-rb-sep"><Icon name="arrow-right" size={16} color="var(--slate-400)" /></span>
       <div className="an-rb-field">
         <span className="an-rb-l">End date</span>
         {dyn
@@ -178,7 +320,7 @@ function TrendRangeBar() {
         </label>
       </div>
       <div className="an-rb-actions">
-        {store.customRange && <button className="btn btn-ghost btn-sm" onClick={() => store.setRange(store.range)} title="Back to quick range"><Icon name="rotate-ccw" size={13} /> Reset</button>}
+        {store.customRange && <button className="btn btn-ghost btn-sm" onClick={() => store.setRange(store.range)} title="Back to quick range"><Icon name="rotate-ccw" size={14} /> Reset</button>}
         <button className="btn btn-primary btn-sm an-rb-apply" onClick={apply}><Icon name="check" size={14} /> Apply</button>
       </div>
     </div>
@@ -205,8 +347,21 @@ function TrendsWorkspace({ tab, onTab }) {
     [pens, view.mode, view.xMin, view.xMax, store.focusEvent]);
   const markers = markersForView(pens, view);
   const curOf = (id) => { const s = series.find((s) => s.pen.id === id); return s ? s.pts[s.pts.length - 1].v : 0; };
+  // min / max / average over the window in view, per pen
+  const statsOf = React.useMemo(() => {
+    const m = {};
+    series.forEach((s) => {
+      if (!s.pts.length) { m[s.pen.id] = null; return; }
+      let mn = Infinity, mx = -Infinity, sum = 0;
+      s.pts.forEach((p) => { if (p.v < mn) mn = p.v; if (p.v > mx) mx = p.v; sum += p.v; });
+      m[s.pen.id] = { min: mn, max: mx, avg: sum / s.pts.length };
+    });
+    return m;
+  }, [series]);
   const ranges = ["1h", "6h", "24h", "7d"];
   const visCount = pens.filter((p) => !p.hidden).length;
+  // a range change re-samples the historian in the real product, so it gets a skeleton
+  const loadingRange = useNjLoading([range, store.customRange, store.rangeOffset]);
 
   const focusAlarm = store.focusAlarm && window.alarmIsAnalog(store.focusAlarm) ? store.focusAlarm : null;
   const timelineAlarm = store.eventTimeline || null;
@@ -232,11 +387,11 @@ function TrendsWorkspace({ tab, onTab }) {
           <button className="an-nav" onClick={() => store.nextWindow()} disabled={focused || store.customRange || !store.rangeOffset} title="Later window"><Icon name="chevron-right" size={16} /></button>
         </div>
         <div className="an-toolbar-r">
-          <button className="btn btn-secondary" onClick={() => openTrendGroups()} title="Browse and load saved Trend Groups"><Icon name="folder" size={15} /> Groups</button>
+          <button className="btn btn-secondary" onClick={() => openTrendGroups()} title="Browse and load saved Trend Groups"><Icon name="folder" size={16} /> Groups</button>
           <button className={"btn btn-secondary" + (store.showMarkers ? " btn-active" : "")} onClick={() => store.toggleMarkers()} title="Show/hide alarm markers on these signals">
-            <Icon name={store.showMarkers ? "bell-ring" : "bell-off"} size={15} /> Alarms
+            <Icon name={store.showMarkers ? "bell-ring" : "bell-off"} size={16} /> Alarms
           </button>
-          <button className="btn btn-secondary" onClick={() => openTrendExport()} title="Export trend data to CSV / Excel"><Icon name="download" size={15} /> Export</button>
+          <button className="btn btn-secondary" onClick={() => openTrendExport()} title="Download the plotted data as CSV / Excel"><Icon name="download" size={16} /> Download</button>
         </div>
       </div>
 
@@ -259,16 +414,16 @@ function TrendsWorkspace({ tab, onTab }) {
             </div>
           )}
           {(focusAlarm || timelineAlarm) && (
-            <button className="btn btn-secondary btn-sm" onClick={() => njGoAlarm(focusAlarm || timelineAlarm)}><Icon name="external-link" size={13} /> Open alarm</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => njGoAlarm(focusAlarm || timelineAlarm)}><Icon name="external-link" size={14} /> Open alarm</button>
           )}
-          <button className="btn btn-secondary btn-sm" onClick={() => store.clearFocus()}><Icon name="x" size={13} /> Clear focus</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => store.clearFocus()}><Icon name="x" size={14} /> Clear focus</button>
         </div>
       )}
 
       <div className="an-layout">
         <div className="card an-chart-card">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="activity" size={17} color="var(--slate-600)" /><span className="card-title">{timelineAlarm ? "Event Timeline" : "Trend View"}</span></div>
+            <div className="card-head-l"><Icon name="activity" size={16} color="var(--slate-600)" /><span className="card-title">{timelineAlarm ? "Event Timeline" : "Trend View"}</span></div>
             {!timelineAlarm && (
               <div className="an-chart-head-r">
                 <span className="an-axis-ctl">
@@ -288,38 +443,36 @@ function TrendsWorkspace({ tab, onTab }) {
             {timelineAlarm
               ? <EventTimeline alarm={timelineAlarm} onOpen={njGoAlarm} onRelated={(s) => njInvestigateAlarm(s)} />
               : visCount > 0
-                ? <MultiTrendChart series={series} view={view} focus={store.focus} markers={markers} showMarkers={store.showMarkers} axisMode={store.axisMode}
-                    onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} />
+                ? (loadingRange
+                  ? <NjSkeleton variant="chart" height={280} note={`Sampling ${visCount} ${visCount === 1 ? "signal" : "signals"} over the last ${range}…`} />
+                  : <MultiTrendChart series={series} view={view} focus={store.focus} markers={markers} showMarkers={store.showMarkers} axisMode={store.axisMode}
+                      onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} />)
                 : (
-                  <div className="an-empty">
-                    <span className="an-empty-icn"><Icon name="line-chart" size={28} /></span>
-                    <div className="body-strong">No signals plotted</div>
-                    <p className="body" style={{ maxWidth: 360, margin: 0 }}>Add a parameter below, or load a saved Trend Group to plot a set you analyse together.</p>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button className="btn btn-primary" onClick={() => setMenu(true)}><Icon name="plus" size={15} /> Add parameter</button>
-                      <button className="btn btn-secondary" onClick={() => openTrendGroups()}><Icon name="folder" size={15} /> Trend Groups</button>
-                    </div>
-                  </div>
+                  <NjEmpty title="No signals plotted" icon="line-chart"
+                    body="Add a parameter below, or load a saved Trend Group to plot a set you analyse together."
+                    action={<button className="btn btn-primary" onClick={() => openTrendSignalPicker()}><Icon name="folder-tree" size={16} /> Browse signals</button>}
+                    secondary={<button className="btn btn-secondary" onClick={() => openTrendGroups()}><Icon name="folder" size={16} /> Trend Groups</button>} />
                 )}
           </div>
         </div>
 
         <div className="card an-pens-card">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="git-commit-horizontal" size={17} color="var(--slate-600)" /><span className="card-title">Signals</span></div>
+            <div className="card-head-l"><Icon name="git-commit-horizontal" size={16} color="var(--slate-600)" /><span className="card-title">Signals</span></div>
             <div className="an-pens-head-r">
               <button className="btn btn-secondary btn-sm" disabled={!pens.length} title="Save the current parameters as a Trend Group"
                 onClick={() => openTrendGroupEditor(null, pens)}><Icon name="folder-plus" size={14} /> Save group</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => openTrendSignalPicker()} title="Browse the full signal catalog as a tree"><Icon name="folder-tree" size={14} /> Browse</button>
               <div style={{ position: "relative" }}>
                 <button className="btn btn-secondary btn-sm" onClick={() => setMenu((m) => !m)}><Icon name="plus" size={14} /> Add</button>
-                {menu && <AddParamMenu active={pens} onAdd={(t) => store.add(resolveTrendPen(t))} onClose={() => setMenu(false)} />}
+                {menu && <AddParamMenu active={pens} onAdd={(t) => store.add(resolveTrendPen(t))} onClose={() => setMenu(false)} onBrowse={openTrendSignalPicker} />}
               </div>
             </div>
           </div>
           <div className="an-pens-body">
-            {pens.length === 0 && <div className="an-pens-empty">No parameters selected.</div>}
+            {pens.length === 0 && <NjEmpty size="compact" icon="git-commit-horizontal" title="No parameters selected" body="Use Browse to pick from the signal tree, or load a Trend Group." />}
             {pens.map((p) => (
-              <PenRow key={p.id} pen={p} current={curOf(p.id)} focused={store.focus === p.id}
+              <PenRow key={p.id} pen={p} current={curOf(p.id)} stats={statsOf[p.id]} focused={store.focus === p.id}
                 onFocus={() => store.setFocus(p.id)} onToggle={() => store.toggle(p.id)} onRemove={() => store.remove(p.id)} />
             ))}
           </div>

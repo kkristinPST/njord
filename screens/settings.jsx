@@ -46,7 +46,7 @@ function UserDialog({ user, existing, onSave }) {
   };
   return (
     <Dialog width={540}>
-      <DlgHeader icon={editing ? "pencil" : "user-plus"} name={editing ? "Edit user" : "Add user"} tag={editing ? user.u : undefined} onClose={closeDialog} />
+      <DlgHeader icon={editing ? "pencil" : "user-plus"} name={editing ? "Edit user" : "New user"} tag={editing ? user.u : undefined} onClose={closeDialog} />
       <div className="dlg-body de-form">
         <div className="de-form-2col">
           <DeField label="First name"><input className="de-input" autoFocus placeholder="First name" value={f.first} onChange={(e) => set("first", e.target.value)} /></DeField>
@@ -60,7 +60,7 @@ function UserDialog({ user, existing, onSave }) {
           <div className="usr-roles">
             {roleOptions.map((r) => (
               <button key={r} type="button" className={"usr-rolechip" + (f.roles.has(r) ? " on" : "")} onClick={() => toggleRole(r)}>
-                {f.roles.has(r) && <Icon name="check" size={13} />} {r}
+                {f.roles.has(r) && <Icon name="check" size={14} />} {r}
               </button>
             ))}
           </div>
@@ -82,7 +82,7 @@ function UserDialog({ user, existing, onSave }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>{editing ? "Save changes" : "Add user"}</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Create"}</button>
       </div>
     </Dialog>
   );
@@ -108,7 +108,7 @@ function UsersTab() {
           <input placeholder="Filter user, name, role…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div style={{ marginLeft: "auto" }}>
-          <button className="btn btn-primary" onClick={openAdd}><Icon name="user-plus" size={15} /> Add user</button>
+          <button className="btn btn-primary" onClick={openAdd}><Icon name="user-plus" size={16} /> New user</button>
         </div>
       </div>
       <table className="tbl">
@@ -121,7 +121,7 @@ function UsersTab() {
               <td><span className="tag">{u.u}</span></td>
               <td className="td-strong">{u.first} {u.last}</td>
               <td>
-                <span style={{ display: "inline-flex", gap: 5, flexWrap: "wrap" }}>
+                <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" }}>
                   {u.roles.map((r) => <span key={r} className="badge" style={{ background: "var(--info-bg)", color: "var(--info-text)" }}>{r}</span>)}
                 </span>
               </td>
@@ -130,12 +130,13 @@ function UsersTab() {
               <td>
                 <span className="row-actions">
                   <button className="icon-btn" title={"Edit " + u.first} onClick={() => openEdit(u)}><Icon name="pencil" size={16} /></button>
-                  <button className="icon-btn" title={"Remove " + u.first} onClick={() => openDialog(<ConfirmDialog title="Remove user" message={"Remove " + u.first + " " + u.last + "?"} detail={"Their account (" + u.u + ") loses access immediately. This cannot be undone."} confirmLabel="Remove user" tone="danger" onConfirm={() => removeUser(u)} />)}><Icon name="trash-2" size={16} /></button>
+                  <button className="icon-btn" title={"Remove " + u.first} onClick={() => openDialog(<ConfirmDialog title="Remove user" message={"Remove " + u.first + " " + u.last + "?"} detail={"Their account (" + u.u + ") loses access immediately. This cannot be undone."} confirmLabel="Remove" tone="danger" onConfirm={() => removeUser(u)} />)}><Icon name="trash-2" size={16} /></button>
                 </span>
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <tr><td colSpan={6}><div className="tbl-empty">No users match the filter.</div></td></tr>}
+          {rows.length === 0 && <NjEmptyRow colSpan={6} reason="search" title={"No users match \u201c" + q + "\u201d"}
+            action={<button className="btn btn-secondary btn-sm" onClick={() => setQ("")}>Clear search</button>} />}
         </tbody>
       </table>
     </div>
@@ -175,7 +176,7 @@ function NewRoleDialog({ roleNames, onCreate }) {
   const save = () => { onCreate(trimmed, base, desc.trim()); njToast(`Role "${trimmed}" created.`); closeDialog(); };
   return (
     <Dialog width={480}>
-      <DlgHeader icon="shield" name="New role" onClose={closeDialog} />
+      <DlgHeader icon="shield-plus" name="New role" onClose={closeDialog} />
       <div className="dlg-body de-form">
         <DeField label="Role name" hint="e.g. Biologist, Maintenance">
           <input className="de-input" autoFocus placeholder="Role name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && valid) save(); }} />
@@ -191,7 +192,7 @@ function NewRoleDialog({ roleNames, onCreate }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>Create role</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Create</button>
       </div>
     </Dialog>
   );
@@ -217,7 +218,7 @@ function RolesTab() {
       <div className="card">
         <div className="card-head">
           <span className="card-title">Roles</span>
-          <button className="linkbtn" onClick={() => openDialog(<NewRoleDialog roleNames={roles.map((r) => r.name)} onCreate={createRole} />)}><Icon name="plus" size={14} /> New</button>
+          <button className="linkbtn" onClick={() => openDialog(<NewRoleDialog roleNames={roles.map((r) => r.name)} onCreate={createRole} />)}><Icon name="plus" size={14} /> New role</button>
         </div>
         <div>
           {roles.map((r) => (
@@ -235,13 +236,13 @@ function RolesTab() {
       <div className="card">
         <div className="card-head">
           <div className="card-head-l">
-            <Icon name="shield" size={17} color="var(--slate-600)" />
+            <Icon name="shield" size={16} color="var(--slate-600)" />
             <div className="role-edit-title">
               <span className="card-title">Edit role · {role}</span>
               {activeRole && activeRole.desc && <span className="role-edit-desc">{activeRole.desc}</span>}
             </div>
           </div>
-          <button className="btn btn-primary" style={{ padding: "6px 14px" }} onClick={() => njToast(role + " role permissions saved.")}>Save</button>
+          <button className="btn btn-primary" style={{ padding: "6px 14px" }} onClick={() => njToast(role + " role permissions saved.")}><Icon name="check" size={16} /> Save</button>
         </div>
         <div style={{ padding: "14px 20px 0" }}>
           <div className="segmented">
@@ -343,6 +344,8 @@ const oncallStore = {
   setPolicy(patch) { this.data.policy = Object.assign({}, this.data.policy, patch); this.emit(); },
 };
 function useOncall() { const [, force] = React.useReducer((x) => x + 1, 0); React.useEffect(() => oncallStore.sub(force), []); return oncallStore; }
+// delivery verification (screens/oncall-delivery.jsx) reads the same groups/channels — never fork them
+Object.assign(window, { oncallStore, OC_CHANNELS, ocRoster, ocMember });
 
 // severity dot color
 function ocPrioColor(id) { const s = (window.SEV && window.SEV[id]) || {}; return s.dot || s.color || "var(--slate-400)"; }
@@ -351,9 +354,9 @@ function ocPrioColor(id) { const s = (window.SEV && window.SEV[id]) || {}; retur
 function OcMemberChip({ m, onRemove }) {
   return (
     <span className="oc-chip">
-      <Icon name={m.kind === "phone" ? "smartphone" : "user"} size={13} color="var(--slate-400)" />
+      <Icon name={m.kind === "phone" ? "smartphone" : "user"} size={14} color="var(--slate-400)" />
       <span className="oc-chip-name">{m.name}</span>
-      <button className="oc-chip-x" title="Remove" onClick={onRemove}><Icon name="x" size={13} /></button>
+      <button className="oc-chip-x" title="Remove" onClick={onRemove}><Icon name="x" size={14} /></button>
     </span>
   );
 }
@@ -374,13 +377,13 @@ function OcAddMenu({ used, onPick, onClose }) {
   const people = avail.filter((m) => m.kind === "person");
   return (
     <div className="oc-menu" ref={ref}>
-      <div className="oc-menu-search"><Icon name="search" size={13} color="var(--slate-400)" /><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people & phones…" /></div>
+      <div className="oc-menu-search"><Icon name="search" size={14} color="var(--slate-400)" /><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people & phones…" /></div>
       <div className="oc-menu-list">
         {phones.length > 0 && <div className="oc-menu-grp">Duty phones</div>}
         {phones.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="smartphone" size={14} color="var(--slate-400)" /> {m.name}</button>)}
         {people.length > 0 && <div className="oc-menu-grp">Personnel</div>}
         {people.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="user" size={14} color="var(--slate-400)" /> <span>{m.name}</span> <span className="oc-menu-role">{m.role}</span></button>)}
-        {!avail.length && <div className="oc-menu-empty">Everyone is already assigned.</div>}
+        {!avail.length && <NjInline>Everyone is already assigned.</NjInline>}
       </div>
     </div>
   );
@@ -403,9 +406,9 @@ function OcTier({ group, tier, n }) {
       </div>
       <div className={"oc-chans" + (chanOk ? "" : " bad")} title={tier === "p1" ? "NS 9416: critical alarms must go out on two independent paths (GSM and UHF)" : "Channels used at this escalation step"}>
         {chans.length
-          ? chans.map((c) => { const m = OC_CHANNELS.find((x) => x.id === c); return m ? <span key={c} className="oc-chan"><Icon name={m.icon} size={11} /> {m.label}</span> : null; })
+          ? chans.map((c) => { const m = OC_CHANNELS.find((x) => x.id === c); return m ? <span key={c} className="oc-chan"><Icon name={m.icon} size={12} /> {m.label}</span> : null; })
           : <span className="oc-tier-empty">No channel</span>}
-        {!chanOk && <span className="oc-chan-warn" title="Single path — NS 9416 requires two independent remote-alarm systems"><Icon name="alert-triangle" size={11} /> one path</span>}
+        {!chanOk && <span className="oc-chan-warn" title="Single path — NS 9416 requires two independent remote-alarm systems"><Icon name="alert-triangle" size={12} /> one path</span>}
       </div>
       <div className="oc-tier-body">
         {ids.map((id) => <OcMemberChip key={id} m={ocMember(id)} onRemove={() => oncallStore.removeMember(group.id, tier, id)} />)}
@@ -433,9 +436,10 @@ function OcGroupCard({ g }) {
         <span className="oc-cover" title="Alarms this group is paged for"><span className="oc-cover-dot" style={{ background: ocPrioColor(g.minPriority) }} /> {prio.covers}</span>
         <span className="sched"><Icon name="clock" size={12} color="var(--slate-400)" /> {ocSchedSummary(g)}</span>
         <div className="oc-head-actions">
-          <button className="icon-btn" title="Edit group" onClick={() => openOnCallEditor(g)}><Icon name="settings" size={15} /></button>
-          <button className="icon-btn" title="Duplicate" onClick={() => oncallStore.duplicate(g.id)}><Icon name="copy" size={15} /></button>
-          <button className="icon-btn" title="Delete" onClick={() => openDialog(<ConfirmDialog title="Delete on-call group" message={"Delete “" + g.name + "”?"} detail="Assigned personnel will no longer be paged for this coverage." confirmLabel="Delete" tone="danger" onConfirm={() => { oncallStore.remove(g.id); njToast(g.name + " deleted."); }} />)}><Icon name="trash-2" size={15} /></button>
+          <button className="icon-btn" title="Send a test alarm to this group and see who receives it" onClick={() => window.njOpenTestDispatch && window.njOpenTestDispatch(g.id)}><Icon name="send" size={16} /></button>
+          <button className="icon-btn" title="Edit group" onClick={() => openOnCallEditor(g)}><Icon name="pencil" size={16} /></button>
+          <button className="icon-btn" title="Duplicate" onClick={() => oncallStore.duplicate(g.id)}><Icon name="copy" size={16} /></button>
+          <button className="icon-btn" title="Delete" onClick={() => openDialog(<ConfirmDialog title="Delete on-call group" message={"Delete “" + g.name + "”?"} detail="Assigned personnel will no longer be paged for this coverage." confirmLabel="Delete" tone="danger" onConfirm={() => { oncallStore.remove(g.id); njToast(g.name + " deleted."); }} />)}><Icon name="trash-2" size={16} /></button>
         </div>
       </div>
       <div className="oncall-cols">
@@ -466,7 +470,7 @@ function OnCallEditorDialog({ group }) {
   const save = () => { if (!canSave) return; oncallStore.upsert(g); closeDialog(); njToast((editing ? "Updated " : "Created ") + g.name + "."); };
   return (
     <Dialog width={640}>
-      <DlgHeader icon="phone-call" name={editing ? "Edit on-call group" : "New on-call group"} onClose={closeDialog} />
+      <DlgHeader icon={editing ? "pencil" : "plus"} name={editing ? "Edit on-call group" : "New on-call group"} onClose={closeDialog} />
       <div className="dlg-body oc-editor">
         <div className="oc-ed-row">
           <label className="oc-field oc-grow"><span className="oc-field-l">Name</span>
@@ -489,7 +493,7 @@ function OnCallEditorDialog({ group }) {
                 <div className="oc-day" key={d}><span className="oc-day-l">{OC_DAY_LABEL[d]}</span>
                   <input className="oos-input oc-day-in" value={g.win[d]} onChange={(e) => setWin(d, e.target.value)} placeholder="off" /></div>
               ))}<p className="oc-days-hint">Format <code>HH:MM-HH:MM</code>. Leave blank for a day with no coverage. Example outside work hours: <code>00:00-07:00, 15:00-24:00</code>.</p></div>
-            : <p className="oc-sched-note"><Icon name="clock" size={13} color="var(--slate-400)" /> {ocShift(g.shift).summary}</p>}
+            : <p className="oc-sched-note"><Icon name="clock" size={14} color="var(--slate-400)" /> {ocShift(g.shift).summary}</p>}
         </div>
 
         <div className="oc-ed-sec">
@@ -518,7 +522,7 @@ function OnCallEditorDialog({ group }) {
                     {OC_CHANNELS.map((c) => (
                       <button key={c.id} type="button" className={"oc-chan-btn" + (list.includes(c.id) ? " on" : "")}
                         aria-pressed={list.includes(c.id)} onClick={() => toggleChan(t, c.id)}>
-                        <Icon name={c.icon} size={13} /> {c.label}
+                        <Icon name={c.icon} size={14} /> {c.label}
                       </button>
                     ))}
                   </div>
@@ -527,14 +531,14 @@ function OnCallEditorDialog({ group }) {
               );
             })}
           </div>
-          {!chanOk && <p className="oc-chan-rule"><Icon name="alert-triangle" size={13} color="var(--critical-text)" /> Priority 1 carries the critical alarms and needs two independent paths. Add UHF, or a GSM channel alongside it, before saving.</p>}
+          {!chanOk && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--critical-text)" /> Priority 1 carries the critical alarms and needs two independent paths. Add UHF, or a GSM channel alongside it, before saving.</p>}
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="users" size={13} /> Assign people on the group card after saving</span>
+        <span className="dlg-foot-meta"><Icon name="users" size={14} /> Assign people on the group card after saving</span>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-          <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="check" size={15} /> {editing ? "Save" : "Create group"}</button>
+          <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Create"}</button>
         </div>
       </div>
     </Dialog>
@@ -592,8 +596,11 @@ function ModemStatusDialog() {
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="info" size={13} /> −60 dBm strong · −85 dBm marginal · below −95 dBm unreliable</span>
-        <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
+        <span className="dlg-foot-meta"><Icon name="info" size={14} /> −60 dBm strong · −85 dBm marginal · below −95 dBm unreliable</span>
+        <div className="dlg-foot-btns">
+          <button className="linkbtn" onClick={() => { closeDialog(); window.njOpenDeliveryLog && window.njOpenDeliveryLog(); }}>Delivery log <Icon name="arrow-up-right" size={14} /></button>
+          <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
+        </div>
       </div>
     </Dialog>
   );
@@ -610,12 +617,12 @@ function OnCallTab() {
       <div className="oc-toolbar">
         <div className="oc-policy">
           <button className="oc-policy-item" onClick={() => njEditParam({ tag: "OC-RESEND", label: "Resend every", value: policy.resendMin, unit: "min", min: 1, max: 60, step: 1, group: "On-call", onApply: (v) => oncallStore.setPolicy({ resendMin: v }) })}>
-            <Icon name="repeat" size={15} color="var(--slate-500)" />
+            <Icon name="repeat" size={16} color="var(--slate-500)" />
             <span className="oc-policy-l">Resend every</span>
             <span className="oc-policy-v data">{policy.resendMin} <span className="u">min</span></span>
           </button>
           <button className="oc-policy-item" onClick={() => njEditParam({ tag: "OC-UPSCALE", label: "Upscale priority after", value: policy.upscaleAfter, unit: "tries", min: 1, max: 10, step: 1, group: "On-call", onApply: (v) => oncallStore.setPolicy({ upscaleAfter: v }) })}>
-            <Icon name="chevrons-up" size={15} color="var(--slate-500)" />
+            <Icon name="chevrons-up" size={16} color="var(--slate-500)" />
             <span className="oc-policy-l">Upscale after</span>
             <span className="oc-policy-v data">{policy.upscaleAfter} <span className="u">tries</span></span>
           </button>
@@ -623,10 +630,10 @@ function OnCallTab() {
         <div className="oc-toolbar-r">
           <button className="modem-pill oc-modem-btn" onClick={openModemStatus} title="Alarm dispatch (GSM modem) status">
             <span className="statusdot" style={{ background: "var(--success)" }} /> Dispatch online
-            <Icon name="chevron-right" size={13} color="var(--success-text)" />
+            <Icon name="chevron-right" size={14} color="var(--success-text)" />
           </button>
-          <button className="btn btn-secondary" onClick={() => oncallStore.setAll(!allOff)}><Icon name={allOff ? "bell-ring" : "bell-off"} size={15} /> {allOff ? "Enable all" : "Disable all"}</button>
-          <button className="btn btn-primary" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={15} /> New group</button>
+          <button className="btn btn-secondary" onClick={() => oncallStore.setAll(!allOff)}><Icon name={allOff ? "bell-ring" : "bell-off"} size={16} /> {allOff ? "Enable all" : "Disable all"}</button>
+          <button className="btn btn-primary" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={16} /> New group</button>
         </div>
       </div>
 
@@ -638,26 +645,18 @@ function OnCallTab() {
         <div className="card-body oc-groups">
           {groups.length
             ? groups.map((g) => <OcGroupCard key={g.id} g={g} />)
-            : <div className="oc-empty"><Icon name="phone-off" size={26} color="var(--slate-300)" /><span>No on-call groups yet.</span><button className="btn btn-primary btn-sm" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={14} /> New group</button></div>}
+            : <NjEmpty size="card" icon="phone-off" title="No on-call groups yet"
+                body="A group defines who is alerted, in what order, and on which channel when an alarm escalates."
+                action={<button className="btn btn-primary btn-sm" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={14} /> New group</button>} />}
         </div>
       </div>
+
+      {window.DeliveryVerificationCard && <window.DeliveryVerificationCard />}
     </React.Fragment>
   );
 }
 
-// ---- General + Project + Alarm sender ----
-function SenderSpark() {
-  const pts = [-78, -79, -78, -80, -79, -78, -70, -76, -72, -79, -78];
-  const W = 240, H = 56, min = -100, max = 0;
-  const xs = (i) => (i / (pts.length - 1)) * W;
-  const ys = (v) => H - ((v - min) / (max - min)) * H;
-  const line = pts.map((v, i) => `${i === 0 ? "M" : "L"}${xs(i).toFixed(1)},${ys(v).toFixed(1)}`).join(" ");
-  return (
-    <svg className="spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height: 56 }}>
-      <path d={line} fill="none" stroke="var(--primary)" strokeWidth="1.6" strokeLinejoin="round" />
-    </svg>
-  );
-}
+// ---- General + Project ----
 
 // ---- Appearance / Theme ----
 const THEMES = [
@@ -701,7 +700,7 @@ function AppearanceCard() {
   return (
     <div className="card" style={{ gridColumn: "1 / -1" }}>
       <div className="card-head">
-        <div className="card-head-l"><Icon name="palette" size={17} color="var(--slate-600)" /><span className="card-title">Appearance</span></div>
+        <div className="card-head-l"><Icon name="palette" size={16} color="var(--slate-600)" /><span className="card-title">Appearance</span></div>
         <span className="caption">Applies across the whole interface · saved on this device</span>
       </div>
       <div className="card-body">
@@ -773,7 +772,7 @@ function AlarmTargetsCard() {
   return (
     <div className="card" ref={ref} style={{ gridColumn: "1 / -1" }}>
       <div className="card-head">
-        <div className="card-head-l"><Icon name="target" size={17} color="var(--slate-600)" /><span className="card-title">Alarm Performance Targets</span></div>
+        <div className="card-head-l"><Icon name="target" size={16} color="var(--slate-600)" /><span className="card-title">Alarm Performance Targets</span></div>
         <span className="caption">Used to grade Alarms · Statistics · unset metrics are reported, not graded</span>
       </div>
       <div className="set-form">
@@ -812,11 +811,11 @@ function GeneralTab() {
         <div className="set-form">
           <div className="set-row">
             <div className="set-row-l"><span className="set-row-name">Display language</span><span className="set-row-desc">Interface & report language</span></div>
-            <span className="select">English <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+            <span className="select">English <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
           </div>
           <div className="set-row">
             <div className="set-row-l"><span className="set-row-name">Show tags & description</span><span className="set-row-desc">Equipment label display mode</span></div>
-            <span className="select">Tag / description <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+            <span className="select">Tag / description <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
           </div>
         </div>
       </div>
@@ -830,23 +829,8 @@ function GeneralTab() {
           </div>
           <div className="set-row">
             <div className="set-row-l"><span className="set-row-name">Default landing page</span><span className="set-row-desc">Screen shown after login</span></div>
-            <span className="select">Dashboard <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+            <span className="select">Dashboard <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
           </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ gridColumn: "1 / -1" }}>
-        <div className="card-head">
-          <div className="card-head-l"><Icon name="signal" size={17} color="var(--slate-600)" /><span className="card-title">Alarm Sender State</span></div>
-          <span className="modem-pill"><span className="statusdot" style={{ background: "var(--success)" }} /> Modem 1 · Connected</span>
-        </div>
-        <div className="card-body" style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span className="eyebrow">Signal · 24h</span>
-            <span className="metric" style={{ fontSize: 24 }}>−74 <span className="kpi-unit">dBm</span></span>
-            <span className="caption">last polled 5. Mar 2026 · 13:48</span>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}><SenderSpark /></div>
         </div>
       </div>
     </div>
@@ -875,3 +859,4 @@ function SettingsScreen() {
 }
 
 window.SettingsScreen = SettingsScreen;
+

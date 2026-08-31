@@ -36,7 +36,9 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
 @media (max-width:1180px){
   .kpi-row:has(> :nth-child(4)):not(:has(> :nth-child(5))){grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-.ff-cards{grid-template-columns:repeat(auto-fit,minmax(min(264px,100%),1fr));gap:var(--gap)}
+/* tank cards size to their CONTENT: a card needs ~320px before the feeder strip and the
+   edit fields stop fitting, and align-items:start lets a card be its own height. */
+.ff-cards{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:var(--gap);align-items:start}
 .tank-row{grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr));gap:var(--gap)}
 .ec-cards,.hp-grid{grid-template-columns:repeat(auto-fit,minmax(min(282px,100%),1fr));gap:var(--gap)}
 .set-grid{grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:var(--gap)}
@@ -46,7 +48,8 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
 .tg-lib-grid{grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr))}
 /* paired field grids inside cards + dialogs */
 .fd-essential,.fd-extra,.tex-grid,.oc-days,.oc-modem-cards,.form-grid,
-.de-form-2col,.ff-grid{grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr))}
+.de-form-2col{grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr))}
+.ff-grid{grid-template-columns:repeat(auto-fit,minmax(min(258px,100%),1fr))}
 .de-form-3col,.de-detail-grid{grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))}
 .tank-stats{grid-template-columns:repeat(auto-fit,minmax(min(96px,100%),1fr))}
 
@@ -56,10 +59,10 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
    incomplete final row (5 KPIs in a 2-column grid showed a gray block beside the last one,
    reading as broken padding). The container paints the CARD SURFACE instead — not
    `transparent`: .ratn-kpis IS its own `.card`, so transparent punches a hole through to the
-   page background (worst in legacy/dark). With gap:1px, adjacent cell rings coincide into
+   page background (worst in legacy/dark). With gap:2px, adjacent cell rings coincide into
    one hairline and an empty track correctly reads as card surface in all three themes. */
 .ratn-kpis,.oncall-cols,.rv-meta,.tank-fish,.tank-readouts{
-  gap:1px;background:var(--surface);
+  gap:2px;background:var(--surface);
 }
 .ratn-kpis{grid-template-columns:repeat(auto-fit,minmax(min(162px,100%),1fr))}
 .oncall-cols{grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr))}
@@ -76,16 +79,16 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
 .ratn-kpis{overflow:hidden}
 
 /* A .bulkbar that is a direct child of a card is full-bleed (the card has no padding), so
-   its own radius + bottom margin read as a stray floating pill. Flush band instead \u2014 but it
+   its own radius + bottom margin read as a stray floating pill. Flush band instead — but it
    is an OPAQUE square band inside a rounded, non-clipping card, so as the first child (the
    Deactivated list, which has no filterbar above it) it must keep the card's top corners.
-   Don't fix that with overflow:hidden on the card \u2014 it would clip the column-chooser and
+   Don't fix that with overflow:hidden on the card — it would clip the column-chooser and
    row-action popovers. */
 .card > .bulkbar{border-radius:0;margin-bottom:0}
 .card > .bulkbar:first-child{border-radius:var(--r-lg) var(--r-lg) 0 0}
 /* Same class of defect, same cure: a table header is also opaque, square and full-bleed, so
-   when the table (or its scroll wrapper) is the card's first child \u2014 Deactivated Alarms with
-   nothing selected \u2014 the header paints over the card's top corners. The compact 16px card
+   when the table (or its scroll wrapper) is the card's first child — Deactivated Alarms with
+   nothing selected — the header paints over the card's top corners. The compact 16px card
    padding used to inset it off the arc; removing that padding exposed it. */
 /* The WRAPPER takes the radius rather than th:last-child, because a scrolled table puts a
    MIDDLE column at the visible right edge. .tbl-scroll already clips overflow-x, so this
@@ -211,9 +214,9 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
 .dlg{max-width:100%;max-height:calc(100vh - 56px)}
 /* fixed-column grids inside dialogs reflow like the ones on screens do */
 .eq-readouts,.eqx-stats{grid-template-columns:repeat(auto-fit,minmax(min(168px,100%),1fr))}
-.eq-readouts{gap:1px;background:var(--slate-200)}
+.eq-readouts{gap:2px;background:var(--slate-200)}
 .eq-readouts > .eq-ro{background:var(--surface);border-right:none!important;border-bottom:none!important}
-.rv-sheet{padding:clamp(18px,2.4vw,34px) clamp(18px,2.6vw,34px) clamp(18px,2vw,26px)}
+.rv-sheet{padding:clamp(16px,2.4vw,32px) clamp(16px,2.6vw,32px) clamp(16px,2vw,24px)}
 .rv-sheet-head{flex-wrap:wrap}
 @media (max-width:700px){
   .dlg{width:100%!important}

@@ -94,13 +94,13 @@ function AlarmDrawer() {
             </div>
 
             <div className="ad-foot">
-              <button className="btn btn-secondary" onClick={() => { njInvestigateAlarm(row); alarmDrawerStore.close(); }}><Icon name="line-chart" size={15} /> Investigate</button>
-              {row.supp === "none" && row.state === "unack" && <button className="btn btn-primary" onClick={() => njAckUndo(row.id)}><Icon name="check" size={15} /> Acknowledge</button>}
+              <button className="btn btn-secondary" onClick={() => { njInvestigateAlarm(row); alarmDrawerStore.close(); }}><Icon name="line-chart" size={16} /> Investigate</button>
+              {row.supp === "none" && row.state === "unack" && <button className="btn btn-primary" onClick={() => njAckUndo(row.id)}><Icon name="check" size={16} /> Acknowledge</button>}
               {row.supp === "none" && row.state !== "unack" && (() => { const sh = njShelveRule(row); return (
-                <button className="btn btn-secondary" disabled={!sh.ok} title={sh.ok ? "Block this alarm so it stops annunciating" : sh.why} onClick={() => openBlockDialog(row)}><Icon name={sh.ok ? "ban" : "lock"} size={15} /> Block</button>
+                <button className="btn btn-secondary" disabled={!sh.ok} title={sh.ok ? "Block this alarm so it stops annunciating" : sh.why} onClick={() => openBlockDialog(row)}><Icon name={sh.ok ? "ban" : "lock"} size={16} /> Block</button>
               ); })()}
-              {row.supp === "blocked" && !row.auto && <button className="btn btn-primary" onClick={() => reactivateAlarms(row.id)}><Icon name="bell" size={15} /> Reactivate</button>}
-              {row.supp === "oos" && <button className="btn btn-primary" onClick={() => restoreAlarms(row.id)}><Icon name="bell" size={15} /> Return to service</button>}
+              {row.supp === "blocked" && !row.auto && <button className="btn btn-primary" onClick={() => reactivateAlarms(row.id)}><Icon name="bell" size={16} /> Reactivate</button>}
+              {row.supp === "oos" && <button className="btn btn-primary" onClick={() => restoreAlarms(row.id)}><Icon name="bell" size={16} /> Return to service</button>}
             </div>
           </React.Fragment>
         )}
@@ -118,37 +118,22 @@ function AlarmTabs({ active }) {
   );
 }
 
+// Renders the event it is GIVEN — the old two-way branch printed "Returned" for anything that
+// was not "Activated", which silently mislabelled acknowledgements.
+const NJ_EVT_DOT = { Activated: null, Acknowledged: "var(--warning)", Returned: "var(--slate-400)" };
 function EventPill({ event, level }) {
   if (event === "Activated") {
     const s = SEV[level] || SEV.high;
     return <span className="evt"><span className="statusdot" style={{ background: s.dot }} /> Activated</span>;
   }
-  return <span className="evt returned"><span className="statusdot" style={{ background: "var(--slate-400)" }} /> Returned</span>;
+  return <span className={"evt " + (event === "Acknowledged" ? "acked" : "returned")}>
+    <span className="statusdot" style={{ background: NJ_EVT_DOT[event] || "var(--slate-400)" }} /> {event}
+  </span>;
 }
 
-const HIST = [
-  { t: "04/03/2026 12:59:58", area: "DPT2 Pump Sump", tag: "DPT2-SMP0-LT1", alarm: "Level in pump sump Low alarm", event: "Activated", level: "high", user: "—" },
-  { t: "04/03/2026 12:55:17", area: "DPT2 CO₂-stripper", tag: "DPT2-STR1-PT1", alarm: "Vacuum in CO₂ stripping High alarm", event: "Activated", level: "high", user: "E. Sørensen" },
-  { t: "04/03/2026 11:22:46", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Returned", level: "high", user: "—" },
-  { t: "04/03/2026 11:22:46", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Returned", level: "critical", user: "—" },
-  { t: "04/03/2026 11:22:26", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Activated", level: "critical", user: "—" },
-  { t: "04/03/2026 11:22:25", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Activated", level: "high", user: "—" },
-  { t: "04/03/2026 11:22:12", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Returned", level: "critical", user: "—" },
-  { t: "04/03/2026 11:22:12", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Returned", level: "high", user: "—" },
-  { t: "04/03/2026 11:21:30", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Activated", level: "high", user: "—" },
-  { t: "04/03/2026 11:21:30", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Activated", level: "critical", user: "—" },
-  { t: "04/03/2026 11:21:23", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Returned", level: "critical", user: "—" },
-  { t: "04/03/2026 11:21:23", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Returned", level: "high", user: "—" },
-  { t: "04/03/2026 11:20:53", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Activated", level: "critical", user: "—" },
-  { t: "04/03/2026 11:20:53", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Activated", level: "high", user: "—" },
-];
+// HIST now lives in lib/alarm-log.jsx (shared with the mobile alarm log).
 
-// shared text matcher for alarm tables (tag / area / description / time)
-function alarmMatch(r, q) {
-  if (!q || !q.trim()) return true;
-  const s = q.trim().toLowerCase();
-  return [r.tag, r.area, r.alarm, r.t].filter(Boolean).join(" ").toLowerCase().includes(s);
-}
+// alarmMatch now lives in lib/alarm-log.jsx (shared with the mobile alarm log).
 
 function AlarmHistoricalScreen() {
   const [q, setQ] = React.useState("");
@@ -160,7 +145,7 @@ function AlarmHistoricalScreen() {
       <div className="pagehead">
         <div className="pagehead-row">
           <div>
-            <p className="pagehead-sub">Alarm &amp; event log · per ISA-18.2 / IEC 62682</p>
+            <p className="pagehead-sub">Alarm &amp; event log</p>
           </div>
           <div className="pagehead-right"><AlarmTabs active="Historical" /></div>
         </div>
@@ -174,11 +159,11 @@ function AlarmHistoricalScreen() {
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="calendar" size={15} color="var(--slate-500)" /> Time Period</span>
+            <span className="lbl"><Icon name="calendar" size={16} color="var(--slate-500)" /> Time Period</span>
             <span className="fbar-pair">
-              <span className="dateinput">03-03-2026 00:00 <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+              <span className="dateinput">03-03-2026 00:00 <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
               <Icon name="arrow-right" size={14} color="var(--slate-400)" />
-              <span className="dateinput">05-03-2026 00:00 <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+              <span className="dateinput">05-03-2026 00:00 <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
             </span>
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
@@ -196,7 +181,7 @@ function AlarmHistoricalScreen() {
           </thead>
           <tbody>
             {pg.rows.map((r, i) => (
-              <tr key={i} {...njAlmRow(r.event, r.level)} className={r.event === "Activated" ? (r.level === "critical" ? "row-crit" : "row-warn") : "row-rtn"}>
+              <tr key={i} {...njAlmRow(r.event, r.level)} className={r.event === "Activated" ? (r.level === "critical" ? "row-crit" : "row-warn") : r.event === "Acknowledged" ? "row-ack" : "row-rtn"}>
                 <td><span className="data td-strong">{r.t}</span></td>
                 <td><AreaLink area={r.area} /></td>
                 <td><span className="tag">{r.tag}</span></td>
@@ -209,7 +194,9 @@ function AlarmHistoricalScreen() {
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={9} style={{ textAlign: "center", padding: "36px 0", color: "var(--slate-400)" }}>No events match the filter.</td></tr>
+              <NjEmptyRow colSpan={9} reason={q.trim() ? "search" : "filtered"}
+                title={q.trim() ? "No events match “" + q.trim() + "”" : "No events match the filter"}
+                action={q.trim() ? <button className="btn btn-secondary btn-sm" onClick={() => setQ("")}>Clear search</button> : null} />
             )}
           </tbody>
         </table>
@@ -295,7 +282,7 @@ function AlarmCell({ row }) {
 function InvBtn({ row }) {
   return (
     <button className="icnact act-inv" title="Open the trend at the moment this alarm went off"
-      onClick={(e) => { e.stopPropagation(); njInvestigateAlarm(row); }}><Icon name="line-chart" size={13} /> Trend</button>
+      onClick={(e) => { e.stopPropagation(); njInvestigateAlarm(row); }}><Icon name="line-chart" size={14} /> Trend</button>
   );
 }
 
@@ -309,7 +296,7 @@ function RowActions({ row }) {
       <span className="row-actions">
         {details}
         <InvBtn row={row} />
-        <button className="icnact act-ack" onClick={() => reactivateAlarms(row.id)} title="Unblock this alarm and return it to the active list"><Icon name="bell" size={13} /> Reactivate</button>
+        <button className="icnact act-ack" onClick={() => reactivateAlarms(row.id)} title="Unblock this alarm and return it to the active list"><Icon name="bell" size={14} /> Reactivate</button>
       </span>
     );
   }
@@ -318,7 +305,7 @@ function RowActions({ row }) {
       <span className="row-actions">
         {details}
         <InvBtn row={row} />
-        <button className="icnact act-ack" onClick={() => restoreAlarms(row.id)} title="Return alarm to service"><Icon name="bell" size={13} /> Return to service</button>
+        <button className="icnact act-ack" onClick={() => restoreAlarms(row.id)} title="Return alarm to service"><Icon name="bell" size={14} /> Return to service</button>
       </span>
     );
   }
@@ -327,12 +314,12 @@ function RowActions({ row }) {
       {details}
       <InvBtn row={row} />
       <button className="icnact act-ack" disabled={row.state !== "unack"} onClick={() => njAckUndo(row.id)}
-        title={row.state === "unack" ? "Acknowledge" : "Already acknowledged"}><Icon name="check" size={13} /> Ack</button>
+        title={row.state === "unack" ? "Acknowledge" : "Already acknowledged"}><Icon name="check" size={14} /> Ack</button>
       {(() => { const sh = njShelveRule(row); return (
         <button className="icnact" disabled={!sh.ok} onClick={() => openBlockDialog(row)}
-          title={sh.ok ? "Block this alarm so it stops annunciating" : sh.why}><Icon name={sh.ok ? "ban" : "lock"} size={13} /> Block</button>
+          title={sh.ok ? "Block this alarm so it stops annunciating" : sh.why}><Icon name={sh.ok ? "ban" : "lock"} size={14} /> Block</button>
       ); })()}
-      <button className="icnact act-disable" onClick={() => openOosDialog(row)} title="Take out of service while maintenance work is under way"><Icon name="wrench" size={13} /> OOS</button>
+      <button className="icnact act-disable" onClick={() => openOosDialog(row)} title="Take out of service while maintenance work is under way"><Icon name="wrench" size={14} /> OOS</button>
     </span>
   );
 }
@@ -366,7 +353,7 @@ function BlockRefusal({ rows, onDone }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" onClick={() => { closeDialog(); setTimeout(() => openOosDialog(rows, onDone), 0); }}><Icon name="wrench" size={15} /> Take out of service</button>
+        <button className="btn btn-primary" onClick={() => { closeDialog(); setTimeout(() => openOosDialog(rows, onDone), 0); }}><Icon name="wrench" size={16} /> Take out of service</button>
       </div>
     </Dialog>
   );
@@ -494,7 +481,7 @@ function ActiveAlarmsScreen({ filter = null }) {
       <div className="pagehead">
         <div className="pagehead-row">
           <div>
-            <p className="pagehead-sub">{counts.total} standing · {counts.critical} critical · {counts.high} high · {counts.unack} unacknowledged{counts.stale ? ` · ${counts.stale} stale` : ""} · per ISA-18.2 / IEC 62682</p>
+            <p className="pagehead-sub">{counts.total} standing · {counts.critical} critical · {counts.high} high · {counts.unack} unacknowledged{counts.stale ? ` · ${counts.stale} stale` : ""}</p>
           </div>
           <div className="pagehead-right"><AlarmTabs active="Active" /></div>
         </div>
@@ -508,7 +495,7 @@ function ActiveAlarmsScreen({ filter = null }) {
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="sliders-horizontal" size={15} color="var(--slate-500)" /> Priority</span>
+            <span className="lbl"><Icon name="sliders-horizontal" size={16} color="var(--slate-500)" /> Priority</span>
             <PriorityChips value={filter} onChange={setFilter} counts={counts} />
           </span>
           {/* live operator load (ch. 11): the count that says whether this is a busy shift or a
@@ -529,7 +516,7 @@ function ActiveAlarmsScreen({ filter = null }) {
                   <span className="al-rate-sep" />
                   <span className="al-rate-v data">{inHr}</span><span className="al-rate-u">/ 1 h</span>
                   {flood && <span className="al-rate-flood">FLOOD</span>}
-                  <Icon name="arrow-up-right" size={13} />
+                  <Icon name="arrow-up-right" size={14} />
                 </button>
               </React.Fragment>
             );
@@ -543,7 +530,7 @@ function ActiveAlarmsScreen({ filter = null }) {
                   detail="Alarms whose condition has not returned to normal stay active in the list. Undo is offered for a few seconds afterwards."
                   confirmLabel={"Acknowledge " + ids.length} onConfirm={() => njAckUndo(ids)} />);
               }}>
-              <Icon name="check-check" size={15} /> Acknowledge all
+              <Icon name="check-check" size={16} /> Acknowledge all
             </button>
           </div>
         </div>
@@ -564,7 +551,7 @@ function ActiveAlarmsScreen({ filter = null }) {
             {rows.map((r) => (
               <tr key={r.id} {...njAlmRow(r.state, r.level)} className={(sel.has(r.id) ? "row-sel " : "") + (hl.includes(r.id) ? "row-hl " : "") + (r.state === "unack" && r.level === "critical" ? "row-crit" : r.state === "unack" && r.level === "high" ? "row-warn" : "")}>
                 <td><Check on={sel.has(r.id)} onClick={() => sel.toggle(r.id)} /></td>
-                <td><span className="data td-strong">{r.t}</span>{isStale(r) && <span className="stale-pill" title={`Standing ${Math.round(r.since)}h: exceeds 24h`}><Icon name="clock" size={10} /> STALE</span>}</td>
+                <td><span className="data td-strong">{r.t}</span>{isStale(r) && <span className="stale-pill" title={`Standing ${Math.round(r.since)}h: exceeds 24h`}><Icon name="clock" size={12} /> STALE</span>}</td>
                 <td><AreaLink area={r.area} strong /></td>
                 <td><span className="tag">{r.tag}</span></td>
                 <td><AlarmCell row={r} /></td>
@@ -574,13 +561,22 @@ function ActiveAlarmsScreen({ filter = null }) {
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: "36px 0", color: "var(--slate-400)" }}>No standing {fLabel || ""} alarms.</td></tr>
+              /* `resolved` may ONLY be used when nothing is narrowing the list. With a query or a
+                 priority filter active, an empty table means "hidden", not "healthy" — claiming
+                 the plant has no standing alarms while 18 are filtered out is the single most
+                 dangerous thing this component could say. */
+              <NjEmptyRow colSpan={8}
+                reason={q.trim() ? "search" : filter ? "filtered" : "resolved"}
+                title={q.trim() ? "No standing alarms match “" + q.trim() + "”"
+                  : filter ? "No standing " + fLabel + " alarms — " + counts.total + " standing on other priorities"
+                  : "No standing alarms."}
+                action={(q.trim() || filter) ? <button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setFilter(null); }}>Clear filters</button> : null} />
             )}
           </tbody>
         </table>
         </div>
         <div className="tbl-foot">
-          <span className="rows-select">Show <span className="select">100 rows <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span></span>
+          <span className="rows-select">Show <span className="select">100 rows <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span></span>
           <span className="small">{rows.length} of {counts.total} active{fLabel ? " · " + fLabel.toLowerCase() : ""}</span>
         </div>
       </div>
@@ -622,7 +618,7 @@ function AllAlarmsScreen() {
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
-            <span className="lbl"><Icon name="sliders-horizontal" size={15} color="var(--slate-500)" /> Priority</span>
+            <span className="lbl"><Icon name="sliders-horizontal" size={16} color="var(--slate-500)" /> Priority</span>
             <PriorityChips value={prio} onChange={setPrio} counts={regCounts} />
           </span>
         </div>
@@ -651,13 +647,15 @@ function AllAlarmsScreen() {
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: "center", padding: "36px 0", color: "var(--slate-400)" }}>No alarms match this filter.</td></tr>
+              <NjEmptyRow colSpan={7} reason={q.trim() ? "search" : "filtered"}
+                title={q.trim() ? "No alarms match “" + q.trim() + "”" : "No alarms match this filter"}
+                action={<button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setPrio(null); }}>{q.trim() && prio ? "Clear filters" : q.trim() ? "Clear search" : "Clear filters"}</button>} />
             )}
           </tbody>
         </table>
         </div>
         <div className="tbl-foot">
-          <span className="rows-select">Show <span className="select">100 rows <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span></span>
+          <span className="rows-select">Show <span className="select">100 rows <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span></span>
           <span className="small">{rows.length} of {register.length} configured</span>
         </div>
       </div>
@@ -673,7 +671,10 @@ function DeactivatedAlarmsScreen() {
   const [, tick] = React.useReducer((x) => x + 1, 0);
   React.useEffect(() => { const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
   const counts = alarmCounts();
-  const rows = hub.rows.filter(isDeactivated);
+  const [q, setQ] = React.useState("");
+  const [state, setState] = React.useState("All");
+  const all = hub.rows.filter(isDeactivated);
+  const rows = all.filter((r) => (state === "Blocked" ? r.supp === "blocked" : state === "Out of service" ? r.supp === "oos" : true)).filter((r) => alarmMatch(r, q));
   // operator-blocked + oos are restorable; logic-controlled blocks are read-only
   const restorable = rows.filter((r) => (r.supp === "blocked" && !r.auto) || r.supp === "oos").map((r) => r.id);
   const visibleIds = restorable;
@@ -697,7 +698,7 @@ function DeactivatedAlarmsScreen() {
   };
 
   return (
-    <AppShell active="alarms" title="Alarms" crumbs={["Deactivated"]} statusLevel={rows.length ? "medium" : "ok"} scope="facility">
+    <AppShell active="alarms" title="Alarms" crumbs={["Deactivated"]} statusLevel={all.length ? "medium" : "ok"} scope="facility">
       <div className="pagehead">
         <div className="pagehead-row">
           <div>
@@ -708,6 +709,26 @@ function DeactivatedAlarmsScreen() {
       </div>
 
       <div className="card">
+        <div className="filterbar">
+          <div className="field" style={{ minWidth: 220 }}>
+            <Icon name="search" size={16} color="var(--slate-400)" />
+            <input placeholder="Filter tag, area, description…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+          <span className="fbar-div" />
+          <span className="fbar-group">
+            <span className="lbl"><Icon name="sliders-horizontal" size={16} color="var(--slate-500)" /> Deactivation</span>
+            <div className="segmented">
+              {[["All", all.length], ["Blocked", counts.blocked], ["Out of service", counts.oos]].map(([s, c]) => (
+                <button key={s} className={"seg" + (s === state ? " active" : "")} onClick={() => { setState(s); sel.clear(); }}>{s} <span className="seg-n">{c}</span></button>
+              ))}
+            </div>
+          </span>
+          {restorable.length > 0 && (
+            <button className="linkbtn" style={{ marginLeft: "auto" }} onClick={() => sel.setAll(restorable, !allOn)}>
+              {allOn ? "Clear selection" : "Select all " + restorable.length + (state === "Blocked" ? " blocked" : state === "Out of service" ? " out of service" : " restorable")}
+            </button>
+          )}
+        </div>
         <BulkBar count={selVisible.length} onClear={sel.clear}>
           <button className="bb-btn" onClick={() => doBulk(restoreAlarms, selVisible)}><Icon name="bell" size={14} /> Return to active</button>
         </BulkBar>
@@ -737,13 +758,14 @@ function DeactivatedAlarmsScreen() {
               );
             })}
             {rows.length === 0 && (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: "48px 0", color: "var(--slate-400)" }}>No deactivated alarms, every alarm is annunciating normally.</td></tr>
+              <NjEmptyRow colSpan={8} reason={all.length ? "filtered" : "resolved"}
+                title={all.length ? "No deactivated alarms match this filter." : "No deactivated alarms — every alarm is annunciating normally."} />
             )}
           </tbody>
         </table>
         </div>
         <div className="tbl-foot">
-          <span className="small">{rows.length} deactivated · {counts.blocked} blocked · {counts.oos} out of service</span>
+          <span className="small">{rows.length === all.length ? rows.length + " deactivated" : rows.length + " of " + all.length + " deactivated"} · {counts.blocked} blocked · {counts.oos} out of service</span>
         </div>
       </div>
     </AppShell>
@@ -757,4 +779,5 @@ function Th({ children }) {
 }
 
 Object.assign(window, { AlarmHistoricalScreen, AllAlarmsScreen, ActiveAlarmsScreen, DeactivatedAlarmsScreen, SuppressedAlarmsScreen,
-  AlarmTabs, useRowSelection, BulkBar, alarmMatch, Th, AlarmDrawer, openAlarmDrawer });
+  AlarmTabs, useRowSelection, BulkBar, Th, AlarmDrawer, openAlarmDrawer });
+

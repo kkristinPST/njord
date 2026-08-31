@@ -244,16 +244,16 @@ function DeadFishScreen() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className="btn btn-secondary" onClick={emptyCyclone}><Icon name="arrow-down-to-line" size={15} /> Empty cyclone</button>
-        <button className="btn btn-secondary" onClick={startGrinding}><Icon name="cog" size={15} /> Start grinding</button>
-        <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={15} /> Parameters</button>
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
-        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={15} /> SCADA view</button>
+        <button className="btn btn-secondary" onClick={emptyCyclone}><Icon name="arrow-down-to-line" size={16} /> Empty cyclone</button>
+        <button className="btn btn-secondary" onClick={startGrinding}><Icon name="cog" size={16} /> Start grinding</button>
+        <button className={"btn btn-secondary" + (dock ? " btn-active" : "")} onClick={() => setDock((d) => !d)}><Icon name="sliders-horizontal" size={16} /> Parameters</button>
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={16} /> SCADA view</button>
       </div>
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="skull" size={17} color="var(--slate-600)" /><span className="card-title">Dead Fish · DFS0-FHA0 · Building 2</span></div>
+          <div className="card-head-l"><Icon name="skull" size={16} color="var(--slate-600)" /><span className="card-title">Dead Fish · DFS0-FHA0 · Building 2</span></div>
           <span className="caption">Click equipment for controls · tap a value's trend icon to send it to Trends</span>
         </div>
         <div className="card-body rasm-body"><DeadFishMimic /></div>
@@ -262,7 +262,7 @@ function DeadFishScreen() {
 
       {dock && <div className="dock-drawer-scrim" onClick={() => setDock(false)} />}
       <div className={"dock-drawer" + (dock ? " open" : "")} aria-hidden={!dock}>
-        <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={18} /></button>
+        <button className="dock-drawer-x" title="Close" onClick={() => setDock(false)}><Icon name="x" size={20} /></button>
         <ParamTabs dock tabs={DF_TABS} params={DF_PARAMS} title="Dead Fish · parameters" />
       </div>
 

@@ -56,6 +56,9 @@ const TREND_RANGES = { "1h": 60, "6h": 72, "24h": 96, "7d": 84 };
 const RANGE_HOURS = { "1h": 1, "6h": 6, "24h": 24, "7d": 168 };
 // sampling intervals for the explicit date-range picker
 const INTERVALS = [
+  { k: "1m", label: "1 minute", ms: 60000 },
+  { k: "5m", label: "5 minutes", ms: 5 * 60000 },
+  { k: "15m", label: "15 minutes", ms: 15 * 60000 },
   { k: "1h", label: "1 hour", ms: 3600000 },
   { k: "6h", label: "6 hours", ms: 6 * 3600000 },
   { k: "12h", label: "12 hours", ms: 12 * 3600000 },
@@ -239,6 +242,24 @@ const trendStore = {
     this.clearFocus(); // emits
   },
   toggle(id) { this.snap("show/hide signal"); this.pens = this.pens.map((p) => p.id === id ? { ...p, hidden: !p.hidden } : p); this.emit(); },
+  // ── per-pen vertical scale (legacy pen table: Range Min / Range Max / Dyn. Scale) ──
+  // Turning Dynamic off without a range yet seeds it from the pen's own operating band, so the
+  // operator never lands on an empty plot.
+  setPenDyn(id, dyn) {
+    this.snap("scale mode");
+    this.pens = this.pens.map((p) => {
+      if (p.id !== id) return p;
+      if (dyn) return { ...p, dyn: true };
+      const rMin = p.rMin != null ? p.rMin : Math.round((p.base - p.amp) * 10) / 10;
+      const rMax = p.rMax != null ? p.rMax : Math.round((p.base + p.amp) * 10) / 10;
+      return { ...p, dyn: false, rMin, rMax };
+    });
+    this.emit();
+  },
+  setPenRange(id, rMin, rMax) {
+    this.pens = this.pens.map((p) => p.id === id ? { ...p, rMin, rMax, dyn: false } : p);
+    this.emit();
+  },
   setFocus(id) { this.focus = this.focus === id ? null : id; this.emit(); },
   // explicit per-signal axis picks (separate-axis mode). Empty = automatic (focused pen first).
   axisSel: (() => { try { return JSON.parse(localStorage.getItem("nj_trend_axissel_v1")) || []; } catch (e) { return []; } })(),
@@ -386,7 +407,8 @@ function njToast(message, linkLabel, onLink) {
   const el = document.createElement("div"); el.className = "nj-toast";
   const txt = document.createElement("div"); txt.className = "nj-toast-txt"; txt.textContent = message;
   el.appendChild(txt);
-  if (linkLabel) {
+  // a link with nothing behind it is a lie: require BOTH the label and a handler
+  if (linkLabel && onLink) {
     const link = document.createElement("button"); link.className = "nj-toast-link"; link.type = "button"; link.textContent = linkLabel;
     txt.appendChild(document.createTextNode(" ")); txt.appendChild(link);
     link.addEventListener("click", () => { close(); if (onLink) onLink(); });
@@ -408,7 +430,7 @@ const EXP_FORMATS = [
   { k: "csv", label: "CSV (.csv)", sub: "Comma-separated values", icon: "file-text" },
   { k: "xlsx", label: "Excel (.xlsx)", sub: "Microsoft Excel workbook", icon: "sheet" },
 ];
-function ExportMenu({ label = "Export", icon = "download", primary, describe, disabled, btnClass, align = "right" }) {
+function ExportMenu({ label = "Download", icon = "download", primary, describe, disabled, btnClass, align = "right" }) {
   const [open, setOpen] = React.useState(false);
   const cls = btnClass || ("btn " + (primary ? "btn-primary" : "btn-secondary"));
   const pick = (fmt) => {
@@ -419,7 +441,7 @@ function ExportMenu({ label = "Export", icon = "download", primary, describe, di
   return (
     <div className="exp-menu">
       <button className={cls} disabled={disabled} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
-        <Icon name={icon} size={btnClass ? 14 : 15} /> {label} <Icon name="chevron-down" size={13} />
+        <Icon name={icon} size={btnClass ? 14 : 16} /> {label} <Icon name="chevron-down" size={14} />
       </button>
       {open && (
         <React.Fragment>
@@ -521,6 +543,12 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   const [selId, setSelId] = React.useState(null);
   const [hoverT, setHoverT] = React.useState(null);
   const [moreAx, setMoreAx] = React.useState(false);
+  React.useEffect(() => {
+    if (!moreAx) return;
+    const onKey = (e) => { if (e.key === "Escape") setMoreAx(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [moreAx]);
   const SEVm = window.SEV || {};
   const vis = series.filter((s) => !s.pen.hidden && s.pts.length);
   const sepAxes = axisMode === "separate" && vis.length > 1;
@@ -528,7 +556,12 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   const W = 980, H = height, padR = 18, padT = sepAxes ? 42 : 30, padB = 30;
   const span = view.xMax - view.xMin || 1;
   const x = (t) => padL + ((t - view.xMin) / span) * (W - padL - padR);
-  const norm = (pts) => { let mn = Math.min(...pts.map((p) => p.v)), mx = Math.max(...pts.map((p) => p.v)); if (mn === mx) { mn -= 1; mx += 1; } const pad = (mx - mn) * 0.16; return { mn: mn - pad, mx: mx + pad }; };
+  // Dynamic scale (default) fits the data in view. A pen with dyn === false plots against the
+  // operator's OWN fixed Range min/max — so a boolean pen can be pinned to 0..2 and stop
+  // reading as noise, exactly like the legacy pen table's Range Min / Range Max columns.
+  const norm = (pts, pen) => {
+    if (pen && pen.dyn === false && pen.rMin != null && pen.rMax != null && pen.rMax > pen.rMin) return { mn: pen.rMin, mx: pen.rMax };
+    let mn = Math.min(...pts.map((p) => p.v)), mx = Math.max(...pts.map((p) => p.v)); if (mn === mx) { mn -= 1; mx += 1; } const pad = (mx - mn) * 0.16; return { mn: mn - pad, mx: mx + pad }; };
   const yOf = (v, mn, mx) => padT + (1 - (v - mn) / (mx - mn)) * (H - padT - padB);
   const fpen = vis.find((s) => s.pen.id === focus) || vis[0];
   // Gutters are capped — beyond AXMAX the plot area would be eaten by axis furniture.
@@ -544,10 +577,10 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   }
   const axisHidden = sepAxes ? vis.length - axisPens.length : 0;
   const padL = axisPens.length ? 22 + axisPens.length * AXW : 56;
-  const fr = fpen ? norm(fpen.pts) : { mn: 0, mx: 1 };
+  const fr = fpen ? norm(fpen.pts, fpen.pen) : { mn: 0, mx: 1 };
   const decOf = (r) => (Math.abs(r.mx) < 5 ? 2 : Math.abs(r.mx) < 50 ? 1 : 0);
   const TICKF = [0, 0.25, 0.5, 0.75, 1];
-  const rngOf = {}; vis.forEach((s) => { rngOf[s.pen.id] = norm(s.pts); });
+  const rngOf = {}; vis.forEach((s) => { rngOf[s.pen.id] = norm(s.pts, s.pen); });
   const yticks = fpen ? TICKF.map((f) => fr.mn + f * (fr.mx - fr.mn)) : [];
   const dec = fpen ? decOf(fr) : 0;
   const ev = view.focusEvent;
@@ -633,44 +666,13 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
         </g>
       )}
 
-      {sepAxes && vis.length > 1 && (() => {
-        const open = moreAx;
-        const rowH = 22, bw = 258, bh = 30 + vis.length * rowH + 22, bx = 8, by = Math.max(6, H - padB - 6 - bh);
-        const full = axisPens.length >= AXMAX;
-        const shownIds = axisPens.map((s) => s.pen.id);
-        return (
-          <g onMouseLeave={() => setMoreAx(false)}>
-            <g onMouseEnter={() => setMoreAx(true)} onClick={() => setMoreAx(!open)} role="button" aria-expanded={open}
-              aria-label="Choose which signals get their own axis" {...njActivate(() => setMoreAx(!open))}>
-              <rect x={4} y={H - padB + 2} width={padL - 10} height="16" rx="4" fill="transparent" />
-              <text className={"mt-yaxmore" + (open ? " on" : "")} x={padL - 12} y={H - padB + 14} textAnchor="end">axes {axisPens.length}/{vis.length}</text>
-            </g>
-            {open && (
-              <g>
-                <rect x={bx} y={by} width={bw} height={bh} rx="8" className="mt-tipbox" />
-                <text className="mt-tiphead" x={bx + 12} y={by + 19}>SIGNALS WITH THEIR OWN AXIS</text>
-                {vis.map((s, i) => {
-                  const on = axisPens.includes(s), ry = by + 28 + i * rowH;
-                  const flip = () => trendStore.toggleAxisPen(s.pen.id, AXMAX, on, shownIds);
-                  return (
-                    <g key={s.pen.id} className={"mt-axrow" + (on ? " on" : "")} role="button" aria-pressed={on}
-                      aria-label={(on ? "Remove axis for " : "Give an axis to ") + s.pen.name} onClick={flip} {...njActivate(flip)}>
-                      <rect x={bx + 6} y={ry} width={bw - 12} height={rowH - 2} rx="5" className="mt-axrow-bg" />
-                      <rect x={bx + 13} y={ry + rowH / 2 - 3} width="10" height="3" rx="1.5" fill={s.pen.color} opacity={on ? 1 : 0.45} />
-                      <text className="mt-tiprow" x={bx + 30} y={ry + rowH / 2 + 4}>{s.pen.name}</text>
-                      <text className="mt-tipunit" x={bx + bw - 30} y={ry + rowH / 2 + 4} textAnchor="end">{s.pen.unit}</text>
-                      {on
-                        ? <path d={"M" + (bw + bx - 22) + " " + (ry + rowH / 2) + "l3 3 5.5-6.5"} className="mt-axcheck" />
-                        : <circle cx={bx + bw - 18} cy={ry + rowH / 2} r="4.5" className="mt-axdot" />}
-                    </g>
-                  );
-                })}
-                <text className="mt-tipnote" x={bx + 12} y={by + bh - 9}>{full ? "Max " + AXMAX + " axes — a new pick replaces the oldest" : "Signals without an axis still plot, on a fitted scale"}</text>
-              </g>
-            )}
-          </g>
-        );
-      })()}
+      {sepAxes && vis.length > 1 && (
+        <g onClick={(e) => { e.stopPropagation(); setMoreAx(!moreAx); }} role="button" aria-expanded={moreAx}
+          aria-label="Choose which signals get their own axis" {...njActivate(() => setMoreAx(!moreAx))}>
+          <rect x={4} y={H - padB + 2} width={padL - 10} height="16" rx="4" fill="transparent" style={{ cursor: "pointer" }} />
+          <text className={"mt-yaxmore" + (moreAx ? " on" : "")} x={padL - 12} y={H - padB + 14} textAnchor="end">axes {axisPens.length}/{vis.length}</text>
+        </g>
+      )}
 
       {/* vertical time gridlines */}
       {ticks.map((t, i) => (
@@ -707,7 +709,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
 
       {/* pens */}
       {vis.map((s) => {
-        const { mn, mx } = norm(s.pts);
+        const { mn, mx } = norm(s.pts, s.pen);
         const isFocus = fpen && s.pen.id === fpen.pen.id;
         const d = s.pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.t).toFixed(1)},${yOf(p.v, mn, mx).toFixed(1)}`).join(" ");
         const last = s.pts[s.pts.length - 1];
@@ -729,7 +731,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
         const sev = SEVm[m.level] || { dot: "#5C646F" };
         const sEntry = vis.find((s) => s.pen.id === m.penId);
         const active = m.id === selId;
-        const dotY = !m.discrete && sEntry ? yOf(valAt(sEntry.pts, m.ts), norm(sEntry.pts).mn, norm(sEntry.pts).mx) : null;
+        const dotY = !m.discrete && sEntry ? yOf(valAt(sEntry.pts, m.ts), norm(sEntry.pts, sEntry.pen).mn, norm(sEntry.pts, sEntry.pen).mx) : null;
         return (
           <g key={m.id} className="mt-marker" onClick={(e) => { e.stopPropagation(); setSelId(active ? null : m.id); }} style={{ cursor: "pointer" }}>
             <line x1={mx} y1={padT} x2={mx} y2={H - padB} stroke={m.discrete ? "var(--slate-400)" : sev.dot} strokeWidth={active ? 1.6 : 1} strokeDasharray={m.discrete ? "2 3" : "4 4"} opacity={active ? 0.9 : 0.5} />
@@ -764,7 +766,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
           <text x={cross.bx + 14} y={cross.by + 21} className="mt-cross-ts">{fmtDayClock(hoverT)}</text>
           {cross.rows.map((r, i) => {
             const ry = cross.by + 32 + i * 19 + 10;
-            const nm = r.pen.name.length > 24 ? r.pen.name.slice(0, 23) + "\u2026" : r.pen.name;
+            const nm = r.pen.name.length > 24 ? r.pen.name.slice(0, 23) + "…" : r.pen.name;
             return (
               <g key={r.pen.id}>
                 <circle cx={cross.bx + 18} cy={ry - 4} r="3.6" fill={r.pen.color} />
@@ -806,6 +808,44 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
           </g>
         </g>
       )}
+
+      {/* axis picker — drawn last so nothing plots over it; click-to-toggle, click-away to close */}
+      {sepAxes && vis.length > 1 && moreAx && (() => {
+        const rowH = 24, bw = 262, bh = 34 + vis.length * rowH + 24, bx = 8, by = Math.max(6, H - padB - 6 - bh);
+        const full = axisPens.length >= AXMAX;
+        const shownIds = axisPens.map((s) => s.pen.id);
+        return (
+          <g className="mt-axpop">
+            <rect x="0" y="0" width={W} height={H} fill="transparent" onClick={(e) => { e.stopPropagation(); setMoreAx(false); }} />
+            <g onClick={(e) => e.stopPropagation()}>
+              <rect x={bx} y={by} width={bw} height={bh} rx="8" className="mt-tipbox" />
+              <text className="mt-tiphead" x={bx + 12} y={by + 21}>SIGNALS WITH THEIR OWN AXIS</text>
+              <g className="mt-axclose" role="button" aria-label="Close axis picker" onClick={(e) => { e.stopPropagation(); setMoreAx(false); }} {...njActivate(() => setMoreAx(false))}>
+                <rect x={bx + bw - 30} y={by + 6} width="24" height="20" rx="5" fill="transparent" />
+                <path d={"M" + (bx + bw - 23) + " " + (by + 12) + "l10 8m0-8l-10 8"} className="mt-axclose-x" />
+              </g>
+              {vis.map((s, i) => {
+                const on = axisPens.includes(s), ry = by + 32 + i * rowH;
+                const flip = () => trendStore.toggleAxisPen(s.pen.id, AXMAX, on, shownIds);
+                return (
+                  <g key={s.pen.id} className={"mt-axrow" + (on ? " on" : "")} role="button" aria-pressed={on}
+                    aria-label={(on ? "Remove axis for " : "Give an axis to ") + s.pen.name}
+                    onClick={(e) => { e.stopPropagation(); flip(); }} {...njActivate(flip)}>
+                    <rect x={bx + 6} y={ry} width={bw - 12} height={rowH - 2} rx="5" className="mt-axrow-bg" />
+                    <rect x={bx + 13} y={ry + rowH / 2 - 3} width="10" height="3" rx="1.5" fill={s.pen.color} opacity={on ? 1 : 0.45} />
+                    <text className="mt-tiprow" x={bx + 30} y={ry + rowH / 2 + 4}>{s.pen.name}</text>
+                    <text className="mt-tipunit" x={bx + bw - 30} y={ry + rowH / 2 + 4} textAnchor="end">{s.pen.unit}</text>
+                    {on
+                      ? <path d={"M" + (bw + bx - 22) + " " + (ry + rowH / 2) + "l3 3 5.5-6.5"} className="mt-axcheck" />
+                      : <circle cx={bx + bw - 18} cy={ry + rowH / 2} r="4.5" className="mt-axdot" />}
+                  </g>
+                );
+              })}
+              <text className="mt-tipnote" x={bx + 12} y={by + bh - 10}>{full ? "Max " + AXMAX + " axes — a new pick replaces the oldest" : "Signals without an axis still plot, on a fitted scale"}</text>
+            </g>
+          </g>
+        );
+      })()}
     </svg>
   );
 }
@@ -926,7 +966,7 @@ function NjDateTime({ value, onChange, disabled }) {
     <div className="njdt" ref={ref}>
       <button type="button" className="njdt-field" disabled={disabled} onClick={() => setOpen((o) => !o)}>
         <span className="njdt-val data">{label}</span>
-        <Icon name="calendar" size={15} color="var(--slate-400)" />
+        <Icon name="calendar" size={16} color="var(--slate-400)" />
       </button>
       {open && (
         <div className="njdt-pop">
@@ -946,7 +986,7 @@ function NjDateTime({ value, onChange, disabled }) {
             ))}
           </div>
           <div className="njdt-time">
-            <span className="njdt-time-l"><Icon name="clock" size={13} color="var(--slate-400)" /> Time</span>
+            <span className="njdt-time-l"><Icon name="clock" size={14} color="var(--slate-400)" /> Time</span>
             <div className="njdt-clock">
               <div className="njdt-spin">
                 <button type="button" onClick={() => commit({ h: (hh + 1) % 24 })}><Icon name="chevron-up" size={14} /></button>
@@ -1001,25 +1041,51 @@ function TrendExportDialog() {
   const canExport = sel.size > 0 && span > 0 && !tooMany;
   const selPens = allPens.filter((p) => sel.has(p.tag));
 
+  // a year of 1-min values is real work; the export runs in frame-sized chunks so the dialog
+  // stays responsive, the percentage is the true ratio of rows written, and Cancel really stops it
+  const [job, setJob] = React.useState(null);
+  const jobRef = React.useRef(null);
+  React.useEffect(() => () => { if (jobRef.current) jobRef.current.cancel(); }, []);
+  const PRESETS = [{ k: "24 h", d: 1 }, { k: "7 d", d: 7 }, { k: "30 d", d: 30 }, { k: "90 d", d: 90 }, { k: "1 year", d: 365 }];
+  const setPreset = (d) => { setStart(toInput(now - d * 24 * 3600000)); setEnd(toInput(now)); };
+  const activePreset = PRESETS.find((p) => Math.abs(span - p.d * 24 * 3600000) < 3600000);
+
   const doExport = () => {
-    if (!canExport) return;
+    if (!canExport || job) return;
     const ts = []; for (let t = sMs; t <= eMs; t += ivMs) ts.push(t);
+    const csv = fmt === "csv";
+    const esc = (s) => /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     const cols = selPens.map((p) => p.name + (p.unit ? " (" + p.unit + ")" : ""));
-    let content, mime, ext;
-    if (fmt === "csv") {
-      const esc = (s) => /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-      const lines = ["Timestamp," + cols.map(esc).join(",")];
-      ts.forEach((t) => { lines.push(fmtFullTs(t) + "," + selPens.map((p) => penValueAt(p, t).toFixed(2)).join(",")); });
-      content = lines.join("\n"); mime = "text/csv;charset=utf-8"; ext = "csv";
-    } else {
-      const th = "<tr><th>Timestamp</th>" + cols.map((c) => "<th>" + c + "</th>").join("") + "</tr>";
-      const rows = ts.map((t) => "<tr><td>" + fmtFullTs(t) + "</td>" + selPens.map((p) => "<td>" + penValueAt(p, t).toFixed(2) + "</td>").join("") + "</tr>").join("");
-      content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>th{background:#0F182B;color:#fff;text-align:left}td,th{border:1px solid #E0E5EB;padding:4px 8px;font-family:Calibri,Arial}</style></head><body><table>' + th + rows + "</table></body></html>";
-      mime = "application/vnd.ms-excel"; ext = "xls";
-    }
-    njDownloadFile("njord-trends-" + start.slice(0, 10) + "_" + end.slice(0, 10) + "." + ext, mime, content);
-    closeDialog();
-    njToast("Exported " + ts.length.toLocaleString() + " rows × " + selPens.length + " signal" + (selPens.length !== 1 ? "s" : "") + " to " + (fmt === "csv" ? "CSV." : "Excel."));
+    const rows = new Array(ts.length);
+    const step = (i) => {
+      const t = ts[i];
+      const vals = selPens.map((p) => penValueAt(p, t).toFixed(2));
+      rows[i] = csv
+        ? fmtFullTs(t) + "," + vals.join(",")
+        : "<tr><td>" + fmtFullTs(t) + "</td>" + vals.map((v) => "<td>" + v + "</td>").join("") + "</tr>";
+    };
+    const chunk = Math.max(24, Math.round(600 / Math.max(1, selPens.length)));
+    const run = njChunkRun({ total: ts.length, chunk, step, onProgress: (done) => setJob((j) => (j ? { ...j, done } : j)) });
+    jobRef.current = run;
+    setJob({ done: 0, total: ts.length });
+    run.promise.then(() => {
+      let content, mime, ext;
+      if (csv) {
+        content = ["Timestamp," + cols.map(esc).join(",")].concat(rows).join("\n");
+        mime = "text/csv;charset=utf-8"; ext = "csv";
+      } else {
+        const th = "<tr><th>Timestamp</th>" + cols.map((c) => "<th>" + c + "</th>").join("") + "</tr>";
+        content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>th{background:#0F182B;color:#fff;text-align:left}td,th{border:1px solid #E0E5EB;padding:4px 8px;font-family:Calibri,Arial}</style></head><body><table>' + th + rows.join("") + "</table></body></html>";
+        mime = "application/vnd.ms-excel"; ext = "xls";
+      }
+      njDownloadFile("njord-trends-" + start.slice(0, 10) + "_" + end.slice(0, 10) + "." + ext, mime, content);
+      jobRef.current = null; setJob(null);
+      closeDialog();
+      njToast("Exported " + ts.length.toLocaleString("nb-NO") + " rows × " + selPens.length + " signal" + (selPens.length !== 1 ? "s" : "") + " to " + (csv ? "CSV." : "Excel."));
+    }).catch(() => {
+      jobRef.current = null; setJob(null);
+      njToast("Export cancelled — no file was written.");
+    });
   };
 
   return (
@@ -1027,6 +1093,13 @@ function TrendExportDialog() {
       <DlgHeader icon="download" name="Export trend data" onClose={closeDialog} />
       <div className="dlg-body tex-body">
         <p className="tex-intro">Export raw sampled values for any parameters over a date range, no need to load them on the chart first. Long ranges (up to a year) are supported; raise the interval to keep the file manageable.</p>
+
+        <div className="tex-quick">
+          <span className="an-rb-l">Quick range</span>
+          <div className="segmented">
+            {PRESETS.map((p) => <button key={p.k} className={"seg" + (activePreset === p ? " active" : "")} onClick={() => setPreset(p.d)}>{p.k}</button>)}
+          </div>
+        </div>
 
         <div className="tex-grid">
           <div className="an-rb-field"><span className="an-rb-l">Start date</span>
@@ -1064,27 +1137,59 @@ function TrendExportDialog() {
               <span className="tex-pen-grp">{p.group}</span>
             </button>
           ))}
-          {!shown.length && <div className="tex-empty">No parameters match “{q}”.</div>}
+          {!shown.length && <NjEmpty size="compact" reason="search" title={"No parameters match “" + q + "”"}
+            body="Check the spelling, or clear the search to see the whole catalogue."
+            action={<button className="btn btn-secondary btn-sm" onClick={() => setQ("")}>Clear search</button>} />}
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className={"tex-meta" + (tooMany ? " warn" : "")}>
-          {sel.size === 0 ? "Select at least one parameter"
-            : span <= 0 ? "End date must be after start date"
-            : tooMany ? "≈ " + cells.toLocaleString() + " cells: raise the interval to export"
-            : "≈ " + rowCount.toLocaleString() + " rows × " + sel.size + " signal" + (sel.size !== 1 ? "s" : "")}
-        </span>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-          <button className="btn btn-primary" disabled={!canExport} onClick={doExport}><Icon name="download" size={15} /> Export</button>
-        </div>
+        {job ? (
+          <NjProgress value={job.done} total={job.total} label="Sampling trend data"
+            sub={job.done.toLocaleString("nb-NO") + " of " + job.total.toLocaleString("nb-NO") + " rows × " + selPens.length + " signal" + (selPens.length !== 1 ? "s" : "")}
+            onCancel={() => jobRef.current && jobRef.current.cancel()} />
+        ) : (
+          <React.Fragment>
+            <span className={"tex-meta" + (tooMany ? " warn" : "")}>
+              {sel.size === 0 ? "Select at least one parameter"
+                : span <= 0 ? "End date must be after start date"
+                : tooMany ? "≈ " + cells.toLocaleString("nb-NO") + " cells: raise the interval to export"
+                : "≈ " + rowCount.toLocaleString("nb-NO") + " rows × " + sel.size + " signal" + (sel.size !== 1 ? "s" : "")}
+            </span>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
+              <button className="btn btn-primary" disabled={!canExport} onClick={doExport}><Icon name="download" size={16} /> Download</button>
+            </div>
+          </React.Fragment>
+        )}
       </div>
     </Dialog>
   );
 }
 function openTrendExport() { openDialog(<TrendExportDialog />); }
 
+// ── signal tree (system → equipment → parameter) — shared by the desktop Browse-signals dialog
+// and the mobile Browse-signals screen, so both surfaces read ONE derivation of the catalog.
+function trendEquip(tag) {
+  if (window.alarmEquip) { const e = window.alarmEquip(tag); if (e) return e; }
+  const parts = String(tag || "").split("-");
+  return parts.length > 2 ? parts.slice(0, 2).join("-") : tag;
+}
+function trendTree() {
+  const groups = new Map();
+  TREND_CATALOG.forEach((c) => {
+    if (!groups.has(c.group)) groups.set(c.group, new Map());
+    const eq = trendEquip(c.tag);
+    const byEq = groups.get(c.group);
+    if (!byEq.has(eq)) byEq.set(eq, []);
+    byEq.get(eq).push(c);
+  });
+  return [...groups.entries()].map(([group, byEq]) => ({
+    group, equips: [...byEq.entries()].map(([eq, items]) => ({ eq, items })),
+  }));
+}
+
 Object.assign(window, {
+  trendEquip, trendTree,
   TREND_CATALOG, TREND_BY_TAG, TREND_PALETTE, TREND_RANGES, RANGE_HOURS, FOCUS_WINDOWS, INTERVALS, INTERVAL_MS,
   trendStore, useTrends, trendSeries, njSendToTrend, njTrendToast, njToast, resolveTrendPen, MultiTrendChart, TrendBtn,
   seriesForView, viewFromStore, markersForView, penValueAt, fmtClock, fmtDayClock, fmtFullTs, fmtAxis, njDownloadFile,

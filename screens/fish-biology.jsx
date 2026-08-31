@@ -41,7 +41,7 @@ function CauseCard({ action }) {
   return (
     <div className="card">
       <div className="card-head">
-        <div className="card-head-l"><Icon name="chart-pie" size={17} color="var(--slate-600)" /><span className="card-title">Cause of Death</span></div>
+        <div className="card-head-l"><Icon name="chart-pie" size={16} color="var(--slate-600)" /><span className="card-title">Cause of Death</span></div>
         {action}
       </div>
       <div className="card-body">
@@ -76,7 +76,7 @@ function RegistrationsCard({ rows, action }) {
   return (
     <div className="card">
       <div className="card-head">
-        <div className="card-head-l"><Icon name="list" size={17} color="var(--slate-600)" /><span className="card-title">Recent Registrations</span></div>
+        <div className="card-head-l"><Icon name="list" size={16} color="var(--slate-600)" /><span className="card-title">Recent Registrations</span></div>
         {action}
       </div>
       <table className="tbl">
@@ -86,7 +86,7 @@ function RegistrationsCard({ rows, action }) {
             <tr key={i}>
               <td><span className="data td-strong">{d.t}</span></td>
               <td>{d.loc}</td>
-              <td className="num" style={{ textAlign: "right" }}><span className="data td-strong">{d.n.toLocaleString()}</span></td>
+              <td className="num" style={{ textAlign: "right" }}><span className="data td-strong">{d.n.toLocaleString("nb-NO")}</span></td>
             </tr>
           ))}
         </tbody>
@@ -125,14 +125,14 @@ function MortalityTimeline() {
 function MortalityReport({ onBack }) {
   return (
     <React.Fragment>
-      <button className="bio-back" onClick={onBack}><Icon name="arrow-left" size={15} /> Back to Mortality</button>
+      <button className="bio-back" onClick={onBack}><Icon name="arrow-left" size={16} /> Back to Mortality</button>
       <div className="bio-actionbar">
         <div className="bio-actionbar-l">
           <span className="ttl">Mortality Report</span>
           <span className="sub">Generate mortality report · 17 Feb – 02 Mar 2026</span>
         </div>
         <div className="bio-actions">
-          <span className="select">Group by tank <Icon name="chevron-down" size={13} color="var(--slate-400)" /></span>
+          <span className="select">Group by tank <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
           <ExportMenu describe={(fmt) => "Export started: mortality report will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
         </div>
       </div>
@@ -144,7 +144,7 @@ function MortalityReport({ onBack }) {
       </div>
       <div className="bio-grid2">
         <div className="card">
-          <div className="card-head"><div className="card-head-l"><Icon name="activity" size={17} color="var(--slate-600)" /><span className="card-title">Mortality Timeline · daily</span></div></div>
+          <div className="card-head"><div className="card-head-l"><Icon name="activity" size={16} color="var(--slate-600)" /><span className="card-title">Mortality Timeline · daily</span></div></div>
           <div className="card-body"><MortalityTimeline /></div>
         </div>
         <CauseCard />
@@ -154,30 +154,14 @@ function MortalityReport({ onBack }) {
 }
 
 // ---- multi-location deadfish registration (register several tanks in one pass) ----
-const DF_TANKS = [
-  { id: "d1t1", label: "DPT1 · Tank 1" }, { id: "d1t2", label: "DPT1 · Tank 2" },
-  { id: "d2t3", label: "DPT2 · Tank 3" }, { id: "d2t4", label: "DPT2 · Tank 4" },
-  { id: "d3t5", label: "DPT3 · Tank 5" }, { id: "d3t6", label: "DPT3 · Tank 6" },
-  { id: "d3t7", label: "DPT3 · Tank 7" }, { id: "d3t8", label: "DPT3 · Tank 8" },
-];
+// Locations come from the shared tank register (lib/facility.jsx): a hand-written list drifted
+// into claiming DPT2 owned Tank 3, so the same tank number named a different department here
+// than in the welfare register. **Never re-type a tank list.**
+const DF_TANKS = njAllTanks().map((t) => ({ id: t.tag, label: t.bld + " · " + t.dept.split(" · ")[0] + " · Tank " + t.n, deptId: t.deptId, n: t.n }));
 // Cause of death is a two-level register (cause → subcause): several countries report at the
 // subcause level, so the list grows past what a <select> can serve. Hence a searchable picker
 // — typing filters causes AND subcauses; a cause can still be logged on its own.
-const DF_CAUSE_TREE = [
-  { cause: "Mechanical damage", subs: ["Handling injury", "Pump or grader damage", "Screen abrasion", "Transport damage"] },
-  { cause: "Runt / poor growth", subs: ["Non-feeder", "Emaciation", "Failed smoltification"] },
-  { cause: "Maturation", subs: ["Early maturation", "Grilse"] },
-  { cause: "Wound / ulcer", subs: ["Skin ulcer", "Winter ulcer", "Fin rot", "Snout wound"] },
-  { cause: "Gill health", subs: ["Gill inflammation", "Amoebic gill disease", "Particle irritation"] },
-  { cause: "Deformity", subs: ["Spinal deformity", "Jaw deformity", "Cataract"] },
-  { cause: "Handling / grading", subs: ["Grading", "Vaccination", "Crowding", "Tank transfer"] },
-  { cause: "CMS / cardiac", subs: ["CMS", "HSMI", "Cardiac rupture"] },
-  { cause: "Infectious", subs: ["Bacterial · Yersinia", "Bacterial · Flavobacterium", "Fungal · Saprolegnia", "Viral · IPN", "Parasitic"] },
-  { cause: "Environmental", subs: ["Low oxygen", "High CO₂", "Temperature shock", "Ammonia / nitrite", "Gas supersaturation"] },
-  { cause: "Culling", subs: ["Veterinary culling", "Welfare culling"] },
-  { cause: "Unknown", subs: [] },
-];
-function dfCauseLabel(r) { return r.cause ? (r.sub ? r.cause + " · " + r.sub : r.cause) : ""; }
+// DF_CAUSE_TREE + dfCauseLabel now live in lib/mortality-causes.jsx (shared with mobile).
 
 function DfCausePicker({ row, line, onPick }) {
   const [open, setOpen] = React.useState(false);
@@ -229,7 +213,7 @@ function DfCausePicker({ row, line, onPick }) {
       <button type="button" ref={btnRef} className={"form-input sel dfx-causebtn" + (label ? "" : " dfx-ph")} aria-haspopup="listbox" aria-expanded={open}
         aria-label={`Cause of death, line ${line}`} title={label || "Select cause"} onClick={() => (open ? setOpen(false) : openNow())}>
         <span className="dfx-causetxt">{row.cause ? <React.Fragment><span className="dfx-cause-1">{row.cause}</span>{row.sub && <span className="dfx-cause-2">{row.sub}</span>}</React.Fragment> : "Select cause…"}</span>
-        <Icon name="chevron-down" size={13} color="var(--slate-400)" />
+        <Icon name="chevron-down" size={14} color="var(--slate-400)" />
       </button>
       {open && pos && (
         <div className="dfx-cp" role="listbox" aria-label="Cause of death"
@@ -239,7 +223,7 @@ function DfCausePicker({ row, line, onPick }) {
             <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search cause or subcause…" aria-label="Search causes" />
           </div>
           <div className="dfx-cp-list" style={{ maxHeight: pos.maxList }}>
-            {groups.length === 0 && <div className="dfx-cp-empty">No cause matches “{q.trim()}”</div>}
+            {groups.length === 0 && <NjInline icon="search-x">No cause matches “{q.trim()}”</NjInline>}
             {groups.map((g) => (
               <div className="dfx-cp-grp" key={g.cause}>
                 <button type="button" className={"dfx-cp-cause" + (row.cause === g.cause && !row.sub ? " on" : "")} onClick={() => pick(g.cause, "")}>
@@ -256,7 +240,7 @@ function DfCausePicker({ row, line, onPick }) {
     </div>
   );
 }
-const DF_BATCHES = ["21-2-11-0-26-26", "21-2-21-0-26-26", "20-4-05-0-26-26"];
+const DF_BATCHES = FACILITY_BATCHES.map((x) => x.id); // shared list, lib/facility.jsx
 
 // shared row state for a deadfish registration form (used by both the full page and the
 // Fish Tank dock's quick-register modal)
@@ -292,9 +276,9 @@ function DeadfishTable({ rows, upd, addRow, removeRow, rowN, rowReady, rowIncomp
         <div className={"dfl-line" + (rowReady(r) ? " on" : "") + (rowIncomplete(r) ? " warn" : "")} key={r.key}>
           <div className="dfl-head">
             <span className="dfl-n">Line <span className="data">{i + 1}</span></span>
-            {lockedLoc && <span className="dfl-loc" title="Registering to the tank you opened this from"><Icon name="lock" size={11} color="var(--slate-400)" />{lockedLoc}</span>}
+            {lockedLoc && <span className="dfl-loc" title="Registering to the tank you opened this from"><Icon name="lock" size={12} color="var(--slate-400)" />{lockedLoc}</span>}
             {rowIncomplete(r) && <span className="dfl-warn"><Icon name="alert-triangle" size={12} /> Not registered — add {missing(r)}</span>}
-            <button className="dfx-x" title={last ? "Clear line" : "Remove line"} aria-label={last ? `Clear line ${i + 1}` : `Remove line ${i + 1}`} onClick={() => removeRow(r.key)}><Icon name="trash-2" size={15} /></button>
+            <button className="dfx-x" title={last ? "Clear line" : "Remove line"} aria-label={last ? `Clear line ${i + 1}` : `Remove line ${i + 1}`} onClick={() => removeRow(r.key)}><Icon name="trash-2" size={16} /></button>
           </div>
           <div className={"dfl-grid" + (lockedLoc ? "" : " withloc")}>
             {!lockedLoc && (
@@ -329,7 +313,7 @@ function DeadfishTable({ rows, upd, addRow, removeRow, rowN, rowReady, rowIncomp
         </div>
       ))}
       <div className="dfl-foot">
-        <button className="df-add dfx-add" onClick={addRow}><Icon name="plus" size={15} /> Add line</button>
+        <button className="df-add dfx-add" onClick={addRow}><Icon name="plus" size={16} /> Add line</button>
         <span className="dfx-add-hint">{lockedLoc ? "Add a line per cause of death — all lines register to " + lockedLoc : "A location can appear on several lines for multiple causes"}</span>
       </div>
     </div>
@@ -345,7 +329,7 @@ function DeadfishForm({ onBack }) {
 
   return (
     <React.Fragment>
-      <button className="bio-back" onClick={onBack}><Icon name="arrow-left" size={15} /> Back to Mortality</button>
+      <button className="bio-back" onClick={onBack}><Icon name="arrow-left" size={16} /> Back to Mortality</button>
       <div className="bio-actionbar">
         <div className="bio-actionbar-l">
           <span className="ttl">Mortality Registration</span>
@@ -365,14 +349,14 @@ function DeadfishForm({ onBack }) {
 
       <div className="dfx-foot">
         <div className="dfx-summary" role="status" aria-live="polite">
-          <span className="dfx-tot-wrap"><span className="dfx-tot data">{total.toLocaleString()}</span><span className="dfx-tot-l">total mortalities</span></span>
+          <span className="dfx-tot-wrap"><span className="dfx-tot data">{total.toLocaleString("nb-NO")}</span><span className="dfx-tot-l">total mortalities</span></span>
           <span className="dfx-foot-sep" aria-hidden="true">·</span>
           <span className="dfx-foot-meta">{valid.length} valid entr{valid.length === 1 ? "y" : "ies"} across {locCount} location{locCount === 1 ? "" : "s"}</span>
-          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={13} /> {dropped} on incomplete lines will not be registered</span>}
+          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={14} /> {dropped} on incomplete lines will not be registered</span>}
         </div>
         <div className="dfx-foot-r">
           <button className="btn btn-secondary" onClick={onBack}>Cancel</button>
-          <button className="btn btn-primary" disabled={valid.length === 0} onClick={register}><Icon name="check" size={15} /> Register</button>
+          <button className="btn btn-primary" disabled={valid.length === 0} onClick={register}><Icon name="check" size={16} /> Register</button>
         </div>
       </div>
     </React.Fragment>
@@ -382,7 +366,8 @@ function DeadfishForm({ onBack }) {
 // quick-register modal: same table/logic as the full page, opened from the Fish Tank dock
 // without leaving the tank — prefilled to this tank's location, single row by default.
 function DeadfishRegisterDialog({ tank }) {
-  const initialLoc = DF_TANKS.find((t) => t.label.endsWith("Tank " + tank.n)) ? DF_TANKS.find((t) => t.label.endsWith("Tank " + tank.n)).label : "";
+  const hit = DF_TANKS.find((t) => t.n === tank.n);
+  const initialLoc = hit ? hit.label : "";
   const { rows, upd, addRow, removeRow, rowN, rowReady, rowIncomplete, total, dropped, valid } = useDeadfishRows(initialLoc);
   const register = () => {
     closeDialog();
@@ -399,14 +384,14 @@ function DeadfishRegisterDialog({ tank }) {
       </div>
       <div className="dlg-foot dlg-foot-split">
         <span className="dfx-summary" role="status" aria-live="polite">
-          <span className="dfx-tot-wrap"><span className="dfx-tot data">{total.toLocaleString()}</span><span className="dfx-tot-l">total mortalities</span></span>
+          <span className="dfx-tot-wrap"><span className="dfx-tot data">{total.toLocaleString("nb-NO")}</span><span className="dfx-tot-l">total mortalities</span></span>
           <span className="dfx-foot-sep" aria-hidden="true">·</span>
-          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={13} /> {dropped} on incomplete lines will not be registered</span>}
+          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={14} /> {dropped} on incomplete lines will not be registered</span>}
           <button className="linkbtn" onClick={() => { closeDialog(); window.__njDeadfishPending = true; window.__njNavigate && window.__njNavigate("biology"); }}>Register several locations <Icon name="arrow-up-right" size={14} /></button>
         </span>
         <span style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-          <button className="btn btn-primary" disabled={valid.length === 0} onClick={register}><Icon name="check" size={15} /> Register</button>
+          <button className="btn btn-primary" disabled={valid.length === 0} onClick={register}><Icon name="check" size={16} /> Register</button>
         </span>
       </div>
     </Dialog>
@@ -429,8 +414,8 @@ function MortalitySection() {
           <span className="sub">22.6k dead · 30 days · 4 active batches</span>
         </div>
         <div className="bio-actions">
-          <button className="btn btn-secondary" onClick={() => setView("report")}><Icon name="bar-chart-2" size={15} /> Mortality report</button>
-          <button className="btn btn-primary" onClick={() => setView("new")}><Icon name="plus" size={15} /> New registration</button>
+          <button className="btn btn-secondary" onClick={() => setView("report")}><Icon name="bar-chart-2" size={16} /> Mortality report</button>
+          <button className="btn btn-primary" onClick={() => setView("new")}><Icon name="plus" size={16} /> New registration</button>
         </div>
       </div>
       <div className="bio-grid2">
@@ -453,7 +438,7 @@ function OverviewTab({ onGoto }) {
         <KpiCard label="Mortality · 30d" value="22.6" unit="k" delta="11.77 % of stock" deltaDir="down" icon="fish" />
         <KpiCard label="Active Batches" value="4" delta="across 3 buildings" deltaDir="flat" icon="layers" />
         <KpiCard label="Open Registrations" value={String(openReg.length)} delta={openReg.length ? openReg[0].loc + " · " + openReg[0].done + "/" + openReg[0].fish : "none in progress"} deltaDir="flat" icon="clipboard-list" onClick={() => onGoto("Welfare")} />
-        <KpiCard label="Fish Scored · 30d" value={scored.toLocaleString()} delta={regs.length + " registrations logged"} deltaDir="flat" icon="clipboard-check" onClick={() => onGoto("Welfare")} />
+        <KpiCard label="Fish Scored · 30d" value={scored.toLocaleString("nb-NO")} delta={regs.length + " registrations logged"} deltaDir="flat" icon="clipboard-check" onClick={() => onGoto("Welfare")} />
       </div>
       <div style={{ marginBottom: 16 }}>
         <CauseCard action={<button className="linkbtn" onClick={() => onGoto("Mortality")}>Mortality <Icon name="arrow-up-right" size={14} /></button>} />
@@ -493,4 +478,5 @@ function njOpenDeadfishRegistration(tank) {
   if (window.__njNavigate) window.__njNavigate("biology");
 }
 
-Object.assign(window, { FishBiologyScreen, njOpenDeadfishRegistration, DeadfishRegisterDialog, DF_CAUSE_TREE, dfCauseLabel });
+Object.assign(window, { FishBiologyScreen, njOpenDeadfishRegistration, DeadfishRegisterDialog });
+

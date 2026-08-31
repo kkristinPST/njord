@@ -160,7 +160,7 @@ function EnergyPlantMimic() {
       </Eq>
       <SymPump cx={1590} cy={172} running={true} />
       <ModeChip x={1614} y={164} mode="A" />
-      <text className="rasm-flag" x={1572} y={250} textAnchor="middle" style={{ fontWeight: 700, fontSize: "17px" }}>Refra Varmpeumpe</text>
+      <text className="rasm-flag" x={1572} y={250} textAnchor="middle" style={{ fontWeight: 700, fontSize: "18px" }}>Refra Varmpeumpe</text>
       <circle cx={1632} cy={288} r={8} fill="var(--slate-400)" stroke="var(--sc-edge)" strokeWidth="1.2" />
 
       {/* ───── brine loop ───── */}
@@ -186,7 +186,7 @@ function EnergyPlantMimic() {
       <Eq title="Brine loop · Brinesløyfe" onClick={open("DPT1-ENS0")}>
         <rect className="rasm-box" x={1548} y={800} width={168} height={72} rx="6" />
       </Eq>
-      <text className="rasm-flag" x={1632} y={841} textAnchor="middle" style={{ fontWeight: 700, fontSize: "17px" }}>Brinesløyfe</text>
+      <text className="rasm-flag" x={1632} y={841} textAnchor="middle" style={{ fontWeight: 700, fontSize: "18px" }}>Brinesløyfe</text>
     </svg>
   );
 }

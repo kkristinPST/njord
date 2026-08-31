@@ -44,7 +44,7 @@ function EqOverviewExtras({ equip }) {
       <EqStatGrid title="Runtime" rows={[{ l: "Today", v: s.runtime.today, u: "min" }, { l: "Yesterday", v: s.runtime.yest, u: "min" }, { l: "Total", v: s.runtime.total, u: "hours" }]} />
       <EqStatGrid title="Start time" rows={[{ l: "Today", v: s.starts.today, u: "times" }, { l: "Yesterday", v: s.starts.yest, u: "times" }, { l: "Total", v: s.starts.total, u: "times" }]} />
       <button className="btn btn-secondary eqx-maint" onClick={() => openDialog(<MaintenanceLogDialog equip={equip} />)}>
-        <Icon name="wrench" size={15} /> Maintenance
+        <Icon name="wrench" size={16} /> Maintenance
       </button>
     </React.Fragment>
   );
@@ -119,7 +119,7 @@ function MaintenanceLogDialog({ equip }) {
             </label>
             <div className="mnt-form-foot">
               <button className="btn btn-secondary btn-sm" onClick={() => setAdding(false)}>Cancel</button>
-              <button className="btn btn-primary btn-sm" disabled={!valid} onClick={save}><Icon name="check" size={14} /> Save entry</button>
+              <button className="btn btn-primary btn-sm" disabled={!valid} onClick={save}><Icon name="check" size={14} /> Save</button>
             </div>
           </div>
         )}
@@ -170,7 +170,7 @@ function EqLogTab({ equip }) {
             <tr key={i}>
               <td><span className="data">{r.t}</span></td>
               <td><span className="mvr-chip">{r.from}</span></td>
-              <td className="eqx-arrow"><Icon name="arrow-right" size={13} color="var(--slate-400)" /></td>
+              <td className="eqx-arrow"><Icon name="arrow-right" size={14} color="var(--slate-400)" /></td>
               <td><span className="mvr-chip strong">{r.to}</span></td>
             </tr>
           ))}
@@ -203,7 +203,7 @@ function EqAlarmsTab({ equip }) {
     <div className="eqx-tab">
       <div className="eqx-h"><Icon name="bell" size={14} /> Active alarms</div>
       {equip.status === "ok" || !equip.status ? (
-        <div className="eqx-empty">No active alarms on this unit.</div>
+        <NjInline align="left" icon="check-circle-2">No active alarms on this unit.</NjInline>
       ) : (
         <table className="eqx-tbl eqx-alm">
           <thead><tr><th>Alarm</th><th>Priority</th><th>State</th><th style={{ textAlign: "right" }}>Trend</th></tr></thead>
@@ -218,7 +218,7 @@ function EqAlarmsTab({ equip }) {
                   <td style={{ textAlign: "right" }}>
                     <button className="icnact act-inv" title="Investigate: open the trend / event timeline"
                       onClick={() => njInvestigateAlarm({ id: "EQ-" + equip.tag + "-" + i, tag: equip.tag, area: equip.name || equip.tag, alarm: r.a, level: r.p, t: fmtFullTs(window.NJ_NOW), meas: null })}>
-                      <Icon name="line-chart" size={13} /> Trend
+                      <Icon name="line-chart" size={14} /> Trend
                     </button>
                   </td>
                 </tr>
@@ -258,15 +258,15 @@ function EqNotesTab({ equip }) {
       <div className="segmented eqx-notetabs">
         {subs.map((s) => (
           <button key={s.id} className={"seg" + (s.id === sub ? " active" : "")} onClick={() => setSub(s.id)}>
-            <Icon name={s.icon} size={13} /> {s.label}{s.n != null && s.n > 0 ? <span className="eqx-note-badge">{s.n}</span> : null}
+            <Icon name={s.icon} size={14} /> {s.label}{s.n != null && s.n > 0 ? <span className="eqx-note-badge">{s.n}</span> : null}
           </button>
         ))}
-        <button className="eqx-allnotes" title="See notes for all equipment" onClick={() => { closeDialog(); openNotes(); }}>All system notes <Icon name="arrow-up-right" size={13} /></button>
+        <button className="eqx-allnotes" title="See notes for all equipment" onClick={() => { closeDialog(); openNotes(); }}>All system notes <Icon name="arrow-up-right" size={14} /></button>
       </div>
       {sub === "new"
         ? <div className="eqx-newnote"><NoteComposer fixedEquip={{ tag: equip.tag, name: equip.name, area: equip.area || "" }} onSaved={() => setSub("active")} /></div>
         : (list.length === 0
-            ? <div className="eqx-empty">No {sub} notes on this unit.</div>
+            ? <NjInline align="left" icon="notebook-pen">No {sub} notes on this unit.</NjInline>
             : <div className="notes-list eqx-notes">
                 {list.map((n) => (
                   <NoteCard key={n.id} n={n}
@@ -294,7 +294,7 @@ function EqAdminTab({ equip }) {
         <div className="eqx-admin-row"><span className="eqx-admin-l">Error code</span><span className="eqx-admin-v eqx-muted">Not supported</span></div>
       </div>
       <div className="eqx-h eqx-h2"><Icon name="settings-2" size={14} /> Other functions</div>
-      <button className="btn btn-secondary eqx-maint" onClick={resetRuntime}><Icon name="rotate-ccw" size={15} /> Reset total runtime</button>
+      <button className="btn btn-secondary eqx-maint" onClick={resetRuntime}><Icon name="rotate-ccw" size={16} /> Reset total runtime</button>
     </div>
   );
 }

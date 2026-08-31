@@ -27,32 +27,35 @@ function feedSetDist(n, vals, custom) {
 const FEED_TYPES = ["Aller Infinity", "Aller Thalassa", "Aller Futura", "Nutra Supreme", "Biomar Orbit"];
 
 /* small editable value box (matches scada ParamRow editable field) */
-function EditBox({ tank, field, label, value, unit, min, max, step, options, group, dec = 2, wide }) {
+function EditBox({ tank, field, label, value, unit, min, max, step, options, group, dec = 2, wide, fdr = 1 }) {
   const num = typeof value === "number";
   const disp = options ? value : (num ? value.toFixed(dec) : value);
   return (
     <button className={"pv box pv-edit" + (wide ? " pv-wide" : "")} title="Edit value"
       onClick={() => njEditParam({
-        tag: "DPT1-FTA" + tank + "-FDR1", label: "Tank " + tank + " · " + label, value, unit,
-        min, max, step, options, group: group || "Feeder 1",
+        tag: "DPT1-FTA" + tank + "-FDR" + fdr, label: "Tank " + tank + " · " + label, value, unit,
+        min, max, step, options, group: group || ("Feeder " + fdr),
         onApply: (nv) => feedSet(tank, field, nv),
       })}>
       <span className="pv-box-v">{disp}{unit && !options ? <span className="ffu"> {unit}</span> : null}</span>
-      <Icon name="pencil" size={11} />
+      <Icon name="pencil" size={12} />
     </button>
   );
 }
 
 /* ─────────────────────────  FEEDER DETAIL DIALOG  ───────────────────────── */
-function FeederDialog({ n }) {
+// s = feedscrew index (1-based). Screw 1 keeps the unsuffixed store keys; screw 2+ suffix with #n,
+// so a tank's screws hold their OWN feed type, calibration and timing (they are separate machines).
+function ffKey(field, s) { return s > 1 ? field + "#" + s : field; }
+function FeederDialog({ n, s = 1, hyflow }) {
   useFeed();
-  const feedType = feedGet(n, "feedType", "Aller Infinity");
-  const calib = feedGet(n, "calib", 148.0);
-  const minOp = feedGet(n, "minOp", 1);
-  const interval = feedGet(n, "interval", 180);
+  const feedType = feedGet(n, ffKey("feedType", s), "Aller Infinity");
+  const calib = feedGet(n, ffKey("calib", s), 148.0);
+  const minOp = feedGet(n, ffKey("minOp", s), 1);
+  const interval = feedGet(n, ffKey("interval", s), 180);
   const paused = feedGet(n, "paused", false);
-  const curTarget = feedGet(n, "curTarget", 0.19);
-  const pct = feedGet(n, "curPct", 1.3);
+  const curTarget = feedGet(n, ffKey("curTarget", s), 0.19);
+  const pct = feedGet(n, ffKey("curPct", s), 1.3);
   const [more, setMore] = React.useState(false);
 
   const extra = [
@@ -64,7 +67,7 @@ function FeederDialog({ n }) {
 
   return (
     <Dialog width={520}>
-      <DlgHeader icon="utensils" name={"Tank " + n} tag="Feeder 1" onClose={closeDialog} />
+      <DlgHeader icon="utensils" name={"Tank " + n} tag={(hyflow ? "HyFlow · " : "") + "Feeder " + s} onClose={closeDialog} />
       <div className="dlg-body fd-body">
         {/* status + current target hero */}
         <div className="fd-hero">
@@ -85,11 +88,11 @@ function FeederDialog({ n }) {
         <div className="fd-essential">
           <div className="fd-ess-cell">
             <span className="fd-ess-l">Feed type</span>
-            <EditBox tank={n} field="feedType" label="Feed type" value={feedType} options={FEED_TYPES} wide />
+            <EditBox tank={n} fdr={s} field={ffKey("feedType", s)} label="Feed type" value={feedType} options={FEED_TYPES} wide />
           </div>
           <div className="fd-ess-cell">
             <span className="fd-ess-l">Feeder calibration</span>
-            <EditBox tank={n} field="calib" label="Feeder calibration" value={calib} unit="g/rot" min={50} max={400} step={0.5} dec={1} />
+            <EditBox tank={n} fdr={s} field={ffKey("calib", s)} label="Feeder calibration" value={calib} unit="g/rot" min={50} max={400} step={0.5} dec={1} />
           </div>
         </div>
 
@@ -98,9 +101,9 @@ function FeederDialog({ n }) {
           <div className="fd-sec-eyebrow">Timing</div>
           <div className="fd-rows">
             <div className="fd-row"><span className="fd-row-l">Minimum operation time</span>
-              <EditBox tank={n} field="minOp" label="Minimum operation time" value={minOp} unit="s" min={0} max={60} step={1} dec={0} /></div>
+              <EditBox tank={n} fdr={s} field={ffKey("minOp", s)} label="Minimum operation time" value={minOp} unit="s" min={0} max={60} step={1} dec={0} /></div>
             <div className="fd-row"><span className="fd-row-l">Feeder interval</span>
-              <EditBox tank={n} field="interval" label="Feeder interval" value={interval} unit="s" min={10} max={600} step={5} dec={0} /></div>
+              <EditBox tank={n} fdr={s} field={ffKey("interval", s)} label="Feeder interval" value={interval} unit="s" min={10} max={600} step={5} dec={0} /></div>
             <div className="fd-row"><span className="fd-row-l">Current feeder interval</span>
               <span className="data fd-ro">{interval} <span className="u">s</span></span></div>
           </div>
@@ -108,7 +111,7 @@ function FeederDialog({ n }) {
 
         {/* more readings (previously behind the customize-view toggle) */}
         <button className="fd-more" onClick={() => setMore((m) => !m)}>
-          <Icon name={more ? "chevron-down" : "chevron-right"} size={15} /> More readings
+          <Icon name={more ? "chevron-down" : "chevron-right"} size={16} /> More readings
           <span className="fd-more-count">{extra.length}</span>
         </button>
         {more && (
@@ -128,7 +131,7 @@ function FeederDialog({ n }) {
     </Dialog>
   );
 }
-function openFeederDialog(n) { openDialog(<FeederDialog n={n} />); }
+function openFeederDialog(n, s = 1, hyflow) { openDialog(<FeederDialog n={n} s={s} hyflow={hyflow} />); }
 
 /* ─────────────────────  FEED DISTRIBUTION EDITOR DIALOG  ───────────────────── */
 const CURVE_SEEDS = [
@@ -188,7 +191,7 @@ function CurveSaveAsDialog({ initial = "", onSave }) {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!trimmed || dup} onClick={save}>Save</button>
+        <button className="btn btn-primary" disabled={!trimmed || dup} onClick={save}><Icon name="check" size={16} /> Save</button>
       </div>
     </Dialog>
   );
@@ -206,17 +209,17 @@ function CurvePickerDialog({ selId, onPick }) {
       <DlgHeader icon="activity" name="Stored curves" onClose={closeDialog} />
       <div className="dlg-body">
         <div className="fdist-picker-search">
-          <Icon name="search" size={15} color="var(--slate-400)" />
+          <Icon name="search" size={16} color="var(--slate-400)" />
           <input ref={ref} className="fdist-picker-input" placeholder="Search curves…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="fdist-picker-list">
           {list.length ? list.map((c) => (
             <button key={c.id} className={"fdist-curve-row" + (selId === c.id ? " sel" : "")} onClick={() => onPick(c)}>
-              <Icon name="activity" size={13} />
+              <Icon name="activity" size={14} />
               <span className="fdist-curve-name">{c.name}</span>
               {selId === c.id && <Icon name="check" size={14} />}
             </button>
-          )) : <div className="fdist-curve-empty">No matching curves</div>}
+          )) : <NjInline icon="search-x">No matching curves</NjInline>}
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
@@ -263,16 +266,16 @@ function FeedDistributionDialog({ n, todayTarget }) {
   const reset = () => { pushHist(); setVals(EVEN24()); setSelId(null); };
 
   const sel = curves.find((c) => c.id === selId) || null;
-  const newCurve = () => openDialog(<CurveSaveAsDialog onSave={(name) => { const id = feedCurveAdd(name, vals); setSelId(id); if (window.njToast) window.njToast("Curve \u201c" + name + "\u201d saved"); }} />);
+  const newCurve = () => openDialog(<CurveSaveAsDialog onSave={(name) => { const id = feedCurveAdd(name, vals); setSelId(id); if (window.njToast) window.njToast("Curve “" + name + "” saved"); }} />);
   const overwrite = () => {
     if (!sel) return;
-    openDialog(<ConfirmDialog title="Overwrite curve" message={"Replace \u201c" + sel.name + "\u201d with the current distribution?"} confirmLabel="Overwrite"
-      onConfirm={() => { feedCurveUpdate(sel.id, { vals }); if (window.njToast) window.njToast("Curve \u201c" + sel.name + "\u201d updated"); }} />);
+    openDialog(<ConfirmDialog title="Overwrite curve" message={"Replace “" + sel.name + "” with the current distribution?"} confirmLabel="Overwrite"
+      onConfirm={() => { feedCurveUpdate(sel.id, { vals }); if (window.njToast) window.njToast("Curve “" + sel.name + "” updated"); }} />);
   };
   const del = () => {
     if (!sel) return;
-    openDialog(<ConfirmDialog title="Delete curve" tone="danger" message={"Delete \u201c" + sel.name + "\u201d? This cannot be undone."} confirmLabel="Delete"
-      onConfirm={() => { feedCurveRemove(sel.id); setSelId(null); if (window.njToast) window.njToast("Curve \u201c" + sel.name + "\u201d deleted"); }} />);
+    openDialog(<ConfirmDialog title="Delete curve" tone="danger" message={"Delete “" + sel.name + "”? This cannot be undone."} confirmLabel="Delete"
+      onConfirm={() => { feedCurveRemove(sel.id); setSelId(null); if (window.njToast) window.njToast("Curve “" + sel.name + "” deleted"); }} />);
   };
   const openPicker = () => openDialog(<CurvePickerDialog selId={selId} onPick={(c) => { loadCurve(c); closeDialog(); }} />);
   const SHOW_CURVES = 3;
@@ -284,7 +287,7 @@ function FeedDistributionDialog({ n, todayTarget }) {
     feedSetDist(n, vals, custom);
     closeDialog();
     if (window.njToast) window.njToast(
-      "Feed distribution " + (activate ? "committed &amp; activated" : "committed") + " for Tank " + n + (custom ? "" : " (even 24 h)"),
+      "Feed distribution " + (activate ? "committed & activated" : "committed") + " for Tank " + n + (custom ? "" : " (even 24 h)"),
       "Maneuver history", () => window.__njNavigate && window.__njNavigate("maneuver"));
   };
 
@@ -319,7 +322,7 @@ function FeedDistributionDialog({ n, todayTarget }) {
               )) : <span className="fdist-curve-empty">No stored curves</span>}
               {(extra > 0 || (sel && !shown.some((c) => c.id === sel.id))) && (
                 <button className="fdist-chip more" onClick={openPicker} title="Browse all stored curves">
-                  <Icon name="list" size={13} /> {extra > 0 ? "+" + extra + " more" : "Browse"}
+                  <Icon name="list" size={14} /> {extra > 0 ? "+" + extra + " more" : "Browse"}
                 </button>
               )}
             </div>
@@ -378,7 +381,7 @@ function FeedDistributionDialog({ n, todayTarget }) {
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="info" size={13} /> {custom ? "Custom curve: normalised to 100 % across 24 h" : "Even distribution, 4.17 % per hour"}</span>
+        <span className="dlg-foot-meta"><Icon name="info" size={14} /> {custom ? "Custom curve: normalised to 100 % across 24 h" : "Even distribution, 4.17 % per hour"}</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
       </div>
     </Dialog>
@@ -387,7 +390,7 @@ function FeedDistributionDialog({ n, todayTarget }) {
 function openFeedDistribution(n, todayTarget) { openDialog(<FeedDistributionDialog n={n} todayTarget={todayTarget} />); }
 
 Object.assign(window, {
-  feedStore, useFeed, feedGet, feedSet, feedDist, feedCustom, feedSetDist,
+  feedStore, useFeed, feedGet, feedSet, feedDist, feedCustom, feedSetDist, ffKey,
   feedCurveStore, useFeedCurves, feedCurveAdd, feedCurveUpdate, feedCurveRemove, CurveSaveAsDialog, CurvePickerDialog,
   FEED_TYPES, EditBox, FeederDialog, openFeederDialog, FeedDistributionDialog, openFeedDistribution,
 });

@@ -192,13 +192,13 @@ function OverviewScreen() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={15} /> Trends</button>
-        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={15} /> SCADA view</button>
+        <button className="btn btn-secondary" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={16} /> Trends</button>
+        <button className="btn btn-secondary" onClick={() => setFull(true)}><Icon name="maximize-2" size={16} /> SCADA view</button>
       </div>
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="workflow" size={17} color="var(--slate-600)" /><span className="card-title">Process Overview · {dept.name} · {building.name}</span></div>
+          <div className="card-head-l"><Icon name="workflow" size={16} color="var(--slate-600)" /><span className="card-title">Process Overview · {dept.name} · {building.name}</span></div>
           <span className="caption">Click equipment for controls · tap a value's trend icon to send it to Trends</span>
         </div>
         <div className="card-body rasm-body"><OvMimic /></div>
@@ -209,7 +209,7 @@ function OverviewScreen() {
           <span className="ci"><span className="rasm-leg-chip man">M</span> Manual</span>
           <span className="ras-leg-div" aria-hidden="true" />
           <FluidLegend of={["raw","proc","drain","o2"]} />
-          <span className="ci" style={{ marginLeft: "auto", color: "var(--slate-500)" }}><Icon name="line-chart" size={13} /> Tap a value's trend icon → send to Trends</span>
+          <span className="ci" style={{ marginLeft: "auto", color: "var(--slate-500)" }}><Icon name="line-chart" size={14} /> Tap a value's trend icon → send to Trends</span>
         </div>
       </div>
 
@@ -231,3 +231,5 @@ function OverviewScreen() {
 
 window.OverviewScreen = OverviewScreen;
 window.__njSystemScreens = Object.assign(window.__njSystemScreens || {}, { "Overview": OverviewScreen });
+
+Object.assign(window, { OvMimic });

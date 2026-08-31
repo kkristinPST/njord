@@ -57,15 +57,15 @@ function DialogHost() {
 }
 
 /* ── dialog panel chrome ── */
-function Dialog({ width = 560, children }) {
-  return <div className="dlg" style={{ width }} role="dialog" aria-modal="true">{children}</div>;
+function Dialog({ width = 560, className = "", children }) {
+  return <div className={"dlg" + (className ? " " + className : "")} style={{ width }} role="dialog" aria-modal="true">{children}</div>;
 }
 function DlgHeader({ icon, name, tag, status, onClose }) {
   const sev = status ? (SEV[status] || SEV.ok) : null;
   return (
     <div className="dlg-head">
       <div className="dlg-head-l">
-        {icon && <span className="dlg-icn"><Icon name={icon} size={19} color="var(--slate-600)" /></span>}
+        {icon && <span className="dlg-icn"><Icon name={icon} size={20} color="var(--slate-600)" /></span>}
         <div className="dlg-titlewrap">
           <span className="dlg-title">{name}</span>
           {tag && <span className="tag dlg-tag">{tag}</span>}
@@ -73,7 +73,7 @@ function DlgHeader({ icon, name, tag, status, onClose }) {
       </div>
       <div className="dlg-head-r">
         {sev && <span className="badge" style={{ background: sev.bg, color: sev.text }}>{sev.label}</span>}
-        <button className="dlg-x" onClick={onClose} aria-label="Close"><Icon name="x" size={18} /></button>
+        <button className="dlg-x" onClick={onClose} aria-label="Close"><Icon name="x" size={20} /></button>
       </div>
     </div>
   );
@@ -140,9 +140,9 @@ function Stepper({ value, step, unit, onChange, min, max }) {
   const dec = Math.max(0, (String(step).split(".")[1] || "").length);
   return (
     <div className="stepper">
-      <button className="step-btn" onClick={() => onChange(clamp(+(value - step).toFixed(dec)))} aria-label="Decrease"><Icon name="minus" size={18} /></button>
+      <button className="step-btn" onClick={() => onChange(clamp(+(value - step).toFixed(dec)))} aria-label="Decrease"><Icon name="minus" size={20} /></button>
       <div className="step-val"><span className="data">{value.toFixed(dec)}</span><span className="step-unit">{unit}</span></div>
-      <button className="step-btn" onClick={() => onChange(clamp(+(value + step).toFixed(dec)))} aria-label="Increase"><Icon name="plus" size={18} /></button>
+      <button className="step-btn" onClick={() => onChange(clamp(+(value + step).toFixed(dec)))} aria-label="Increase"><Icon name="plus" size={20} /></button>
     </div>
   );
 }
@@ -173,13 +173,14 @@ function SetpointDialog({ title, tag, label, value, unit, step = 1, min, max, cu
 }
 
 /* ── confirmation dialog (start/stop, mode change) ── */
-function ConfirmDialog({ title, message, detail, confirmLabel = "Confirm", tone = "primary", onConfirm }) {
-  const danger = tone === "danger";
+function ConfirmDialog({ title, message, detail, confirmLabel = "Confirm", tone = "primary", danger: dangerProp, icon, onConfirm }) {
+  const danger = tone === "danger" || !!dangerProp;
+  const glyph = icon || (danger ? (/^(delete|remove)/i.test(confirmLabel) || /^(delete|remove)/i.test(title || "") ? "trash-2" : "alert-triangle") : "help-circle");
   return (
     <Dialog width={420}>
-      <div className="dlg-confirm">
+      <div className={"dlg-confirm" + (danger ? " danger" : "")}>
         <span className={"dlg-confirm-icn" + (danger ? " danger" : "")}>
-          <Icon name={danger ? "alert-triangle" : "help-circle"} size={22} />
+          <Icon name={glyph} size={24} />
         </span>
         <div className="dlg-confirm-title">{title}</div>
         <p className="dlg-confirm-msg">{message}</p>
@@ -207,7 +208,7 @@ function HelpDialog() {
       <div className="dlg-body help-body">
         {links.map((l) => (
           <button key={l.label} className="help-link" onClick={l.onClick || closeDialog}>
-            <span className="help-link-icn"><Icon name={l.icon} size={18} /></span>
+            <span className="help-link-icn"><Icon name={l.icon} size={20} /></span>
             <span className="help-link-txt">
               <span className="help-link-l">{l.label}</span>
               <span className="help-link-sub">{l.sub}</span>
@@ -304,10 +305,10 @@ function CreateTicketDialog() {
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="lock" size={13} /> Sent securely to PST support</span>
+        <span className="dlg-foot-meta"><Icon name="lock" size={14} /> Sent securely to PST support</span>
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-          <button className="btn btn-primary" disabled={!canSubmit} onClick={submit}><Icon name="send" size={15} /> Submit ticket</button>
+          <button className="btn btn-primary" disabled={!canSubmit} onClick={submit}><Icon name="send" size={16} /> Submit ticket</button>
         </div>
       </div>
     </Dialog>
@@ -437,10 +438,10 @@ function ParamEditDialog({ tag, label, value, unit = "", min, max, step, options
             <button className="pe-hist" title="View change history" onClick={openHist}><Icon name="history" size={16} /></button>
             {numeric ? (
               <div className="pe-input-wrap">
-                <button className="pe-step" onClick={() => bump(-dstep)} aria-label="Decrease"><Icon name="minus" size={15} /></button>
+                <button className="pe-step" onClick={() => bump(-dstep)} aria-label="Decrease"><Icon name="minus" size={16} /></button>
                 <input className="pe-input data" inputMode="decimal" value={raw} onChange={(e) => setRaw(e.target.value)} />
                 {unit && <span className="pe-unit">{unit}</span>}
-                <button className="pe-step" onClick={() => bump(dstep)} aria-label="Increase"><Icon name="plus" size={15} /></button>
+                <button className="pe-step" onClick={() => bump(dstep)} aria-label="Increase"><Icon name="plus" size={16} /></button>
               </div>
             ) : (
               <div className="segmented pe-opts">
@@ -467,7 +468,7 @@ function ParamEditDialog({ tag, label, value, unit = "", min, max, step, options
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!canConfirm} onClick={confirm}>Confirm</button>
+        <button className="btn btn-primary" disabled={!canConfirm} onClick={confirm}><Icon name="check" size={16} /> Apply</button>
       </div>
     </Dialog>
   );
@@ -517,7 +518,7 @@ function ProfileDialog() {
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" disabled={!valid} onClick={save}>Save changes</button>
+        <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Save</button>
       </div>
     </Dialog>
   );

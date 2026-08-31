@@ -74,13 +74,13 @@ function PumpSumpTable() {
       <button className="pv box pv-edit pst-cell" key={ci} title="Edit value"
         onClick={() => njEditParam({ tag: "DPT1-SMP0", label: r.l + " · " + c.l, value: val, unit: c.u, min: c.min, max: c.max, step: c.step, group: PUMPSUMP.title,
           onApply: (nv) => setOv((p) => Object.assign({}, p, { [key]: nv })) })}>
-        {dec(val, c.step)}<span className="pst-u"> {c.u}</span><Icon name="pencil" size={11} />
+        {dec(val, c.step)}<span className="pst-u"> {c.u}</span><Icon name="pencil" size={12} />
       </button>
     );
   };
   return (
     <div className="pst-wrap">
-      <div className="param-group-h"><Icon name="monitor" size={13} /> {PUMPSUMP.title}</div>
+      <div className="param-group-h"><Icon name="monitor" size={14} /> {PUMPSUMP.title}</div>
       <table className="pst">
         <thead><tr><th></th>{PUMPSUMP.cols.map((c) => <th key={c.l}>{c.l}</th>)}</tr></thead>
         <tbody>
@@ -122,7 +122,7 @@ function LimitRow({ label, kind, value, unit, step, tag, name, onApply }) {
       <button className="pv box pv-edit" title="Edit limit"
         onClick={() => njEditParam({ tag, label: name + " · " + label, value, unit, step: step || 1, min: -50, max: 1000, group: kind,
           onApply })}>
-        {value.toFixed(dec)}<span className="pst-u"> {unit}</span><Icon name="pencil" size={11} />
+        {value.toFixed(dec)}<span className="pst-u"> {unit}</span><Icon name="pencil" size={12} />
       </button>
     </div>
   );
@@ -201,7 +201,7 @@ function DockTrendChart({ chart }) {
       <div className="dtc-legend">
         {chart.series.map((s, si) => (
           <button key={si} className={"dtc-leg" + (vis[si] ? "" : " off")} onClick={() => setVis((p) => p.map((x, i) => (i === si ? !x : x)))}>
-            <span className="dtc-chk" style={{ background: vis[si] ? TR(si) : "transparent", borderColor: TR(si) }}>{vis[si] && <Icon name="check" size={11} color="#fff" />}</span>
+            <span className="dtc-chk" style={{ background: vis[si] ? TR(si) : "transparent", borderColor: TR(si) }}>{vis[si] && <Icon name="check" size={12} color="#fff" />}</span>
             {s.name} <span className="dtc-u">({s.unit})</span>
           </button>
         ))}
@@ -243,13 +243,13 @@ function RasDock() {
       <div className="dock-rail">
         {DOCK_MODES.map((x) => (
           <button key={x.id} className={"dock-rail-btn" + (x.id === mode ? " active" : "")} title={x.title} onClick={() => setMode(x.id)}>
-            <Icon name={x.icon} size={18} />
+            <Icon name={x.icon} size={20} />
           </button>
         ))}
       </div>
       <div className="dock-main">
         <div className="card-head dock-head">
-          <div className="card-head-l"><Icon name={m.icon} size={17} color="var(--slate-600)" /><span className="card-title">{m.title}</span></div>
+          <div className="card-head-l"><Icon name={m.icon} size={16} color="var(--slate-600)" /><span className="card-title">{m.title}</span></div>
         </div>
         <div className="dock-tabs">
           <div className="segmented param-seg">
@@ -260,7 +260,7 @@ function RasDock() {
           {mode === "params" && (tab === "Pump Sump" ? <PumpSumpTable /> : <ParamList rows={RAS_PARAMS[tab]} tag={RAS_PARAM_TAGS[tab]} key={tab} />)}
           {mode === "limits" && (
             <div className="lim-list">
-              <div className="param-group-h"><Icon name="alarm-clock" size={13} /> {RAS_LIMITS[tab].title}</div>
+              <div className="param-group-h"><Icon name="alarm-clock" size={14} /> {RAS_LIMITS[tab].title}</div>
               {RAS_LIMITS[tab].blocks.map((b, i) => <LimitBlock key={tab + i} b={b} />)}
             </div>
           )}

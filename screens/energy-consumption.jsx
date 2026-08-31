@@ -60,7 +60,7 @@ function EcChart({ data, active }) {
       {ticks.map((t, i) => (
         <g key={i}>
           <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="var(--slate-100)" strokeWidth="1" />
-          <text className="ec-ylbl" x={padL - 8} y={y(t) + 3} textAnchor="end">{t.toLocaleString()}</text>
+          <text className="ec-ylbl" x={padL - 8} y={y(t) + 3} textAnchor="end">{t.toLocaleString("nb-NO")}</text>
         </g>
       ))}
       {data.map((d, ci) => {
@@ -109,7 +109,7 @@ function EnergyConsumptionScreen() {
             <p className="pagehead-sub">Facility-wide power draw by department · outside the building hierarchy</p>
           </div>
           <div className="pagehead-right">
-            <button className="btn btn-secondary" title="Back to the site plan" onClick={() => window.__njGoPlan && window.__njGoPlan()}><Icon name="map" size={15} /> Site Plan</button>
+            <button className="btn btn-secondary" title="Back to the site plan" onClick={() => window.__njGoPlan && window.__njGoPlan()}><Icon name="map" size={16} /> Site Plan</button>
           </div>
         </div>
       </div>
@@ -122,7 +122,7 @@ function EnergyConsumptionScreen() {
 
       <div className="card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="bar-chart-3" size={17} color="var(--slate-600)" /><span className="card-title">Consumption</span></div>
+          <div className="card-head-l"><Icon name="bar-chart-3" size={16} color="var(--slate-600)" /><span className="card-title">Consumption</span></div>
           <div className="segmented ec-range">
             {[7, 14, 30].map((d) => <button key={d} className={"seg" + (d === days ? " active" : "")} onClick={() => setDays(d)}>Last {d} days</button>)}
           </div>
@@ -137,14 +137,14 @@ function EnergyConsumptionScreen() {
             ))}
           </div>
           <div className="pagehead-right">
-            <button className="btn btn-secondary" title="Back to the site plan" onClick={() => window.__njGoPlan && window.__njGoPlan()}><Icon name="map" size={15} /> Site Plan</button>
+            <button className="btn btn-secondary" title="Back to the site plan" onClick={() => window.__njGoPlan && window.__njGoPlan()}><Icon name="map" size={16} /> Site Plan</button>
           </div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="activity" size={17} color="var(--slate-600)" /><span className="card-title">Sensors</span></div>
+          <div className="card-head-l"><Icon name="activity" size={16} color="var(--slate-600)" /><span className="card-title">Sensors</span></div>
           <span className="caption">kW · {days}-day window</span>
         </div>
         <table className="tbl ec-tbl">
@@ -157,16 +157,16 @@ function EnergyConsumptionScreen() {
                 <td className="lbl">
                   <button className="ec-checkrow" onClick={() => toggle(s.key)}>
                     <span className={"ec-check" + (active[s.key] ? " on" : "")} style={active[s.key] ? { background: s.color, borderColor: s.color } : null}>
-                      {active[s.key] && <Icon name="check" size={11} color="#fff" />}
+                      {active[s.key] && <Icon name="check" size={12} color="#fff" />}
                     </span>
                     <span className="ec-swatch" style={{ background: s.color }} />
                     <span className="td-strong">{s.label}</span>
                   </button>
                 </td>
-                <td className="num td-strong">{s.cur.toLocaleString()}</td>
-                <td className="num">{s.min.toLocaleString()}</td>
-                <td className="num">{s.max.toLocaleString()}</td>
-                <td className="num">{s.avg.toLocaleString()}</td>
+                <td className="num td-strong">{s.cur.toLocaleString("nb-NO")}</td>
+                <td className="num">{s.min.toLocaleString("nb-NO")}</td>
+                <td className="num">{s.max.toLocaleString("nb-NO")}</td>
+                <td className="num">{s.avg.toLocaleString("nb-NO")}</td>
               </tr>
             ))}
           </tbody>

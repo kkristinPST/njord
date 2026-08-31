@@ -46,8 +46,8 @@ const FF_FIELDS = [
   { key: "af", label: "Activity factor", kind: "edit", unit: "%", min: 0, max: 100, step: 1, dec: 0, def: true },
   { key: "bf", label: "Base feed", kind: "edit", unit: "kg", min: 0, max: 200, step: 0.1, dec: 1, def: true },
   { key: "aw", label: "Avg. weight", kind: "edit", unit: "g", min: 0, max: 8000, step: 0.1, dec: 1, def: true },
-  { key: "pop", label: "Population", kind: "ro", def: true, get: (t) => t.pop.toLocaleString() },
-  { key: "bio", label: "Biomass", kind: "ro", unit: "kg", def: true, get: (t) => t.bio.toLocaleString() },
+  { key: "pop", label: "Population", kind: "ro", def: true, get: (t) => t.pop.toLocaleString("nb-NO") },
+  { key: "bio", label: "Biomass", kind: "ro", unit: "kg", def: true, get: (t) => t.bio.toLocaleString("nb-NO") },
   { key: "recalc", label: "Recalculation time", kind: "ro", def: false, get: () => "00:00" },
   { key: "temp", label: "Temperature", kind: "ro", unit: "°C", def: false, get: (t) => t.temp.toFixed(1) },
   { key: "tsgr", label: "Table SGR", kind: "ro", unit: "%", def: false, get: (t) => t.tsgr.toFixed(2) },
@@ -86,7 +86,7 @@ function FfCustomizeView({ vis, toggle }) {
   }, [open]);
   return (
     <div style={{ position: "relative" }} ref={ref}>
-      <button className="btn btn-secondary" onClick={() => setOpen((o) => !o)}><Icon name="columns-3" size={15} /> Customize view</button>
+      <button className="btn btn-secondary" onClick={() => setOpen((o) => !o)}><Icon name="columns-3" size={16} /> Customize view</button>
       {open && (
         <div className="ff-cv-pop" role="menu">
           <div className="ff-cv-h"><span>Value</span><span>Display / hide</span></div>
@@ -107,7 +107,88 @@ function FfCustomizeView({ vis, toggle }) {
   );
 }
 
-function TankCard({ t, alarmLevel, alarmText, vis }) {
+// ── feedscrew strip ─────────────────────────────────────────────────────────────
+// A tank may drive 1..n feedscrews. Tank-level values (feed factor, biomass, curve, daily
+// target) are SHARED; progress, feed type and calibration are per screw — they are separate
+// machines with their own hopper batch and their own calibration. Screw 1 keeps the
+// unsuffixed store keys (see ffKey), so single-screw tanks are unchanged.
+function FfScrews({ n, screws, target, fed, hyflow }) {
+  const [open, setOpen] = React.useState(false);
+  const stopped = screws.filter((s) => s.running === false).length;
+  return (
+    <div className={"ff-screws" + (open ? " open" : "")}>
+      <button className="ff-screws-h" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        title={open ? "Hide the individual feedscrews" : "Show each feedscrew's feed type, calibration and progress"}>
+        <Icon name={open ? "chevron-down" : "chevron-right"} size={14} />
+        <span>{screws.length} feedscrews</span>
+        {stopped > 0 && <span className="ff-screws-run">{stopped} stopped</span>}
+        <span className="ff-split">{screws.map((s) => s.share).join(" / ")} % of the daily dose</span>
+      </button>
+      {open && (
+        <React.Fragment>
+          {screws.map((s, i) => (
+            <FfScrewStrip key={i} n={n} s={i + 1} screw={s} share={s.share} target={target} fed={fed} hyflow={hyflow} />
+          ))}
+          <div className="ff-screw-sum"><span>Total fed today</span><span className="data">{fed.toFixed(1)} <span className="u">/ {target.toFixed(1)} kg</span></span></div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function FfScrewStrip({ n, s, screw, share, target, fed, hyflow }) {
+  const g = window.feedGet, K = window.ffKey;
+  const feedType = g(n, K("feedType", s), screw.feedType);
+  const calib = g(n, K("calib", s), screw.calib);
+  const st = target * share / 100, sf = fed * share / 100;
+  const pct = st > 0 ? Math.min(100, Math.round((sf / st) * 100)) : 0;
+  const stopped = screw.running === false;
+  // Single-screw tank: one summary line, same height as the collapsed multi-screw header, so
+  // tank-level values line up across the card grid.
+  if (share >= 100) return (
+    <button className="ff-feedstrip ff-screw ff-screw-solo" onClick={() => window.openFeederDialog(n, s, hyflow)} title="Open feeder settings">
+      <span className="ff-screw-id">
+        <Dot level={stopped ? "diagnostic" : "ok"} size={8} />
+        <span className="ff-screw-tag">FDR{s}</span>
+      </span>
+      <span className="ff-solo-sum">
+        <span className="ff-solo-type">{feedType}</span>
+        <span className="ff-solo-sep">·</span>
+        <span className="ff-solo-cal data">{calib.toFixed(1)} <span className="u">g/rot</span></span>
+      </span>
+      <Icon name="settings-2" size={14} color="var(--slate-400)" />
+    </button>
+  );
+  return (
+    <button className="ff-feedstrip ff-screw" onClick={() => window.openFeederDialog(n, s, hyflow)} title={"Open feeder " + s + " settings"}>
+      <span className="ff-screw-id">
+        <Dot level={stopped ? "diagnostic" : "ok"} size={8} />
+        <span className="ff-screw-tag">FDR{s}</span>
+        {share < 100 && <span className="ff-screw-split">{share} %</span>}
+      </span>
+      <span className="ff-screw-prog" hidden={share >= 100}>
+        <span className="ff-screw-bar"><span className="ff-screw-fill" style={{ width: pct + "%" }} /></span>
+        <span className="ff-screw-fed data">{sf.toFixed(1)} <span className="u">/ {st.toFixed(1)} kg</span></span>
+      </span>
+      <span className="ff-fs-cell ff-sc-type">
+        <span className="ff-fs-l">Feed type</span>
+        <span className="ff-fs-v">{feedType}</span>
+      </span>
+      <span className="ff-fs-cell ff-sc-cal">
+        <span className="ff-fs-l">Calibration</span>
+        <span className="ff-fs-v data">{calib.toFixed(1)} <span className="u">g/rot</span></span>
+      </span>
+      <Icon name="settings-2" size={14} color="var(--slate-400)" />
+    </button>
+  );
+}
+function ffScrews(t) {
+  return t.screws && t.screws.length ? t.screws : [{ feedType: t.feedType, calib: t.calib, share: 100 }];
+}
+
+// Shared feeding block: the whole tank-level feeding record. Used by the Feeding card AND by
+// the HyFlow screen (showScrews={false} there — HyFlow renders its own richer screw rows).
+function FfFeedBlock({ t, vis, hyflow, showScrews = true }) {
   const { n } = t;
   const g = window.feedGet;
   const paused = g(n, "paused", t.paused);
@@ -115,28 +196,14 @@ function TankCard({ t, alarmLevel, alarmText, vis }) {
   const af = g(n, "af", t.af);
   const aw = g(n, "aw", t.aw);
   const bf = g(n, "bf", t.bf);
-  const feedType = g(n, "feedType", t.feedType);
-  const calib = g(n, "calib", t.calib);
   const dist = window.feedDist(n);
   const custom = window.feedCustom(n);
+  const screws = ffScrews(t);
   const target = t.target;
   const fed = paused ? 0 : t.fed;
   const pct = target > 0 ? Math.min(100, Math.round((fed / target) * 100)) : 0;
-
   return (
-    <div className={"card ff-card" + (alarmLevel ? " ff-card-alarm" : "")}>
-      <div className="ff-head">
-        <div>
-          <div className="ff-title">Tank {n}</div>
-          <div className="ff-feeder">Feeder 1</div>
-        </div>
-        {alarmText
-          ? <span className="evt ff-alm" title={alarmText}><Dot level={alarmLevel} size={8} /> {alarmText}</span>
-          : <span className={"ff-state-chip " + (paused ? "paused" : "run")}>
-              <Dot level={paused ? "diagnostic" : "ok"} size={7} /> {paused ? "Paused" : "In operation"}
-            </span>}
-      </div>
-
+    <React.Fragment>
       <div className="ff-progress">
         <div className="ff-bar"><div className="ff-fill" style={{ width: pct + "%" }} /></div>
         <div className="ff-progress-lbl">
@@ -145,19 +212,11 @@ function TankCard({ t, alarmLevel, alarmText, vis }) {
         </div>
       </div>
 
-      {/* essential feeder info: surfaced, not hidden. Click → feeder popup. */}
-      <button className="ff-feedstrip" onClick={() => window.openFeederDialog(n)} title="Open feeder settings">
-        <span className="ff-fs-cell">
-          <span className="ff-fs-l">Feed type</span>
-          <span className="ff-fs-v">{feedType}</span>
-        </span>
-        <span className="ff-fs-div" />
-        <span className="ff-fs-cell">
-          <span className="ff-fs-l">Calibration</span>
-          <span className="ff-fs-v data">{calib.toFixed(1)} <span className="u">g/rot</span></span>
-        </span>
-        <Icon name="settings-2" size={14} color="var(--slate-400)" />
-      </button>
+      {showScrews && (
+        screws.length === 1
+          ? <FfScrewStrip n={n} s={1} screw={screws[0]} share={100} target={target} fed={fed} hyflow={hyflow} />
+          : <FfScrews n={n} screws={screws} target={target} fed={fed} hyflow={hyflow} />
+      )}
 
       <div className="ff-grid">
         {FF_FIELDS.filter((f) => f.kind === "edit" && vis.has(f.key)).map((f) => (
@@ -177,7 +236,6 @@ function TankCard({ t, alarmLevel, alarmText, vis }) {
         )}
       </div>
 
-      {/* feed curve: click opens the distribution editor */}
       <button className="ff-curve" onClick={() => window.openFeedDistribution(n, target)} title="Edit feed distribution">
         <span className="ff-curve-head">
           <span className="eyebrow">Feed curve · 24h</span>
@@ -186,19 +244,46 @@ function TankCard({ t, alarmLevel, alarmText, vis }) {
         <Sparkline vals={dist} custom={custom} />
         <span className="ff-curve-edit"><Icon name="pencil" size={12} /> Edit distribution</span>
       </button>
+    </React.Fragment>
+  );
+}
+
+function TankCard({ t, alarmLevel, alarmText, vis }) {
+  const { n } = t;
+  const paused = window.feedGet(n, "paused", t.paused);
+  const screws = ffScrews(t);
+
+  return (
+    <div className={"card ff-card" + (alarmLevel ? " ff-card-alarm" : "")}>
+      <div className="ff-head">
+        <div>
+          <div className="ff-title">Tank {n}</div>
+          <div className="ff-feeder">{screws.length === 1 ? "Feeder 1" : screws.length + " feedscrews"}</div>
+        </div>
+        {alarmText
+          ? <span className="evt ff-alm" title={alarmText}><Dot level={alarmLevel} size={8} /> {alarmText}</span>
+          : <span className={"ff-state-chip " + (paused ? "paused" : "run")}>
+              <Dot level={paused ? "diagnostic" : "ok"} size={7} /> {paused ? "Paused" : "In operation"}
+            </span>}
+      </div>
+      <FfFeedBlock t={t} vis={vis} />
     </div>
   );
 }
 
 const TANKS = [
   { n: 1, fed: 4.5, target: 8.8, ff: 0.90, af: 65, aw: 2.1, bf: 13.6, pop: 149041, bio: 308, feedType: "Aller Infinity", calib: 148.0, paused: false, temp: 13.1, tsgr: 4.7, csgr: 3.9, dailyInc: 2.4 },
-  { n: 2, fed: 10.3, target: 20.4, ff: 0.90, af: 70, aw: 3.6, bf: 29.1, pop: 206271, bio: 734, feedType: "Aller Infinity", calib: 152.0, paused: false, temp: 13.4, tsgr: 4.93, csgr: 4.19, dailyInc: 2.7 },
-  { n: 3, fed: 9.8, target: 19.4, ff: 0.90, af: 75, aw: 3.6, bf: 25.8, pop: 180429, bio: 653, feedType: "Aller Thalassa", calib: 148.0, paused: false, temp: 13.2, tsgr: 4.6, csgr: 3.8, dailyInc: 2.3 },
+  { n: 2, fed: 10.3, target: 20.4, ff: 0.90, af: 70, aw: 3.6, bf: 29.1, pop: 206271, bio: 734, feedType: "Aller Infinity", calib: 152.0, paused: false, temp: 13.4, tsgr: 4.93, csgr: 4.19, dailyInc: 2.7,
+    screws: [{ feedType: "Aller Infinity", calib: 152.0, share: 60 }, { feedType: "Aller Infinity", calib: 149.5, share: 40 }] },
+  { n: 3, fed: 9.8, target: 19.4, ff: 0.90, af: 75, aw: 3.6, bf: 25.8, pop: 180429, bio: 653, feedType: "Aller Thalassa", calib: 148.0, paused: false, temp: 13.2, tsgr: 4.6, csgr: 3.8, dailyInc: 2.3,
+    screws: [{ feedType: "Aller Thalassa", calib: 148.0, share: 50 }, { feedType: "Aller Futura", calib: 146.0, share: 50, running: false }] },
   { n: 4, fed: 0, target: 9.3, ff: 0.90, af: 80, aw: 2.1, bf: 14.3, pop: 156628, bio: 324, feedType: "Aller Infinity", calib: 145.5, paused: true, temp: 12.9, tsgr: 0, csgr: 0, dailyInc: 0 },
-  { n: 5, fed: 7.1, target: 15.2, ff: 0.90, af: 68, aw: 2.9, bf: 21.0, pop: 171204, bio: 497, feedType: "Nutra Supreme", calib: 150.0, paused: false, temp: 13.4, tsgr: 4.5, csgr: 3.6, dailyInc: 2.1 },
+  { n: 5, fed: 7.1, target: 15.2, ff: 0.90, af: 68, aw: 2.9, bf: 21.0, pop: 171204, bio: 497, feedType: "Nutra Supreme", calib: 150.0, paused: false, temp: 13.4, tsgr: 4.5, csgr: 3.6, dailyInc: 2.1,
+    screws: [{ feedType: "Nutra Supreme", calib: 150.0, share: 40 }, { feedType: "Nutra Supreme", calib: 151.5, share: 30 }, { feedType: "Aller Infinity", calib: 147.0, share: 30 }] },
   { n: 6, fed: 8.4, target: 17.6, ff: 0.90, af: 72, aw: 3.2, bf: 23.4, pop: 168930, bio: 541, feedType: "Aller Infinity", calib: 148.0, paused: false, temp: 13.3, tsgr: 4.6, csgr: 3.9, dailyInc: 2.5 },
   { n: 7, fed: 5.9, target: 12.1, ff: 0.90, af: 66, aw: 2.4, bf: 17.8, pop: 159870, bio: 384, feedType: "Aller Futura", calib: 149.5, paused: false, temp: 13.0, tsgr: 4.4, csgr: 3.7, dailyInc: 2.0 },
-  { n: 8, fed: 11.2, target: 22.0, ff: 0.90, af: 74, aw: 3.8, bf: 31.2, pop: 198640, bio: 755, feedType: "Aller Infinity", calib: 151.0, paused: false, temp: 13.5, tsgr: 4.9, csgr: 4.2, dailyInc: 2.8 },
+  { n: 8, fed: 11.2, target: 22.0, ff: 0.90, af: 74, aw: 3.8, bf: 31.2, pop: 198640, bio: 755, feedType: "Aller Infinity", calib: 151.0, paused: false, temp: 13.5, tsgr: 4.9, csgr: 4.2, dailyInc: 2.8,
+    screws: [{ feedType: "Aller Infinity", calib: 151.0, share: 55 }, { feedType: "Biomar Orbit", calib: 153.5, share: 45 }] },
 ];
 
 const FEED_TABLE_SEED = [
@@ -232,20 +317,20 @@ function FeedTablesView({ onBack }) {
     value: table.rates[ri][ci], unit: "%/d", min: 0, max: 20, step: 0.1, group: table.name,
     onApply: (v) => setCell(ri, ci, +(+v).toFixed(1)),
   });
-  const delTable = () => openDialog(<ConfirmDialog title="Delete feed table" message={`Delete the feed table "${table.name}"? This cannot be undone.`} confirmLabel="Delete table" tone="danger"
+  const delTable = () => openDialog(<ConfirmDialog title="Delete feed table" message={`Delete the feed table "${table.name}"? This cannot be undone.`} confirmLabel="Delete" tone="danger"
     onConfirm={() => { setTables((ts) => { const n = ts.filter((t) => t.id !== sel); setSel(n[0] ? n[0].id : ""); return n; }); njToast(`Feed table "${table.name}" deleted.`); }} />);
 
   return (
     <React.Fragment>
-      <button className="bio-back" onClick={onBack}><Icon name="arrow-left" size={15} /> Back to Feeding</button>
+      <button className="bio-back" onClick={onBack}><Icon name="arrow-left" size={16} /> Back to Feeding</button>
       <div className="bio-actionbar">
         <div className="bio-actionbar-l">
           <span className="ttl">Feed Table Management</span>
           <span className="sub">Feed rate (% of biomass / day) per weight class and water temperature. Referenced by each tank's feed type.</span>
         </div>
         <div className="bio-actions">
-          <button className="btn btn-secondary" onClick={() => njToast("Import feed table: CSV / supplier table import.")}><Icon name="upload" size={15} /> Import table</button>
-          <button className="btn btn-secondary" onClick={() => njToast("Feed table saved.")}><Icon name="save" size={15} /> Save changes</button>
+          <button className="btn btn-secondary" onClick={() => njToast("Import feed table: CSV / supplier table import.")}><Icon name="upload" size={16} /> Import table</button>
+          <button className="btn btn-secondary" onClick={() => njToast("Feed table saved.")}><Icon name="check" size={16} /> Save</button>
         </div>
       </div>
 
@@ -342,7 +427,7 @@ function FeedingScreen() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <button className="btn btn-secondary" onClick={() => setView("feedtables")}><Icon name="table-2" size={15} /> Feed tables</button>
+        <button className="btn btn-secondary" onClick={() => setView("feedtables")}><Icon name="table-2" size={16} /> Feed tables</button>
         <FfCustomizeView vis={ffView.vis} toggle={ffView.toggle} />
       </div>
 
@@ -354,3 +439,4 @@ function FeedingScreen() {
 }
 
 window.FeedingScreen = FeedingScreen;
+Object.assign(window, { FF_TANKS: TANKS, FfFeedBlock, FfScrewStrip, FfScrews, useFfView, FF_FIELDS, ffScrews });

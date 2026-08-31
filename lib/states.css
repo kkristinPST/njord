@@ -1,0 +1,75 @@
+/* states.css — empty, loading and progress states.
+   ONE anatomy for all of them: icon tile → title → one line of copy → optional action.
+   Sizes are the only variable: region (a whole card/panel), card, compact (a small panel),
+   row (inside a table body). Spacing steps only; type roles only. */
+
+/* ---------- EMPTY ---------- */
+.nj-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.nj-empty.size-region { gap: 14px; padding: 72px 24px; }
+.nj-empty.size-card { gap: 12px; padding: 48px 24px; }
+.nj-empty.size-compact { gap: 10px; padding: 32px 20px; }
+.nj-empty.size-row { flex-direction: row; gap: 10px; padding: 32px 20px; }
+.nj-empty-ic { flex: none; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--r-lg); background: var(--slate-100); color: var(--slate-400); }
+.nj-empty.size-region .nj-empty-ic { width: 56px; height: 56px; }
+.nj-empty.size-card .nj-empty-ic { width: 48px; height: 48px; }
+.nj-empty.size-compact .nj-empty-ic { width: 40px; height: 40px; }
+.nj-empty.size-row .nj-empty-ic { width: 24px; height: 24px; border-radius: var(--r-sm); background: none; }
+/* tone paints the ICON only — the copy stays neutral so an empty state never reads as an alarm */
+.nj-empty.tone-info .nj-empty-ic { background: var(--primary-bg); color: var(--primary-text); }
+.nj-empty.tone-good .nj-empty-ic { background: var(--success-bg); color: var(--success-text); }
+.nj-empty.tone-warn .nj-empty-ic { background: var(--warning-bg); color: var(--warning-text); }
+.nj-empty-t { color: var(--fg); }
+.nj-empty.size-row .nj-empty-t { color: var(--slate-600); font-weight: 400; }
+.nj-empty-body { margin: 0; max-width: 360px; color: var(--slate-600); text-wrap: pretty; }
+.nj-empty.size-row .nj-empty-body { max-width: none; }
+.nj-empty-acts { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 2px; }
+.nj-empty.fill { height: 100%; }
+.nj-empty.size-row .nj-empty-acts { margin-top: 0; }
+/* a table's empty row must not inherit row hover/borders — it is one cell, not a record */
+.nj-empty-tr td { border-bottom: none !important; background: none !important; }
+.nj-empty-tr:hover td { background: none !important; }
+
+/* ---------- INLINE (the smallest tier: one line in a popover or sub-panel) ---------- */
+.nj-inline { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 12px; text-align: center; color: var(--slate-500); }
+.nj-inline.left { justify-content: flex-start; text-align: left; padding: 10px 2px; }
+.nj-inline .njicon { flex: none; }
+
+/* ---------- SKELETON ---------- */
+/* shape of the content that is coming, never a spinner over a blank card */
+.nj-sk { position: relative; overflow: hidden; border-radius: var(--r-sm); background: var(--slate-100); }
+.nj-sk::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--surface) 70%, transparent), transparent);
+  animation: nj-sk-sweep 1.4s ease-in-out infinite; }
+@keyframes nj-sk-sweep { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .nj-sk::after { display: none; } }
+.nj-sk-lines { display: flex; flex-direction: column; gap: 10px; }
+.nj-sk-line { height: 12px; }
+.nj-sk-wrap { display: flex; flex-direction: column; gap: 12px; }
+.nj-sk-chart { display: flex; align-items: flex-end; gap: 8px; padding: 16px 0 0; border-bottom: 1px solid var(--slate-200); }
+.nj-sk-chart .nj-sk { flex: 1; border-radius: var(--r-sm) var(--r-sm) 0 0; }
+.nj-sk-tbl { display: flex; flex-direction: column; gap: 2px; }
+.nj-sk-tr { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--slate-100); }
+.nj-sk-tr .nj-sk { height: 12px; }
+/* the caption under a skeleton says WHAT is loading and how big — never a bare "Loading…" */
+.nj-sk-note { display: flex; align-items: center; gap: 8px; color: var(--slate-500); }
+
+/* ---------- SPINNER (in-place, for user-initiated work under ~2 s) ---------- */
+.nj-spin { display: inline-block; flex: none; border-radius: 50%; border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor; animation: nj-spin 700ms linear infinite; }
+@keyframes nj-spin { 100% { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .nj-spin { animation-duration: 2.4s; } }
+.btn[aria-busy="true"] { pointer-events: none; }
+.btn[aria-busy="true"] .njicon { display: none; }
+
+/* ---------- PROGRESS (determinate, for work over ~2 s) ---------- */
+.nj-prog { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.nj-prog-head { display: flex; align-items: baseline; gap: 10px; }
+.nj-prog-l { flex: 1; min-width: 0; color: var(--fg); }
+.nj-prog-pct { font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--slate-600); }
+.nj-prog-track { height: 6px; border-radius: var(--r-pill); background: var(--slate-100); overflow: hidden; }
+.nj-prog-fill { display: block; height: 100%; border-radius: var(--r-pill); background: var(--primary); transition: width .12s linear; }
+.nj-prog.indeterminate .nj-prog-fill { width: 32%; animation: nj-prog-slide 1.1s ease-in-out infinite; }
+@keyframes nj-prog-slide { 0% { margin-left: -32%; } 100% { margin-left: 100%; } }
+.nj-prog-sub { display: flex; align-items: center; gap: 8px; color: var(--slate-500); }
+.nj-prog-sub .nj-prog-cancel { margin-left: auto; }

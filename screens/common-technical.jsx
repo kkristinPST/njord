@@ -101,3 +101,5 @@ window.CommonTechnicalScreen = CommonTechnicalScreen;
 window.__njSystemScreens = Object.assign(window.__njSystemScreens || {}, {
   "Technical": CommonTechnicalScreen,
 });
+
+Object.assign(window, { CommonTechMimic });
