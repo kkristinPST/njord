@@ -704,7 +704,7 @@ function AlarmRationalizationScreen() {
             <span className="ratn-statusseg">
               {[["all", "All"], ["due", "Overdue"], ["indate", "In date"]].map(([v, l]) => (
                 <button key={v} className={"ratn-sf" + (revF === v ? " on" : "")} onClick={() => setRevF(v)}
-                  title={v === "all" ? "No review filter" : "Critical and High alarms only — no other priority has a stated cadence"}>{l}</button>
+                  title={v === "all" ? "No review filter" : "Critical and High alarms only · no other priority has a stated cadence"}>{l}</button>
               ))}
             </span>
           </span>
@@ -726,7 +726,7 @@ function AlarmRationalizationScreen() {
                 </div>
               </React.Fragment>
             )}
-            <button className="btn btn-secondary" onClick={() => openDialog(<RatnReportDialog stats={stats} review={stats.reviewDue} changes={njRatnHistory.total()} />)} title="Master Alarm Report — the signed snapshot of the register (ch. 7)"><Icon name="file-text" size={16} /> Report</button>
+            <button className="btn btn-secondary" onClick={() => openDialog(<RatnReportDialog stats={stats} review={stats.reviewDue} changes={njRatnHistory.total()} />)} title="Master Alarm Report · the signed snapshot of the register (ch. 7)"><Icon name="file-text" size={16} /> Report</button>
             <button className="btn btn-secondary" onClick={() => njToast("Import: select an .xlsx/.csv file to merge into the register.", "Choose file", () => njToast("No file selected (demo)."))}><Icon name="upload" size={16} /> Import</button>
             <ExportMenu primary describe={(fmt) => `Export started: ${filtered.length.toLocaleString("nb-NO")} alarms (current filter) will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
           </div>
@@ -773,7 +773,7 @@ function AlarmRationalizationScreen() {
               ))}
               {pageRows.length === 0 && (
                 <NjEmptyRow colSpan={visibleCols.length + 1} reason={q.trim() ? "search" : "filtered"}
-                title={q.trim() ? "No alarms match “" + q.trim() + "”" : "No alarms match the current filter"}
+                title={q.trim() ? "No alarms match \u201c" + q.trim() + "\u201d" : "No alarms match the current filter"}
                 action={<button className="btn btn-secondary btn-sm"
                   onClick={() => { setQ(""); setStatusF("all"); setRevF("all"); setPrioF(null); }}>
                   {q.trim() && statusF === "all" && revF === "all" && !prioF ? "Clear search" : "Clear filters"}</button>} />

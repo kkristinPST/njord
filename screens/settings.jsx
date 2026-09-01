@@ -408,7 +408,7 @@ function OcTier({ group, tier, n }) {
         {chans.length
           ? chans.map((c) => { const m = OC_CHANNELS.find((x) => x.id === c); return m ? <span key={c} className="oc-chan"><Icon name={m.icon} size={12} /> {m.label}</span> : null; })
           : <span className="oc-tier-empty">No channel</span>}
-        {!chanOk && <span className="oc-chan-warn" title="Single path — NS 9416 requires two independent remote-alarm systems"><Icon name="alert-triangle" size={12} /> one path</span>}
+        {!chanOk && <span className="oc-chan-warn" title="Single path · NS 9416 requires two independent remote-alarm systems"><Icon name="alert-triangle" size={12} /> one path</span>}
       </div>
       <div className="oc-tier-body">
         {ids.map((id) => <OcMemberChip key={id} m={ocMember(id)} onRemove={() => oncallStore.removeMember(group.id, tier, id)} />)}
@@ -510,7 +510,7 @@ function OnCallEditorDialog({ group }) {
         </div>
         <div className="oc-ed-sec">
           <span className="oc-field-l">Notification channels</span>
-          <p className="oc-mininfo">NS 9416 requires <b>two independent remote-alarm systems</b> where the facility is not staffed around the clock. SMS and voice both ride the GSM dispatcher, so they count as one path — pair either with UHF.</p>
+          <p className="oc-mininfo">NS 9416 requires <b>two independent remote-alarm systems</b> where the facility is not staffed around the clock. SMS and voice both ride the GSM dispatcher, so they count as one path; pair either with UHF.</p>
           <div className="oc-chan-grid">
             {["p1", "p2", "p3"].map((t, i) => {
               const list = ocChan(g, t);
@@ -570,7 +570,7 @@ function ModemStatusDialog() {
     <Dialog width={720}>
       <DlgHeader icon="radio-tower" name="Alarm dispatch status" onClose={closeDialog} />
       <div className="dlg-body oc-modem">
-        <p className="oc-modem-intro">Remote alarms leave the facility on <b>two independent paths</b>, as NS 9416 requires where there is no round-the-clock on-site presence: the GSM dispatcher (SMS and voice call) and the UHF sender. A path is only redundant while the other one is healthy — watch both like any other critical asset.</p>
+        <p className="oc-modem-intro">Remote alarms leave the facility on <b>two independent paths</b>, as NS 9416 requires where there is no round-the-clock on-site presence: the GSM dispatcher (SMS and voice call) and the UHF sender. A path is only redundant while the other one is healthy, so watch both like any other critical asset.</p>
         <div className="oc-modem-cards">
           <div className="oc-modem-card"><div className="oc-modem-top"><span className="statusdot" style={{ background: "var(--success)" }} /> GSM modem 1 · Connected</div><span className="oc-modem-sig data">{cur1} <span className="u">dBm</span></span><span className="caption">SIM · Telenor NO · signal good</span></div>
           <div className="oc-modem-card"><div className="oc-modem-top"><span className="statusdot" style={{ background: "var(--success)" }} /> GSM modem 2 · Standby</div><span className="oc-modem-sig data">{cur2} <span className="u">dBm</span></span><span className="caption">SIM · Telia NO · failover ready</span></div>
@@ -859,4 +859,3 @@ function SettingsScreen() {
 }
 
 window.SettingsScreen = SettingsScreen;
-
