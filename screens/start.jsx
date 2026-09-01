@@ -93,20 +93,13 @@ function StartScreen() {
   const worstO2 = outBand.length ? outBand.reduce((m, t) => (t.o2 < m.o2 ? t : m)) : null;
   const overCap = activeTanks.filter((t) => t.maxBiomass && t.biomass > t.maxBiomass);
   const worstCap = overCap.length ? overCap.reduce((m, t) => (t.biomass / t.maxBiomass > m.biomass / m.maxBiomass ? t : m)) : null;
-  // TANK_PANELS is DPT1 (Building 1), so every tank-derived card lands on that department's
-  // Fish Tank screen. njGoSystem sets __njNavSub, which is what makes the jump land on the
-  // Fish Tank tab instead of whichever Navigation tab happened to be open last.
-  const goFishTank = () => njGoSystem("b1", "b1-d1", "Fish Tank");
+  const goFishTank = () => { setCtx("b1", "b1-d1"); if (window.__njDeptTab) window.__njDeptTab("Fish Tank"); else if (window.__njNavigate) window.__njNavigate("navigation"); };
 
   // ── facility water-chemistry vitals (worst-case, from real tank data + the alarm register) ──
   const o2MinTank = activeTanks.length ? activeTanks.reduce((m, t) => (t.o2 < m.o2 ? t : m)) : null;
-  // Keep the whole alarm row, not just .meas: the row's `area` is what decides where the card
-  // links, so a card and the alarm row for the same measurement always go to the same screen.
-  const rowByMeasName = (kw) => { const rows = window.alarmHub ? window.alarmHub.rows : []; return rows.find((x) => x.meas && new RegExp(kw, "i").test(x.meas.name)) || null; };
-  const tanRow = rowByMeasName("TAN");
-  const turbRow = rowByMeasName("turbid");
-  const tan = tanRow ? tanRow.meas : null;
-  const turb = turbRow ? turbRow.meas : null;
+  const measByName = (kw) => { const rows = window.alarmHub ? window.alarmHub.rows : []; const r = rows.find((x) => x.meas && new RegExp(kw, "i").test(x.meas.name)); return r ? r.meas : null; };
+  const tan = measByName("TAN");
+  const turb = measByName("turbid");
   const o2St = o2s && o2MinTank ? o2s(o2MinTank.o2, o2MinTank) : "ok";
 
   // ── notes: recent active notes + "new since last login" ──
@@ -139,13 +132,12 @@ function StartScreen() {
         <KpiCard label="Tanks in Operation" value={String(activeTanks.length)} unit={"of " + tanks.length}
           delta={tanks.length - activeTanks.length ? (tanks.length - activeTanks.length) + " deactivated" : "all tanks active"}
           deltaDir="flat" icon="waves" onClick={goFishTank} />
-        {/* the delta names the area these link to, so the destination is predictable before the click */}
         <KpiCard label="Max TAN" value={tan ? tan.base.toFixed(2) : "0.62"} unit="mg/L"
-          delta={`${tanRow ? tanRow.area : "Biofilter"} · alarm limit ${tan ? tan.thr.value.toFixed(2) : "1.50"} mg/L`}
-          deltaDir="up" icon="flask-conical" onClick={() => njGoArea(tanRow ? tanRow.area : "Biofilter A")} />
+          delta={`Biofilter · alarm limit ${tan ? tan.thr.value.toFixed(2) : "1.50"} mg/L`}
+          deltaDir="up" icon="flask-conical" onClick={() => { setCtx("b1", "b1-d1"); window.__njDeptTab ? window.__njDeptTab("RAS") : window.__njNavigate && window.__njNavigate("navigation"); }} />
         <KpiCard label="Max Turbidity" value={turb ? turb.base.toFixed(2) : "0.45"} unit="NTU"
-          delta={`${turbRow ? turbRow.area : "Drum filter"} · alarm limit ${turb ? turb.thr.value.toFixed(1) : "1.0"} NTU`}
-          deltaDir="up" icon="waves" onClick={() => njGoArea(turbRow ? turbRow.area : "Drum filter")} />
+          delta={`Drum filter out · alarm limit ${turb ? turb.thr.value.toFixed(1) : "1.0"} NTU`}
+          deltaDir="up" icon="waves" onClick={() => { setCtx("b1", "b1-d1"); window.__njDeptTab ? window.__njDeptTab("Water Treatment") : window.__njNavigate && window.__njNavigate("navigation"); }} />
       </div>
 
       {/* Secondary: operational / administrative counts */}

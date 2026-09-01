@@ -135,13 +135,97 @@ function TrendSignalPicker() {
 }
 function openTrendSignalPicker() { openDialog(<TrendSignalPicker />); }
 
-function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
+/* ── Pen details ──
+   The legacy "System pens" dialog in one place: name, colour, decimals, aggregate, the vertical
+   scale, accumulate-flow and the estimation line. The TAGPATH lives here and only here — it is a
+   backend pointer, not something an operator reads off a signal list. */
+function PenDetailsDialog({ penId }) {
+  useTrends();
   const store = trendStore;
-  const [scale, setScale] = React.useState(false);
-  const dec = Math.abs(pen.base) < 5 ? 2 : Math.abs(pen.base) < 50 ? 1 : 0;
+  const pen = store.pens.find((p) => p.id === penId);
+  if (!pen) return <Dialog width={560}><DlgHeader name="Pen" onClose={closeDialog} /><div className="dlg-body">This signal is no longer on the chart.</div></Dialog>;
   const dyn = pen.dyn !== false;
   const axisSel = store.axisSel || [];
   const sepOn = axisSel.includes(pen.id);
+  const set = (patch) => store.setPen(pen.id, patch);
+  const accumUnit = window.TREND_ACCUM.find((a) => a.k === (pen.accum || ""));
+  return (
+    <Dialog width={600}>
+      <DlgHeader icon="sliders-horizontal" name={"Pen details · " + pen.name} onClose={closeDialog} />
+      <div className="dlg-body pd-body">
+        <div className="pd-2">
+          <label className="de-field"><span className="de-field-l">Pen name</span>
+            <input className="de-input" value={pen.name} onChange={(e) => set({ name: e.target.value })} /></label>
+          <label className="de-field"><span className="de-field-l">Colour</span>
+            <span className="pd-colw">
+              <span className="pd-sw" style={{ background: pen.color }} />
+              <select className="nj-select" value={pen.color} onChange={(e) => set({ color: e.target.value })} aria-label="Pen colour">
+                {window.TREND_COLORS.some((c) => c.k === pen.color) ? null : <option value={pen.color}>Current</option>}
+                {window.TREND_COLORS.map((c) => <option key={c.k} value={c.k}>{c.label}</option>)}
+              </select>
+            </span></label>
+        </div>
+        <div className="pd-2">
+          <label className="de-field"><span className="de-field-l">Decimals</span>
+            <input className="de-input data" type="number" min="0" max="4" value={pen.dec == null ? "" : pen.dec}
+              placeholder="auto" onChange={(e) => set({ dec: e.target.value === "" ? null : Math.max(0, Math.min(4, parseInt(e.target.value, 10) || 0)) })} /></label>
+          <label className="de-field"><span className="de-field-l">Aggregate</span>
+            <select className="nj-select" value={pen.agg || "last"} onChange={(e) => set({ agg: e.target.value })}>
+              {window.TREND_AGG.map((a) => <option key={a.k} value={a.k}>{a.label}</option>)}
+            </select></label>
+        </div>
+        <div className="pd-sect"><span className="eyebrow">Vertical scale</span></div>
+        <label className="an-pen-chk" {...njCheckable(() => store.setPenDyn(pen.id, !dyn), { on: dyn, label: "Dynamic scale" })}>
+          <Check on={dyn} />
+          <span>Dynamic scale<i>fit the data in view</i></span>
+        </label>
+        <div className="an-pen-rng">
+          <label><span>Range min</span>
+            <input type="number" className="an-pen-num" value={pen.rMin != null ? pen.rMin : ""} disabled={dyn}
+              onChange={(e) => store.setPenRange(pen.id, parseFloat(e.target.value), pen.rMax)} /></label>
+          <label><span>Range max</span>
+            <input type="number" className="an-pen-num" value={pen.rMax != null ? pen.rMax : ""} disabled={dyn}
+              onChange={(e) => store.setPenRange(pen.id, pen.rMin, parseFloat(e.target.value))} /></label>
+        </div>
+        <label className={"an-pen-chk" + (store.axisMode !== "separate" ? " disabled" : "")}
+          {...(store.axisMode === "separate" ? njCheckable(() => store.toggleAxisPen(pen.id, 5, sepOn, axisSel), { on: sepOn, label: "Separate axis" }) : {})}>
+          <Check on={sepOn && store.axisMode === "separate"} />
+          <span>Separate axis<i>{store.axisMode === "separate" ? "own labelled gutter" : "set Y axis to Separate first"}</i></span>
+        </label>
+        <div className="pd-sect"><span className="eyebrow">Calculations</span></div>
+        <label className="de-field"><span className="de-field-l">Accumulate flow</span>
+          <select className="nj-select" value={pen.accum || ""} onChange={(e) => set({ accum: e.target.value || null })} aria-label="Accumulate flow">
+            {window.TREND_ACCUM.map((a) => <option key={a.k} value={a.k}>{a.label}</option>)}
+          </select>
+          <span className="de-field-hint">{pen.accum
+            ? "Integrating a " + accumUnit.label + " rate · the pen plots accumulated volume in m³"
+            : "Pick the unit of the source rate to plot accumulated volume instead of the rate"}</span>
+        </label>
+        <label className="an-pen-chk" {...njCheckable(() => set({ estimate: !pen.estimate }), { on: !!pen.estimate, label: "Estimation line" })}>
+          <Check on={!!pen.estimate} />
+          <span>Estimation line<i>extrapolates the current trend forward, drawn dashed</i></span>
+        </label>
+        <div className="pd-sect"><span className="eyebrow">Source</span></div>
+        <div className="pd-path">
+          <span className="pd-path-l">Tag path</span>
+          <code className="pd-path-v data">{pen.tag}</code>
+        </div>
+        <div className="pd-path">
+          <span className="pd-path-l">Context</span>
+          <span className="pd-path-v">{pen.group}{pen.unit ? " · " + pen.unit : ""}</span>
+        </div>
+      </div>
+      <div className="dlg-foot">
+        <button className="btn btn-primary" onClick={closeDialog}><Icon name="check" size={16} /> Done</button>
+      </div>
+    </Dialog>
+  );
+}
+
+function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
+  const store = trendStore;
+  const dec = pen.dec != null ? pen.dec : (Math.abs(pen.base) < 5 ? 2 : Math.abs(pen.base) < 50 ? 1 : 0);
+  const dyn = pen.dyn !== false;
   const num = (v) => (v == null || isNaN(v) ? "—" : v.toFixed(dec));
   return (
     <div className={"an-pen" + (focused ? " focus" : "") + (pen.hidden ? " hidden" : "")}>
@@ -149,11 +233,11 @@ function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
         <span className="an-pen-swatch" style={{ background: pen.hidden ? "var(--slate-300)" : pen.color }}></span>
         <div className="an-pen-meta">
           <div className="an-pen-name">{pen.name}</div>
-          <div className="an-pen-tag">{pen.tag}<span className="an-pen-group"> · {pen.group}</span></div>
+          <div className="an-pen-tag">{pen.group}{pen.accum ? <span className="an-pen-flag">Σ m³</span> : null}{pen.estimate ? <span className="an-pen-flag">est</span> : null}</div>
         </div>
         <div className="an-pen-val">
           <span className="data" style={{ color: pen.hidden ? "var(--slate-400)" : "var(--fg)" }}>{current.toFixed(dec)}</span>
-          <span className="an-pen-unit">{pen.unit}</span>
+          <span className="an-pen-unit">{pen.accum ? "m³" : pen.unit}</span>
         </div>
         <div className="an-pen-actions">
           <button className="an-pen-btn" title={pen.hidden ? "Show signal" : "Hide signal"} onClick={(e) => { e.stopPropagation(); onToggle(); }}>
@@ -169,33 +253,11 @@ function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
         <span className="an-pen-stat"><i>Min</i><b className="data">{num(stats && stats.min)}</b></span>
         <span className="an-pen-stat"><i>Max</i><b className="data">{num(stats && stats.max)}</b></span>
         <span className="an-pen-stat"><i>Avg</i><b className="data">{num(stats && stats.avg)}</b></span>
-        <button className={"an-pen-scalebtn" + (scale ? " on" : "")} onClick={() => setScale((s) => !s)}
-          title="Vertical scale for this signal" aria-expanded={scale}>
-          <Icon name="ruler" size={13} /> {dyn ? "Auto" : num(pen.rMin) + "–" + num(pen.rMax)}
-          <Icon name={scale ? "chevron-up" : "chevron-down"} size={12} />
+        <button className="an-pen-scalebtn" onClick={() => openDialog(<PenDetailsDialog penId={pen.id} />)}
+          title="Pen details: scale, decimals, aggregate, accumulate flow, estimation line">
+          <Icon name="sliders-horizontal" size={13} /> {dyn ? "Auto" : num(pen.rMin) + "–" + num(pen.rMax)}
         </button>
       </div>
-      {scale && (
-        <div className="an-pen-scale">
-          <label className="an-pen-chk">
-            <input type="checkbox" checked={dyn} onChange={() => store.setPenDyn(pen.id, !dyn)} />
-            <span>Dynamic scale<i>fit the data in view</i></span>
-          </label>
-          <div className="an-pen-rng">
-            <label><span>Range min</span>
-              <input type="number" className="an-pen-num" value={pen.rMin != null ? pen.rMin : ""} disabled={dyn}
-                onChange={(e) => store.setPenRange(pen.id, parseFloat(e.target.value), pen.rMax)} /></label>
-            <label><span>Range max</span>
-              <input type="number" className="an-pen-num" value={pen.rMax != null ? pen.rMax : ""} disabled={dyn}
-                onChange={(e) => store.setPenRange(pen.id, pen.rMin, parseFloat(e.target.value))} /></label>
-          </div>
-          <label className="an-pen-chk">
-            <input type="checkbox" checked={sepOn} disabled={store.axisMode !== "separate"}
-              onChange={() => store.toggleAxisPen(pen.id, 5, sepOn, axisSel)} />
-            <span>Separate axis<i>{store.axisMode === "separate" ? "own labelled gutter" : "set Y axis to Separate first"}</i></span>
-          </label>
-        </div>
-      )}
     </div>
   );
 }
@@ -284,6 +346,9 @@ function TrendRangeBar() {
   const [end, setEnd] = React.useState(toInput(view.xMax));
   const [iv, setIv] = React.useState(store.interval);
   const [dyn, setDyn] = React.useState(store.dynamic);
+  // Interval is the sampling RESOLUTION and applies to the quick presets too, so it takes effect
+  // the moment it is chosen — waiting for Apply would make it look broken on a quick range.
+  const pickIv = (v) => { setIv(v); store.setInterval(v); };
   // re-seed the fields from the active view when a quick preset (or focus) changes it
   React.useEffect(() => {
     if (!store.customRange) { const v = viewFromStore(store); setStart(toInput(v.xMin)); setEnd(toInput(v.xMax)); }
@@ -309,7 +374,7 @@ function TrendRangeBar() {
       </div>
       <div className="an-rb-field">
         <span className="an-rb-l">Interval</span>
-        <select className="nj-select" value={iv} onChange={(e) => setIv(e.target.value)}>
+        <select className="nj-select" value={iv} onChange={(e) => pickIv(e.target.value)} title="How often a datapoint is generated inside the window">
           {INTERVALS.map((o) => <option key={o.k} value={o.k}>{o.label}</option>)}
         </select>
       </div>
@@ -322,6 +387,10 @@ function TrendRangeBar() {
       <div className="an-rb-actions">
         {store.customRange && <button className="btn btn-ghost btn-sm" onClick={() => store.setRange(store.range)} title="Back to quick range"><Icon name="rotate-ccw" size={14} /> Reset</button>}
         <button className="btn btn-primary btn-sm an-rb-apply" onClick={apply}><Icon name="check" size={14} /> Apply</button>
+      </div>
+      <div className="an-rb-res" aria-live="polite">
+        <span className="an-rb-res-v">{view.n.toLocaleString("nb-NO")} points</span>
+        <span className="an-rb-res-l">{iv === "auto" ? "fitted to the window" : "per pen, one every " + (INTERVALS.find((x) => x.k === iv) || {}).label.toLowerCase()}</span>
       </div>
     </div>
   );
@@ -388,7 +457,8 @@ function TrendsWorkspace({ tab, onTab }) {
         </div>
         <div className="an-toolbar-r">
           <button className="btn btn-secondary" onClick={() => openTrendGroups()} title="Browse and load saved Trend Groups"><Icon name="folder" size={16} /> Groups</button>
-          <button className={"btn btn-secondary" + (store.showMarkers ? " btn-active" : "")} onClick={() => store.toggleMarkers()} title="Show/hide alarm markers on these signals">
+          <button className={"btn btn-secondary" + (store.showMarkers ? " btn-active" : "")} onClick={() => store.toggleMarkers()}
+            title="Marks the alarms these signals raised on the timeline and draws the focused pen's alarm limits as static lines. Limits follow the focus: with several pens on their own scales a limit line has no honest position.">
             <Icon name={store.showMarkers ? "bell-ring" : "bell-off"} size={16} /> Alarms
           </button>
           <button className="btn btn-secondary" onClick={() => openTrendExport()} title="Download the plotted data as CSV / Excel"><Icon name="download" size={16} /> Download</button>

@@ -141,6 +141,32 @@ function HfScrewRow({ s, L, split }) {
     </div>
   );
 }
+// Collapsed by default — same rule as the Fish Feeding cards: a 3-screw tank must not stand
+// 300px taller than a 1-screw tank, or the tank-level values stop lining up across the grid.
+function HfScrews({ L, multi, share, total }) {
+  const [open, setOpen] = React.useState(false);
+  const stopped = L.screws.filter((s) => !s.running).length;
+  const one = L.screws[0];
+  return (
+    <div className={"hf-screws" + (open ? " open" : "")}>
+      <button className="hf-screws-h" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        title={open ? "Hide the individual feedscrews" : "Show each feedscrew's dosing rate, pellet size and calibration"}>
+        <Icon name={open ? "chevron-down" : "chevron-right"} size={14} />
+        <span>{L.screws.length + (multi ? " feedscrews" : " feedscrew")}</span>
+        {stopped > 0 && <span className="hf-screws-run">{stopped} stopped</span>}
+        <span className="hf-split">{multi
+          ? "Dose split · " + share.join(" / ") + " %"
+          : one.rate + " kg/h · " + one.pellet + " mm · " + one.cal + " g/rot"}</span>
+      </button>
+      {open && (
+        <React.Fragment>
+          {L.screws.map((s, i) => <HfScrewRow key={s.id} s={s} L={L} split={multi ? share[i] + " %" : null} />)}
+          <div className="hf-screw-sum"><span>Total dosed today</span><span className="hf-sv-v">{String(total)}<i>kg</i></span></div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
 function HfTankCard({ L }) {
   const [run, setRun] = React.useState(L.run);
   const [flushing, setFlushing] = React.useState(false);
@@ -185,16 +211,7 @@ function HfTankCard({ L }) {
           <div className="hf-sv"><span className="hf-sv-l">Line pressure</span><span className="hf-sv-v">{L.bar}<i>bar</i></span></div>
           <div className="hf-sv"><span className="hf-sv-l">Since last flush</span><span className="hf-sv-v">{flushing ? "0" : String(L.flush)}<i>min</i></span></div>
         </div>
-        <div className="hf-screws">
-          <div className="hf-screws-h">
-            <span>{L.screws.length + (multi ? " feedscrews" : " feedscrew")}</span>
-            {multi && <span className="hf-split">{"Dose split · " + share.join(" / ") + " %"}</span>}
-          </div>
-          {L.screws.map((s, i) => <HfScrewRow key={s.id} s={s} L={L} split={multi ? share[i] + " %" : null} />)}
-          {multi && (
-            <div className="hf-screw-sum"><span>Total dosed today</span><span className="hf-sv-v">{String(total)}<i>kg</i></span></div>
-          )}
-        </div>
+        <HfScrews L={L} multi={multi} share={share} total={total} />
         {ffT && (
           <div className="hf-feedblock">
             <div className="hf-fb-h"><span>Feeding record</span><span className="hf-fb-src">shared with Fish Feeding</span></div>

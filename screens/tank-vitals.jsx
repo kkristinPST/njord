@@ -133,19 +133,19 @@ function TankVitalsRail({ buildingId, deptId, onOpen }) {
 
 // ---- Dashboard card: EVERY tank-bearing department, one rail per row ----
 // The picker is gone: a dashboard that shows one department of six is a dashboard that hides
-// five. Collapsed, the card shows the first row only; a department whose tanks are out of band
-// stays visible past the fold (same rule as the site plan) — a fold must never hide an alarm.
+// five. Departments sit INLINE and wrap — as many per line as fit, identical layout open or
+// closed; collapsed simply clips to the first line. Collapsed, a CRITICAL department is ordered
+// to the front so the fold can never push an alarm out of view.
 const TV_EXP_LS = "nj_dash_vitals_open_v1";
 function tvDeptOpts() {
   const out = [];
   FACILITY.forEach((b) => b.depts.forEach((d) => { if (d.systems.some((s) => s.label === "Fish Tank")) out.push({ b, d }); }));
   return out;
 }
-// Only a CRITICAL department is exempt from the fold. A tank sitting below setpoint minus
-// hysteresis is normal operation — the dosing loop is about to open a valve, not an alarm — and
-// every seeded department has one, so exempting "high" would exempt all of them and the fold
-// would do nothing. Computed from the BASE values (not the wandering tick) so the fold cannot
-// reshuffle itself every 5 s.
+// Only a CRITICAL department is promoted to the front of the collapsed line. A tank sitting
+// below setpoint minus hysteresis is normal operation — the dosing loop is about to open a
+// valve, not an alarm — and every seeded department has one. Computed from the BASE values (not
+// the wandering tick) so the order cannot reshuffle itself every 5 s.
 function tvDeptCritical(o) {
   return njVitalTanks(o.b.id, o.d.id).some((t) => t.active && tvO2State(t, t.o2) === "critical");
 }
@@ -153,9 +153,37 @@ function DashTankVitals() {
   const opts = tvDeptOpts();
   const [open, setOpen] = React.useState(() => { try { return localStorage.getItem(TV_EXP_LS) === "1"; } catch (e) { return false; } });
   const toggle = () => { const v = !open; setOpen(v); try { localStorage.setItem(TV_EXP_LS, v ? "1" : "0"); } catch (e) {} };
-  const crit = opts.map(tvDeptCritical);
-  const shown = open ? opts : opts.filter((o, i) => i === 0 || crit[i]);
-  const hidden = opts.length - shown.length;
+  const crit = new Map(opts.map((o) => [o.d.id, tvDeptCritical(o)]));
+  const shown = opts.slice().sort((a, b) => (crit.get(b.d.id) ? 1 : 0) - (crit.get(a.d.id) ? 1 : 0));
+  // The groups always wrap the same way, open or closed — as many departments per line as fit.
+  // Collapsed just CLIPS to the first line's height, so nothing reflows on toggle and no
+  // horizontal scroller appears. Measured from the live layout (every group stays laid out, the
+  // clip is overflow only) and re-measured on resize.
+  const flowRef = React.useRef(null);
+  const [fold, setFold] = React.useState({ h: 0, below: [] });
+  React.useEffect(() => {
+    const el = flowRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const gs = Array.from(el.querySelectorAll(".tv-grp"));
+      if (!gs.length) return;
+      const top = Math.min.apply(null, gs.map((g) => g.offsetTop));
+      const first = gs.filter((g) => g.offsetTop < top + 4);
+      const h = Math.round(Math.max.apply(null, first.map((g) => g.offsetTop + g.offsetHeight)) - top);
+      const below = gs.filter((g) => g.offsetTop >= top + 4).map((g) => g.dataset.dept);
+      setFold((p) => (p.h === h && p.below.join() === below.join() ? p : { h, below }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [opts.length]);
+  const clipped = !open && fold.below.length > 0 && fold.h > 0;
+  // A clipped group is not just invisible — it is out of reach. Left interactive, Tab would land
+  // on a gauge the operator cannot see and the browser would scroll the overflow:hidden flow to
+  // reveal it, stranding the card on a mid-department slice with no way to scroll back.
+  React.useEffect(() => { if (clipped && flowRef.current) flowRef.current.scrollTop = 0; }, [clipped]);
+  const hiddenSet = clipped ? new Set(fold.below) : null;
   return (
     <div className="card dash-vitals">
       <div className="card-head">
@@ -166,25 +194,27 @@ function DashTankVitals() {
         </div>
       </div>
       <div className="card-body tv-body">
-        {shown.map((o) => {
-          const isCrit = crit[opts.indexOf(o)];
-          return (
-            <div key={o.d.id} className="tv-grp">
+        <div ref={flowRef} className={"tv-flow" + (clipped ? " tv-clip" : "")} style={clipped ? { maxHeight: fold.h } : null}>
+          {shown.map((o) => {
+            const off = hiddenSet && hiddenSet.has(o.d.id);
+            return (
+            <div key={o.d.id} data-dept={o.d.id} className="tv-grp" inert={off ? "" : undefined} aria-hidden={off ? "true" : undefined}>
               <div className="tv-grp-head">
                 <span className="tv-grp-name">{o.d.name}</span>
                 <span className="tv-grp-sub">{o.b.name} · {o.d.sub}</span>
-                {isCrit && <Badge level="critical">O₂ CRITICAL</Badge>}
+                {crit.get(o.d.id) && <Badge level="critical">O₂ CRITICAL</Badge>}
                 <button className="linkbtn tv-grp-link" onClick={() => njGoTankScreen(o.b.id, o.d.id)}
                   title={"Open the Fish Tank screen for " + o.d.name}>Fish Tank <Icon name="arrow-up-right" size={14} /></button>
               </div>
               <TankVitalsRail buildingId={o.b.id} deptId={o.d.id} />
             </div>
-          );
-        })}
-        {opts.length > 1 && (
+            );
+          })}
+        </div>
+        {fold.below.length > 0 && (
           <button className="tv-more" onClick={toggle} aria-expanded={open}>
             <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
-            {open ? "Show less" : hidden > 0 ? "Show " + hidden + " more department" + (hidden === 1 ? "" : "s") : "Show all departments"}
+            {open ? "Show less" : "Show " + fold.below.length + " more department" + (fold.below.length === 1 ? "" : "s")}
           </button>
         )}
       </div>

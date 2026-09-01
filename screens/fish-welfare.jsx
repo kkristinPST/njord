@@ -479,16 +479,13 @@ function WfScoreGuide({ indicator }) {
         <p className="wf-guide-intro">Every inspected fish is scored 0–3. Score 0 is no finding; the references show where 1, 2 and 3 begin.</p>
         <div className="wf-guide-row">
           <span className="wf-guide-n" style={{ background: WF_CAT[0].bg, color: WF_CAT[0].ink }}>0</span>
-          <span className="wf-guide-cap wf-guide-cap-0">No finding — nothing to register</span>
+          <span className="wf-guide-cap wf-guide-cap-0">No finding · nothing to register</span>
         </div>
         {caps.map((c, i) => (
           <div className="wf-guide-row" key={i}>
             <span className="wf-guide-n" style={{ background: WF_CAT[i + 1].bg, color: WF_CAT[i + 1].ink }}>{i + 1}</span>
             <div className="wf-guide-body">
-              <div className="wf-guide-slot" role="img" aria-label={"Reference photo · " + indicator + " score " + (i + 1)}>
-                <Icon name="image" size={20} color="var(--slate-400)" />
-                <span className="wf-guide-slot-cap">Reference photo · {indicator} score {i + 1}</span>
-              </div>
+              <image-slot id={"wf-guide-" + slug + "-" + (i + 1)} shape="rounded" radius="8" placeholder={"Reference photo · " + indicator + " score " + (i + 1)}></image-slot>
               <span className="wf-guide-cap">{c}</span>
             </div>
           </div>

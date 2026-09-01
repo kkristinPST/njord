@@ -38,6 +38,11 @@
 <script src="vendor/react-dom.production.min.js" defer></script>
 <script src="vendor/lucide.min.js" defer></script>
 
+<!-- <image-slot> custom element: the Fish Welfare scoring guide renders its reference photos
+     through it, and lib/screens.css styles it. Must define the element before the app renders,
+     so it loads (deferred, in order) ahead of the bundle. -->
+<script src="image-slot.js" defer></script>
+
 <!-- The app, precompiled by build.mjs. This used to be 54 <script type="text/babel"> tags
      transpiled in the browser by @babel/standalone; edit the .jsx sources and run
      `npm run build` (or `npm run watch`) to regenerate. -->

@@ -55,7 +55,11 @@ function trendSeed(s) {
 const TREND_RANGES = { "1h": 60, "6h": 72, "24h": 96, "7d": 84 };
 const RANGE_HOURS = { "1h": 1, "6h": 6, "24h": 24, "7d": 168 };
 // sampling intervals for the explicit date-range picker
+// "auto" = fit the window (the old fixed per-range point counts). Any other choice is a real
+// RESOLUTION: how often a datapoint is generated inside the window, so 24 h at a 1 h interval
+// draws 24 buckets per pen — and it now applies to the quick presets too, not only a custom range.
 const INTERVALS = [
+  { k: "auto", label: "Auto (fit window)", ms: null },
   { k: "1m", label: "1 minute", ms: 60000 },
   { k: "5m", label: "5 minutes", ms: 5 * 60000 },
   { k: "15m", label: "15 minutes", ms: 15 * 60000 },
@@ -66,7 +70,31 @@ const INTERVALS = [
   { k: "1w", label: "1 week", ms: 7 * 24 * 3600000 },
   { k: "1mo", label: "1 month", ms: 30 * 24 * 3600000 },
 ];
-const INTERVAL_MS = INTERVALS.reduce((o, i) => { o[i.k] = i.ms; return o; }, {});
+const INTERVAL_MS = INTERVALS.reduce((o, i) => { if (i.ms) o[i.k] = i.ms; return o; }, {});
+// points across a window at the chosen interval. Capped: past ~2 000 samples the SVG path is
+// denser than the screen and nothing is gained. `ivMs` null (auto) falls back to `fit`.
+function trendPointCount(spanMs, interval, fit) {
+  const ivMs = INTERVAL_MS[interval];
+  if (!ivMs) return fit;
+  // 24 h at a 1 h interval is 24 points, not 25 — an interval names the buckets in the window.
+  // Clamping for very long ranges is the backend's job; the cap here only protects the SVG.
+  return Math.max(2, Math.min(2000, Math.round(spanMs / ivMs)));
+}
+// GUI-only flags the backend acts on. Accumulate flow integrates a rate into a volume; the unit
+// picked here is the unit of the SOURCE rate, and the plotted series becomes m³.
+const TREND_ACCUM = [
+  { k: "", label: "Off" }, { k: "m3h", label: "m³/h" }, { k: "m3min", label: "m³/min" },
+  { k: "lh", label: "l/h" }, { k: "lmin", label: "l/min" },
+];
+const TREND_AGG = [
+  { k: "last", label: "Last Value" }, { k: "avg", label: "Average" },
+  { k: "min", label: "Minimum" }, { k: "max", label: "Maximum" },
+];
+const TREND_COLORS = [
+  { k: "#1E3A8A", label: "Dark blue" }, { k: "#00AEEE", label: "Light blue" }, { k: "#00C483", label: "Green" },
+  { k: "#FBA100", label: "Amber" }, { k: "#F53E39", label: "Red" }, { k: "#8B5CF6", label: "Violet" },
+  { k: "#0E7490", label: "Teal" }, { k: "#5C646F", label: "Grey" },
+];
 // focus-window presets (minutes each side of the alarm timestamp)
 const FOCUS_WINDOWS = [15, 30, 60, 180];
 function fmtClock(ts) { const d = new Date(ts); const p = (n) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()); }
@@ -132,15 +160,62 @@ function viewFromStore(store) {
     let xMin = store.startTs, xMx = store.endTs;
     if (xMx <= xMin) xMx = xMin + 3600000;
     if (store.dynamic) { const span = xMx - xMin; xMx = njNow(); xMin = xMx - span; }
-    const ivMs = INTERVAL_MS[store.interval] || 3600000;
-    const n = Math.max(2, Math.min(500, Math.round((xMx - xMin) / ivMs) + 1));
-    return { mode: "range", xMin, xMax: xMx, n, range: store.range, custom: true };
+    const n = trendPointCount(xMx - xMin, store.interval, 96);
+    return { mode: "range", xMin, xMax: xMx, n, range: store.range, custom: true, interval: store.interval };
   }
   const off = store.rangeOffset || 0;
   const xMax = njNow() - off;
-  return { mode: "range", xMin: xMax - h * 3600000, xMax, n: TREND_RANGES[store.range] || 72, range: store.range, offset: off };
+  const xMin = xMax - h * 3600000;
+  return { mode: "range", xMin, xMax, n: trendPointCount(xMax - xMin, store.interval, TREND_RANGES[store.range] || 72),
+    range: store.range, offset: off, interval: store.interval };
+}
+// Alarm limits per signal, from RAS_LIMITS — the per-signal limit registry with correct units and
+// both bounds. NOT from the alarm register: that keys on the QT measurement scheme, which is not
+// the id the trend pens carry, so every join missed and every line fell off-scale.
+// The pump-sump pH signals are the one place the two schemes disagree, hence the alias.
+const TREND_LIMIT_ALIAS = { "DPT1-SMP0-PH1": "DPT1-SMP0-QT3", "DPT1-SMP0-PH2": "DPT1-SMP0-QT4" };
+let TREND_LIMITS = null;
+function njTagLimits(tag) {
+  const reg = window.RAS_LIMITS;
+  if (!reg) return [];                                   // ras-dock.jsx not loaded yet — don't cache
+  if (!TREND_LIMITS) {
+    TREND_LIMITS = {};
+    Object.keys(reg).forEach((grp) => {
+      (reg[grp].blocks || []).forEach((b) => {
+        if (!b.tag) return;
+        const out = [];
+        ["hihi", "hi", "lo", "lolo"].forEach((k) => { if (b[k] != null) out.push({ value: b[k], kind: k, unit: b.u }); });
+        if (out.length) TREND_LIMITS[b.tag] = out;
+      });
+    });
+  }
+  return TREND_LIMITS[TREND_LIMIT_ALIAS[tag] || tag] || [];
 }
 // sample one pen across a view → [{ t, v }]
+// Accumulate flow: the pen's source is a RATE, so the plotted series is its running integral in
+// m³ — the backend owns the real integration; this is the same shape so the chart reads true.
+const TREND_ACCUM_FACTOR = { m3h: 1 / 3600000, m3min: 1 / 60000, lh: 1 / 3600000000, lmin: 1 / 60000000 };
+function trendAccumulate(pts, unitKey) {
+  const f = TREND_ACCUM_FACTOR[unitKey];
+  if (!f || pts.length < 2) return pts;
+  let acc = 0;
+  return pts.map((p, i) => {
+    if (i > 0) acc += Math.max(0, p.v) * (p.t - pts[i - 1].t) * f;
+    return { t: p.t, v: acc };
+  });
+}
+// least-squares fit over the window, drawn dashed — the legacy estimation line. Backend math in
+// production; the GUI's job is the per-pen on/off and drawing it.
+function trendFit(pts) {
+  if (pts.length < 3) return null;
+  const n = pts.length, t0 = pts[0].t;
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  pts.forEach((p) => { const x = (p.t - t0) / 60000; sx += x; sy += p.v; sxx += x * x; sxy += x * p.v; });
+  const d = n * sxx - sx * sx;
+  if (Math.abs(d) < 1e-9) return null;
+  const m = (n * sxy - sx * sy) / d, b = (sy - m * sx) / n;
+  return { at: (t) => b + m * ((t - t0) / 60000) };
+}
 function seriesForView(pen, view) {
   const n = view.n, span = view.xMax - view.xMin;
   const ev = (view.focusEvent && view.focusEvent.penId === pen.id)
@@ -150,7 +225,7 @@ function seriesForView(pen, view) {
     const t = view.xMin + (i / (n - 1)) * span;
     pts.push({ t, v: ev ? eventValueAt(pen, t, ev) : penValueAt(pen, t) });
   }
-  return pts;
+  return pen.accum ? trendAccumulate(pts, pen.accum) : pts;
 }
 // alarm markers visible on the plotted pens within a view.
 // Strict 1:1 — an analog alarm marks ONLY the pen whose tag is its measured value.
@@ -189,7 +264,7 @@ const trendStore = {
   pens: loadPens(),
   range: "6h",
   rangeOffset: 0,      // ms back from now for the quick-range window (prev/next paging)
-  interval: "6h",
+  interval: "auto",
   dynamic: true,
   customRange: false,
   startTs: null,
@@ -284,6 +359,12 @@ const trendStore = {
     if (interval) this.interval = interval;
     if (dynamic != null) this.dynamic = dynamic;
     this.customRange = true; this.centerTs = null; this.focusEvent = null; this.eventTimeline = null; this.emit();
+  },
+  // one write for every pen field the details dialog owns (name, colour, decimals, aggregate,
+  // accumulate-flow unit, estimation line). Range/dyn keep their own setters.
+  setPen(id, patch) {
+    this.pens = this.pens.map((p) => (p.id === id ? { ...p, ...patch } : p));
+    this.emit();
   },
   toggleMarkers() { this.showMarkers = !this.showMarkers; this.emit(); },
   setAxisMode(m) { this.axisMode = m; try { localStorage.setItem("nj_trend_axis_v1", m); } catch (e) {} this.emit(); },
@@ -517,7 +598,7 @@ function TrendBtn({ id, name, unit, value, group, tag, title, className }) {
   return (
     <button type="button" className={"trend-btn" + (on ? " on" : "") + (className ? " " + className : "")}
       aria-pressed={on}
-      title={on ? (name || "Value") + " is in Trends — click to remove" : (title || ("Send " + (name || "value") + " to Trends"))}
+      title={on ? (name || "Value") + " is in Trends · click to remove" : (title || ("Send " + (name || "value") + " to Trends"))}
       onClick={(e) => { e.stopPropagation(); e.preventDefault();
         if (on) { trendStore.remove(penId); njToast((name || "Parameter") + " removed from Trends", "line-chart"); }
         else njSendToTrend(id, { name, unit, value, group, tag }); }}>
@@ -559,9 +640,17 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   // Dynamic scale (default) fits the data in view. A pen with dyn === false plots against the
   // operator's OWN fixed Range min/max — so a boolean pen can be pinned to 0..2 and stop
   // reading as noise, exactly like the legacy pen table's Range Min / Range Max columns.
+  // When alarm limits are shown, the FOCUSED pen's scale also opens up far enough to contain its
+  // limits — otherwise a healthy signal (the normal case) scales to its own noise and every limit
+  // line falls outside the band and never draws. Legacy trends behave the same way.
+  const focusId = (vis.find((s) => s.pen.id === focus) || vis[0] || { pen: {} }).pen.id || null;
+  const limitsFor = (pen) => (showMarkers && pen && pen.id === focusId && !pen.accum ? njTagLimits(pen.id) : []);
   const norm = (pts, pen) => {
     if (pen && pen.dyn === false && pen.rMin != null && pen.rMax != null && pen.rMax > pen.rMin) return { mn: pen.rMin, mx: pen.rMax };
-    let mn = Math.min(...pts.map((p) => p.v)), mx = Math.max(...pts.map((p) => p.v)); if (mn === mx) { mn -= 1; mx += 1; } const pad = (mx - mn) * 0.16; return { mn: mn - pad, mx: mx + pad }; };
+    let mn = Math.min(...pts.map((p) => p.v)), mx = Math.max(...pts.map((p) => p.v)); if (mn === mx) { mn -= 1; mx += 1; }
+    const pad = (mx - mn) * 0.16; mn -= pad; mx += pad;
+    limitsFor(pen).forEach((l) => { if (l.value < mn) mn = l.value - (mx - l.value) * 0.06; if (l.value > mx) mx = l.value + (l.value - mn) * 0.06; });
+    return { mn, mx }; };
   const yOf = (v, mn, mx) => padT + (1 - (v - mn) / (mx - mn)) * (H - padT - padB);
   const fpen = vis.find((s) => s.pen.id === focus) || vis[0];
   // Gutters are capped — beyond AXMAX the plot area would be eaten by axis furniture.
@@ -648,7 +737,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
         const dim = fpen && s.pen.id !== fpen.pen.id;
         return (
           <g key={"ax" + s.pen.id} opacity={dim ? 0.85 : 1}>
-            <title>{s.pen.name + " — " + s.pen.unit}</title>
+            <title>{s.pen.name + " · " + s.pen.unit}</title>
             <line x1={gr - 4} y1={padT} x2={gr - 4} y2={H - padB} stroke={s.pen.color} strokeWidth={dim ? 1.5 : 2.5} />
             <rect x={gr - 9} y={padT - 13} width="11" height={dim ? 2.5 : 3.5} rx="1.5" fill={s.pen.color} />
             {TICKF.map((f, k) => (
@@ -713,13 +802,37 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
         const isFocus = fpen && s.pen.id === fpen.pen.id;
         const d = s.pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.t).toFixed(1)},${yOf(p.v, mn, mx).toFixed(1)}`).join(" ");
         const last = s.pts[s.pts.length - 1];
+        // estimation line: the fit extended dashed to the right edge of the window
+        const fit = s.pen.estimate ? trendFit(s.pts) : null;
         return (
           <g key={s.pen.id} opacity={fpen && !isFocus ? 0.66 : 1}>
             <path d={d} fill="none" stroke={s.pen.color} strokeWidth={isFocus ? 2.6 : 1.7} strokeLinejoin="round" strokeLinecap="round" />
+            {fit && (
+              <path d={`M${x(view.xMin).toFixed(1)},${yOf(fit.at(view.xMin), mn, mx).toFixed(1)}L${x(view.xMax).toFixed(1)},${yOf(fit.at(view.xMax), mn, mx).toFixed(1)}`}
+                fill="none" stroke={s.pen.color} strokeWidth="1.4" strokeDasharray="6 5" opacity=".75" />
+            )}
             <circle cx={x(last.t)} cy={yOf(last.v, mn, mx)} r="3.2" fill={s.pen.color} />
           </g>
         );
       })}
+
+      {/* Static alarm-limit lines for the FOCUSED pen only — every limit the register holds for
+          its tag, not just the ones that fired in view. With several pens on their own normalised
+          scales a limit line has no honest position, so it follows the focus. */}
+      {showMarkers && fpen && !fpen.pen.accum && (() => {
+        const { mn, mx } = norm(fpen.pts, fpen.pen);
+        return njTagLimits(fpen.pen.id).map((l) => {
+          const inside = l.value >= mn && l.value <= mx;
+          const ly = inside ? yOf(l.value, mn, mx) : (l.value > mx ? padT + 7 : H - padB - 7);
+          const lab = (window.THR_LABEL[l.kind] || "LIM") + " " + l.value + (inside ? "" : l.value > mx ? " \u2191" : " \u2193");
+          return (
+            <g key={"lim" + l.kind + l.value}>
+              {inside && <line x1={padL} x2={W - padR} y1={ly} y2={ly} stroke="var(--critical)" strokeWidth="1.2" strokeDasharray="7 4" opacity=".75" />}
+              <text x={W - padR - 4} y={inside ? ly - 5 : ly} textAnchor="end" className={"mt-limlbl" + (inside ? "" : " off")}>{lab}</text>
+            </g>
+          );
+        });
+      })()}
 
       {/* hover capture → crosshair readout (below the markers so their hit areas still win) */}
       <rect x={padL} y={padT} width={W - padL - padR} height={H - padT - padB} fill="transparent"
@@ -766,7 +879,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
           <text x={cross.bx + 14} y={cross.by + 21} className="mt-cross-ts">{fmtDayClock(hoverT)}</text>
           {cross.rows.map((r, i) => {
             const ry = cross.by + 32 + i * 19 + 10;
-            const nm = r.pen.name.length > 24 ? r.pen.name.slice(0, 23) + "…" : r.pen.name;
+            const nm = r.pen.name.length > 24 ? r.pen.name.slice(0, 23) + "\u2026" : r.pen.name;
             return (
               <g key={r.pen.id}>
                 <circle cx={cross.bx + 18} cy={ry - 4} r="3.6" fill={r.pen.color} />
@@ -841,7 +954,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
                   </g>
                 );
               })}
-              <text className="mt-tipnote" x={bx + 12} y={by + bh - 10}>{full ? "Max " + AXMAX + " axes — a new pick replaces the oldest" : "Signals without an axis still plot, on a fitted scale"}</text>
+              <text className="mt-tipnote" x={bx + 12} y={by + bh - 10}>{full ? "Max " + AXMAX + " axes · a new pick replaces the oldest" : "Signals without an axis still plot, on a fitted scale"}</text>
             </g>
           </g>
         );
@@ -1084,7 +1197,7 @@ function TrendExportDialog() {
       njToast("Exported " + ts.length.toLocaleString("nb-NO") + " rows × " + selPens.length + " signal" + (selPens.length !== 1 ? "s" : "") + " to " + (csv ? "CSV." : "Excel."));
     }).catch(() => {
       jobRef.current = null; setJob(null);
-      njToast("Export cancelled — no file was written.");
+      njToast("Export cancelled. No file was written.");
     });
   };
 
@@ -1190,7 +1303,8 @@ function trendTree() {
 
 Object.assign(window, {
   trendEquip, trendTree,
-  TREND_CATALOG, TREND_BY_TAG, TREND_PALETTE, TREND_RANGES, RANGE_HOURS, FOCUS_WINDOWS, INTERVALS, INTERVAL_MS,
+  TREND_CATALOG, TREND_BY_TAG, TREND_PALETTE, TREND_RANGES, RANGE_HOURS, FOCUS_WINDOWS, INTERVALS, INTERVAL_MS, trendPointCount,
+  TREND_ACCUM, TREND_AGG, TREND_COLORS, njTagLimits,
   trendStore, useTrends, trendSeries, njSendToTrend, njTrendToast, njToast, resolveTrendPen, MultiTrendChart, TrendBtn,
   seriesForView, viewFromStore, markersForView, penValueAt, fmtClock, fmtDayClock, fmtFullTs, fmtAxis, njDownloadFile,
   TrendExportDialog, openTrendExport, NjDateTime,

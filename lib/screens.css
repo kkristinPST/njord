@@ -61,8 +61,8 @@
 .ff-target { font-size: 12px; color: var(--slate-500); }
 
 .ff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-/* label column flexes, value column is a FIXED width so every edit box in the card â€” and
-   across neighbouring cards â€” shares one right/left edge. A ragged box column was the
+/* label column flexes, value column is a FIXED width so every edit box in the card — and
+   across neighbouring cards — shares one right/left edge. A ragged box column was the
    "cards look off" report. */
 .ff-field { display: grid; grid-template-columns: minmax(0, 1fr) 92px; align-items: center; gap: 8px; }
 .ff-field-l { font-size: 12px; color: var(--slate-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -77,7 +77,7 @@
 .ff-state-chip.run { background: var(--success-bg); color: var(--success-text); }
 .ff-state-chip.paused { background: var(--warning-bg); color: var(--warning-text); }
 
-/* essential feeder strip â€” surfaced feed type + calibration, opens feeder popup */
+/* essential feeder strip — surfaced feed type + calibration, opens feeder popup */
 .ff-feedstrip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas: "id prog set" "type type cal"; column-gap: 10px; row-gap: 8px;
   align-items: center; width: 100%; text-align: left;
@@ -256,7 +256,7 @@
 .tank-stack { display: flex; flex-direction: column; gap: 16px; }
 .tank-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
 
-/* one data card per tank â€” readouts + controls */
+/* one data card per tank — readouts + controls */
 .tank-panel { padding: 16px 16px 16px; display: flex; flex-direction: column; align-items: stretch; gap: 14px; min-width: 0; }
 .tank-info { display: flex; flex-direction: column; gap: 14px; }
 .tank-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
@@ -267,7 +267,7 @@
   background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--r-pill); padding: 4px 10px 4px 8px; white-space: nowrap; }
 .feed-state.on { color: var(--success-text); background: var(--success-bg); border-color: transparent; }
 
-/* Oâ‚‚ sat / level readouts */
+/* O₂ sat / level readouts */
 .tank-readouts { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--slate-200); border-radius: var(--r-md); overflow: hidden; }
 .ro { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; }
 .ro + .ro { border-left: 1px solid var(--slate-200); }
@@ -301,7 +301,7 @@
 .ro-open { position: absolute; top: 12px; right: 11px; opacity: 0; transition: opacity .12s; }
 .ro-click:hover .ro-open, .ro-click:focus-within .ro-open { opacity: 1; }
 
-/* three small stats: control valve / emergency Oâ‚‚ / feeding */
+/* three small stats: control valve / emergency O₂ / feeding */
 .tank-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .tstat { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .tstat-l { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--slate-400); }
@@ -379,7 +379,7 @@
 .valve-meta .caption { line-height: 1.3; }
 .valve-val { font-size: 12px; font-weight: 700; color: var(--fg); }
 
-/* pump sump â€” full-width horizontal strip */
+/* pump sump — full-width horizontal strip */
 .pump-card { padding: 16px 20px 16px; }
 .pump-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .pump-strip { display: flex; align-items: center; }
@@ -734,12 +734,12 @@
 .bio-back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--slate-600); background: none; border: none; cursor: pointer; padding: 0; margin-bottom: 14px; }
 .bio-back:hover { color: var(--primary-text); }
 
-/* deadfish registration â€” inline editable table */
+/* deadfish registration — inline editable table */
 .dfx-time { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
 .dfx-time-l { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--slate-400); }
 .dfx-time-v { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--fg); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
 .dfx-card { padding: 0; overflow: visible; }
-/* line cards: labelled fields in a grid that collapses to one column â€” no sideways scroll */
+/* line cards: labelled fields in a grid that collapses to one column — no sideways scroll */
 .dfl { padding: 4px; }
 .dfl-line { padding: 10px 14px 14px; border-radius: var(--r-md); }
 .dfl-line + .dfl-line { border-top: 1px solid var(--border); border-radius: 0; }
@@ -755,14 +755,14 @@
 .dfl-grid .form-row { padding: 8px 0 0; }
 .dfl-grid .form-input { width: 100%; box-sizing: border-box; }
 /* auto-fit, NOT a viewport @media query: the constraint is the card (page card = viewport
-   minus a 72â€“256px rail; modal = fixed 860 dialog), so a viewport breakpoint pushed a 614px
+   minus a 72–256px rail; modal = fixed 860 dialog), so a viewport breakpoint pushed a 614px
    template into a 400px box. This template can never demand more width than it has.
    Container queries would fix it too, but container-type makes the card the containing block
    for the cause popover's position:fixed. */
 .dfl-grid { grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); }
 .dfl-comment { grid-column: 1 / -1; }
 .dfl-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 12px 14px; border-top: 1px solid var(--border); background: var(--slate-50, #F8FAFC); border-radius: 0 0 var(--r-lg) var(--r-lg); }
-/* Fixed layout: with auto layout, picking a long cause ("Mechanical damage Â· Handling injury")
+/* Fixed layout: with auto layout, picking a long cause ("Mechanical damage · Handling injury")
    re-measured every column and yanked Location narrow mid-interaction. Columns must not move. */
 .dfx-tbl { min-width: 660px; table-layout: fixed; width: 100%; }
 .dfx-tbl td { vertical-align: middle; padding: 6px 8px; }
@@ -778,7 +778,7 @@ select.dfx-in { -webkit-appearance: none; appearance: none; padding-right: 20px;
 .dfx-ph { color: var(--slate-400); }
 .dfx-mono { font-family: var(--font-mono); font-size: 12px; }
 .dfx-dlg-body { max-height: 62vh; overflow: hidden auto; }
-/* cause-of-death picker: searchable two-level (cause â†’ subcause) list */
+/* cause-of-death picker: searchable two-level (cause → subcause) list */
 .dfx-cp-wrap { position: relative; }
 /* Two-part value on two lines: cause + subcause cannot fit one line of a reflowing column,
    and the subcause is the whole point of the two-level picker. Do NOT restore nowrap+ellipsis. */
@@ -887,11 +887,11 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .slm-cap-strong { font-size: 14px; fill: var(--fg); }
 .rasm-eq:hover .wtm-chbox { stroke: var(--primary); }
 .rasm-eq:hover .wtm-skid { stroke: var(--primary); }
-/* pipes â€” subtle hairline connectors (status & equipment carry the color) */
+/* pipes — subtle hairline connectors (status & equipment carry the color) */
 .rasm-pipe { fill: none; stroke: var(--sc-pipe); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-/* â”€â”€ process-fluid line coding: every mimic pipe is tinted by the fluid it carries.
+/* ── process-fluid line coding: every mimic pipe is tinted by the fluid it carries.
    Liquids solid, gases dashed, so the two neutral-gray lines stay tellable apart.
-   Colours come from the --fl-* tokens (monochrome in the legacy skin). â”€â”€ */
+   Colours come from the --fl-* tokens (monochrome in the legacy skin). ── */
 .rasm-pipe.fl-proc, .ras-pipe.fl-proc { stroke: var(--fl-proc); }
 .rasm-pipe.fl-raw,  .ras-pipe.fl-raw  { stroke: var(--fl-raw); }
 .rasm-pipe.fl-drain,.ras-pipe.fl-drain{ stroke: var(--fl-drain); }
@@ -903,7 +903,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .rasm-pipe.fl-o2    { stroke: var(--fl-o2);  stroke-dasharray: 7 6; }
 .rasm-pipe.fl-gas   { stroke: var(--fl-gas); stroke-dasharray: 7 6; }
 .rasm-pipe.fl-idle  { opacity: .4; }
-/* â”€â”€ HyFlow subsurface feeding (screens/hyflow.jsx) â”€â”€ */
+/* ── HyFlow subsurface feeding (screens/hyflow.jsx) ── */
 .hf-hop { fill: var(--sc-vessel); stroke: var(--sc-edge); stroke-width: 1.4; }
 .hf-hopfill { fill: var(--success); opacity: .5; }
 .hf-lnttl { font: 700 11px/1 var(--font-sans); letter-spacing: .8px; text-transform: uppercase; fill: var(--slate-500); }
@@ -918,8 +918,13 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .hf-sv-v { font: 500 15px/1.1 var(--font-mono); color: var(--fg); }
 .hf-sv-v i { font: 400 11px/1 var(--font-mono); font-style: normal; color: var(--slate-500); margin-left: 4px; }
 .hf-screws { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.hf-screws-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; background: var(--slate-50); border-bottom: 1px solid var(--border); font: 700 10px/1 var(--font-sans); letter-spacing: 1px; text-transform: uppercase; color: var(--slate-600); }
-.hf-split { font-family: var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--slate-500); }
+.hf-screws-h { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 8px; width: 100%; text-align: left; padding: 6px 10px; background: var(--slate-50); border: 0; border-bottom: 1px solid transparent; cursor: pointer; font: 700 10px/1 var(--font-sans); letter-spacing: 1px; text-transform: uppercase; color: var(--slate-600); }
+.hf-screws-h:hover { background: var(--slate-100); }
+.hf-screws-h .njicon { flex: none; color: var(--slate-400); }
+.hf-screws-h > span { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.hf-screws-h .hf-screws-run { justify-self: end; font-weight: 700; letter-spacing: .02em; text-transform: none; color: var(--warning-text); background: var(--warning-bg); border-radius: 5px; padding: 2px 6px; }
+.hf-screws.open .hf-screws-h { border-bottom-color: var(--border); }
+.hf-split { grid-column: 2/4; font-family: var(--font-mono); letter-spacing: 0; text-transform: none; color: var(--slate-500); }
 .hf-screw { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-bottom: 1px solid var(--border); }
 .hf-screw:last-child { border-bottom: 0; }
 .hf-screw-id { display: flex; align-items: center; gap: 8px; }
@@ -943,7 +948,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .epm-joint { stroke: none; }
 .epm-joint.epm-w { fill: #3E88C6; } .epm-joint.epm-d { fill: #98A2B0; } .epm-joint.epm-g { fill: #D98A2B; } .epm-joint.epm-b { fill: #2AA198; }
 .epm-leg-sw { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
-/* run/stop trend affordance on equipment symbols (binary signal, tied to the graphic) â€”
+/* run/stop trend affordance on equipment symbols (binary signal, tied to the graphic) —
    shared across all mimics; placed to the right of the symbol like the value trend icon.
    Distinct STEP-wave glyph (vs the value's line-chart glyph) so binary vs analog reads at a glance. */
 .rasm-symtrend { cursor: pointer; opacity: .62; transition: opacity .12s; }
@@ -952,7 +957,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .rasm-symtrend:hover .rasm-symtrend-bg { fill: var(--primary); stroke: var(--primary); }
 .rasm-symtrend-ln path { fill: none; stroke: var(--slate-600); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke .12s; }
 .rasm-symtrend:hover .rasm-symtrend-ln path { stroke: #fff; }
-/* active â€” a run/stop pen for this symbol is already on the Trends register */
+/* active — a run/stop pen for this symbol is already on the Trends register */
 .rasm-symtrend.on { opacity: 1; }
 .rasm-symtrend.on .rasm-symtrend-bg { fill: var(--primary); stroke: var(--primary); }
 .rasm-symtrend.on .rasm-symtrend-ln path { stroke: #fff; }
@@ -974,7 +979,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .rasm-rd-trln { fill: none; stroke: var(--primary); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; transition: stroke .12s; }
 .rasm-rd-tr:hover .rasm-rd-trbg { fill: var(--primary); stroke: var(--primary); }
 .rasm-rd-tr:hover .rasm-rd-trln { stroke: #fff; }
-/* active â€” a pen for this value is already on the Trends register */
+/* active — a pen for this value is already on the Trends register */
 .rasm-rd-tr.on .rasm-rd-trbg { fill: var(--primary); stroke: var(--primary); }
 .rasm-rd-tr.on .rasm-rd-trln { stroke: #fff; }
 /* legend chips */
@@ -1094,7 +1099,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .hpc .param-row:last-child { border-bottom: none; }
 .hpc .param-row .pl { font-size: 12px; }
 .hpc .param-row .pv { font-size: 12px; }
-/* Flow shown statically â€” animation intentionally removed so motion doesn't pull focus from values/parameters. */
+/* Flow shown statically — animation intentionally removed so motion doesn't pull focus from values/parameters. */
 .ras-legend { display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--slate-100); }
 .ras-legend .ci { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--slate-600); }
 .ras-legend .ras-leg-div { width: 1px; align-self: stretch; min-height: 16px; background: var(--slate-200); flex: none; }
@@ -1105,7 +1110,7 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .param-group-h { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--slate-500); padding: 12px 20px 6px; background: var(--slate-50); border-bottom: 1px solid var(--slate-100); }
 .param-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--slate-100); }
 .param-row .pl { font-size: 14px; color: var(--slate-600); }
-/* value chip â€” de-scoped so it also styles the pump-sump grid + alarm-limit blocks
+/* value chip — de-scoped so it also styles the pump-sump grid + alarm-limit blocks
    (these render the same .pv/.pv.box buttons outside .param-row) */
 .pv { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--fg); white-space: nowrap; }
 .pv.box { border: 1px solid var(--slate-300); border-radius: var(--r-md); padding: 6px 10px; background: var(--surface); min-width: 56px; text-align: right; }
@@ -1120,7 +1125,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .pv-edit:hover svg { opacity: 1; color: var(--primary); }
 .param-mode { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--success-text); background: var(--success-bg); border-radius: var(--r-sm); padding: 4px 10px; }
 
-/* â”€â”€ RAS side dock: left icon rail + mode panel (Parameters / Alarm limits / Trends) â”€â”€ */
+/* ── RAS side dock: left icon rail + mode panel (Parameters / Alarm limits / Trends) ── */
 .dock { display: flex; padding: 0; overflow: hidden; }
 .dock-rail { display: flex; flex-direction: column; gap: 6px; padding: 12px 8px; background: var(--slate-50); border-right: 1px solid var(--slate-200); flex-shrink: 0; }
 .dock-rail-btn { width: 38px; height: 38px; border-radius: var(--r-md); border: 1px solid transparent; background: transparent; color: var(--slate-500); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all .12s ease; }
@@ -1128,7 +1133,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .dock-rail-btn.active { background: var(--ink); color: #fff; border-color: var(--fg); }
 .dock-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .dock-head { border-bottom: 1px solid var(--slate-100); }
-/* the drawer's close button floats over the head â€” reserve its lane so long titles can't collide */
+/* the drawer's close button floats over the head — reserve its lane so long titles can't collide */
 .dock-drawer .dock-head { padding-right: 56px; }
 .dock-tabs { padding: 10px 12px 0; }
 .dock-tabs .param-seg .seg { font-size: 12px; padding: 6px 6px; }
@@ -1172,7 +1177,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .dtc-chk { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .dtc-u { color: var(--slate-400); }
 
-/* â”€â”€ Fish Summary â”€â”€ */
+/* ── Fish Summary ── */
 .fs-stack { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
 .fs-tbl-scroll { overflow-x: auto; }
 .fs-tbl { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -1194,7 +1199,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .fs-stat-v { font-size: 14px; font-weight: 700; color: var(--fg); }
 .fs-stat-v .u { font-size: 12px; font-weight: 400; color: var(--slate-400); }
 
-/* ---------- NAVIGATION â€” FACILITY SITE PLAN ---------- */
+/* ---------- NAVIGATION — FACILITY SITE PLAN ---------- */
 .plan-legend { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
 .pl-item { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--slate-500); }
 .pl-item .data { font-family: var(--font-mono); color: var(--fg); font-weight: 700; letter-spacing: 0; }
@@ -1269,7 +1274,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .dtab-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; min-width: 210px; max-height: 340px; overflow: hidden auto; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 28px rgba(15,24,43,.18); padding: 6px; }
 .dtab-menu-item { display: block; width: 100%; text-align: left; background: none; border: 0; cursor: pointer; padding: 8px 10px; border-radius: 7px; font-size: 14px; line-height: 20px; color: var(--fg); font-family: var(--font-sans); white-space: nowrap; }
 .dtab-menu-item:hover { background: var(--slate-100); }
-/* system tabs (DeptTabs). Building/department scope lives ONLY in the top bar â€” the in-page
+/* system tabs (DeptTabs). Building/department scope lives ONLY in the top bar — the in-page
    "Viewing" pill strip that used to sit above these tabs was removed. */
 .deptnav { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; max-width: 100%; }
 .seg-back {
@@ -1334,7 +1339,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .ov-g-val { font-family: var(--font-mono); font-size: 10px; font-weight: 700; fill: var(--fg); }
 .ov-cap { font-size: 10px; fill: var(--slate-400); }
 
-/* ---------- ALARM AREA â†’ PROCESS LINK ---------- */
+/* ---------- ALARM AREA → PROCESS LINK ---------- */
 /* alarm text + operator comment surfaced on active alarm rows */
 .al-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .al-cell-txt { color: var(--fg); }
@@ -1416,8 +1421,31 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
   font-family: var(--font-mono); font-size: 14px; color: var(--slate-600); }
 .an-rb-nowdot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--success-bg); }
 .an-rb-dyn { display: inline-flex; align-items: center; gap: 8px; height: 34px; font-size: 14px; font-weight: 600; color: var(--slate-600); cursor: pointer; user-select: none; }
-.an-rb-actions { margin-left: auto; display: flex; align-items: flex-end; gap: 8px; }
+/* Apply sits with the fields it applies, not exiled to the far right — the resolution readout
+   takes the right edge instead, where it reads as a result rather than a control. */
+.an-rb-actions { display: flex; align-items: flex-end; gap: 8px; }
 .an-rb-apply { height: 34px; }
+.an-rb-res { margin-left: auto; display: flex; flex-direction: column; gap: 2px; align-items: flex-end; padding-bottom: 8px; }
+.an-rb-res-v { font-family: var(--font-mono); font-size: 14px; line-height: 20px; font-weight: 700; color: var(--fg); }
+.an-rb-res-l { font-size: 11px; line-height: 14px; color: var(--slate-400); }
+/* pen details dialog */
+/* No horizontal scroll: `1fr` is minmax(auto,1fr), and a number input's intrinsic minimum is
+   wider than its share — which is what pushed the dialog body sideways. */
+.pd-body { display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow-x: hidden; }
+.pd-body .an-pen-rng { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+.pd-body .an-pen-rng label { min-width: 0; }
+.pd-body .an-pen-num { box-sizing: border-box; min-width: 0; }
+.pd-body .an-pen-chk.disabled { cursor: default; }
+.pd-body .an-pen-chk.disabled span { color: var(--slate-400); }
+.pd-2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+.pd-sect { padding-top: 4px; border-top: 1px solid var(--border); }
+.pd-colw { display: flex; align-items: center; gap: 8px; }
+.pd-sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border); flex: 0 0 auto; }
+.pd-colw .nj-select { flex: 1; min-width: 0; }
+.pd-path { display: flex; align-items: baseline; gap: 12px; }
+.pd-path-l { flex: 0 0 84px; font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-500); }
+.pd-path-v { font-size: 13px; line-height: 18px; color: var(--slate-600); word-break: break-all; }
+.an-pen-flag { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 4px; background: var(--slate-100); color: var(--slate-600); font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
 
 /* custom date + time picker */
 .njdt { position: relative; }
@@ -1514,6 +1542,8 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .mt-axclose-x { fill: none; stroke: var(--slate-500); stroke-width: 1.6; stroke-linecap: round; }
 .mt-axclose:hover .mt-axclose-x { stroke: var(--fg); }
 .mt-yaxmore { cursor: pointer; }
+.mt-limlbl { font-family: var(--font-mono); font-size: 10px; font-weight: 700; fill: var(--critical-text); }
+.mt-limlbl.off { opacity: .7; }
 .mt-tiphead { font-size: 10px; font-weight: 700; letter-spacing: 1px; fill: var(--fg-subtle); }
 .mt-tiprow { font-size: 12px; fill: var(--fg); }
 .mt-tipunit { font-family: var(--font-mono); font-size: 10px; fill: var(--fg-muted); }
@@ -1699,7 +1729,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
   border-radius: var(--r-sm); border: 1px solid var(--slate-200); background: var(--surface); color: var(--slate-400);
   cursor: pointer; transition: background .12s, color .12s, border-color .12s, opacity .12s; flex: none; }
 .trend-btn:hover { background: var(--primary-bg); color: var(--primary-text); border-color: var(--primary); }
-/* already in the trend register â€” the state indicator (second click removes it) */
+/* already in the trend register — the state indicator (second click removes it) */
 .trend-btn.on { background: var(--primary-bg); color: var(--primary-text); border-color: var(--primary); opacity: 1; }
 .trend-btn.on:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 /* equipment dialog readouts: button sits top-right, revealed on hover */
@@ -1752,7 +1782,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .tg-vt:hover { background: var(--slate-50); color: var(--fg); }
 .tg-vt.on { background: var(--ink); color: #fff; }
 
-/* library body â€” stable min-height so switching scope/search doesn't collapse the panel */
+/* library body — stable min-height so switching scope/search doesn't collapse the panel */
 .tg-lib-body { padding: 16px 16px; min-height: 360px; max-height: min(66vh, 560px); }
 .tg-lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
@@ -1858,7 +1888,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 /* filter bar extras */
 .ratn-filterbar { flex-wrap: wrap; row-gap: 10px; }
 /* Same anatomy as .segmented (trough + gap + per-button chip) rather than a bordered strip
-   with divider rules â€” so it WRAPS to a second row like the tab strips instead of clipping
+   with divider rules — so it WRAPS to a second row like the tab strips instead of clipping
    its last option. A bordered/overflow:hidden strip cannot wrap without orphaning a divider. */
 .ratn-statusseg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 4px; background: var(--slate-100); border: 1px solid var(--slate-200); border-radius: var(--r-md); }
 .ratn-sf { border: none; background: transparent; color: var(--slate-600); font-family: var(--font-sans); font-size: 12px;
@@ -1866,7 +1896,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
   white-space: nowrap; }
 .ratn-sf:hover { background: var(--surface); color: var(--fg); }
 .ratn-sf.on { background: var(--ink); color: #fff; }
-/* flex:none â€” without it the dot is a shrinkable flex item and squashes into an oval
+/* flex:none — without it the dot is a shrinkable flex item and squashes into an oval
    as soon as the strip runs out of room */
 .ratn-sf-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 
@@ -1886,7 +1916,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .ratn-selall { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--primary-bg);
   color: var(--primary-text); font-size: 14px; border-bottom: 1px solid var(--slate-100); }
 
-/* table â€” horizontal scroll + sticky header + sticky first cols */
+/* table — horizontal scroll + sticky header + sticky first cols */
 .ratn-scroll { overflow-x: auto; overflow-y: visible; }
 .ratn-tbl { table-layout: fixed; }
 .ratn-tbl thead th { position: sticky; top: 0; z-index: 3; background: var(--surface-2); white-space: nowrap; }
@@ -2004,7 +2034,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .ratn-bed-sugg { display: flex; flex-direction: column; gap: 4px; }
 .ratn-bed-foot-hint { margin-right: auto; font-size: 12px; color: var(--slate-500); font-family: var(--font-mono); }
 
-/* just-edited flash â€” temporary blue highlight that fades after a few seconds
+/* just-edited flash — temporary blue highlight that fades after a few seconds
    (same interaction pattern as trend-marker row highlights, for consistency) */
 @keyframes njRatnEdited {
   0%   { background: color-mix(in srgb, var(--primary) 30%, var(--surface)); }
@@ -2114,14 +2144,19 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .de-dup-note strong { color: var(--fg); }
 
 /* two-pane operator layout */
-.de-layout { display: grid; grid-template-columns: 272px 1fr; height: calc(100vh - 232px); min-height: 480px; border: 1px solid var(--border); border-radius: var(--r-lg, 12px); overflow: hidden; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+/* The card grows with its content and the PAGE scrolls — same as every Analytics tab. A pane
+   pinned to the viewport gave the operator two nested scrollbars for one list; the rail is 9
+   locations, the list is the long thing, and neither needs its own scrollport.
+   `clip`, not `hidden`: both clip identically for the radius, but `hidden` would make this a
+   scroll container and `.de-mxbar`'s sticky would resolve against a box that never scrolls. */
+.de-layout { display: grid; grid-template-columns: 272px 1fr; align-items: stretch; border: 1px solid var(--border); border-radius: var(--r-lg, 12px); overflow: clip; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
 
 /* location rail */
 .de-rail { display: flex; flex-direction: column; border-right: 1px solid var(--border); background: var(--slate-50, #F8FAFC); min-height: 0; }
 .de-rail-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 8px; }
 .de-rail-add { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--r-sm, 8px); background: var(--surface); color: var(--slate-600); cursor: pointer; }
 .de-rail-add:hover { background: var(--slate-100); color: var(--fg); }
-.de-rail-scroll { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
+.de-rail-scroll { padding: 4px 8px 12px; }
 .de-loc { display: flex; align-items: center; gap: 2px; border-radius: var(--r-sm, 8px); width: 100%; background: none; border: none; padding: 0; text-align: left; color: var(--fg); }
 .de-loc:hover { background: var(--slate-100); }
 .de-loc.active { background: var(--ink); }
@@ -2154,7 +2189,75 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .de-subchip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--surface); color: var(--fg-muted); font-family: var(--font-sans); font-size: 14px; font-weight: 500; cursor: pointer; }
 .de-subchip:hover { border-color: var(--slate-400); color: var(--fg); }
 .de-subchip .data { color: var(--slate-400); font-size: 12px; }
-.de-panel-scroll { flex: 1; overflow-y: auto; }
+.de-panel-scroll { min-height: 0; }
+/* when the reading was taken — Add value dialog + the table view's action bar */
+.de-when { display: flex; flex-direction: column; gap: 4px; }
+.de-when-row { display: flex; align-items: center; gap: 8px; }
+.de-when-d { width: 148px; }
+.de-when-t { width: 104px; }
+.de-when-now { flex: 0 0 auto; }
+.de-when-warn { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; line-height: 14px; color: var(--warning-text); }
+/* table view: a whole round in one pass */
+/* The table lives in its OWN wrapper. The app-wide `.content :where(div,section,form):has(>
+   table.tbl){overflow-x:auto}` rule would otherwise match .de-mx — at higher specificity than
+   anything written here — and overflow-x:auto forces overflow-y to auto, making .de-mx a
+   scrollport with no travel that captured .de-mxbar's sticky. The generic rule now lands on
+   .de-mx-scroll, which is where a horizontal scroller belongs. Don't put the table back. */
+.de-mx { display: flex; flex-direction: column; }
+.de-mx-scroll { min-width: 0; }
+.de-mxtbl { width: 100%; }
+.de-mxtbl th, .de-mxtbl td { vertical-align: middle; }
+.de-mx-th-n { width: 128px; }
+.de-mx-th-lim { width: 148px; }
+.de-mx-th-v { width: 172px; }
+.de-mx-th-c { width: 220px; }
+.de-mx-th-p { width: 200px; }
+.de-mx-name { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--fg); }
+/* Scoped to .de-mxtbl deliberately: `.tbl td{font-size:14px}` is (0,1,1) and outranks a bare
+   `.de-mx-exp`, so this 12px never applied — the `data` class used to mask that on the limits cell.
+   Location and Limits are both secondary to the 14px measurement name and last value. */
+.de-mxtbl .de-mx-p, .de-mxtbl .de-mx-exp { font-size: 12px; line-height: 16px; color: var(--slate-400); }
+/* a measurement with no alarm limits shows its expected range, prefixed so the Limits column can
+   never be read as "these are the limits" */
+/* --slate-300 left the prefix at ~1.5:1 on the card while the numbers it prefixes are --slate-600.
+   The pair has to read as one unit, so the prefix sits at the label colour (.de-lim-l). */
+.de-mx-nolim { color: var(--slate-400); }
+/* LIMITS: the mono/sans split, not one mono run. HH/H/L/LL are labels (badge role, muted, so the
+   eye lands on the thresholds); the thresholds are tabular mono at body-data size. Two per line at
+   148px, so a measurement with all four reads as a 2x2 block rather than a wrapped sentence. */
+.de-lims { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.de-lim { display: inline-flex; align-items: baseline; gap: 4px; }
+.de-lim-l { font: var(--t-badge); letter-spacing: var(--t-badge-ls); color: var(--slate-400); }
+.de-lim-v { font: var(--t-data); color: var(--slate-600); font-variant-numeric: tabular-nums; }
+/* No severity colour on the labels: a CONFIGURED limit is not an active status, and four tinted
+   chips per row would spend the status palette on something that is not happening. Severity shows
+   when a value crosses (de-stat, pe-warn). */
+.de-rec-range .de-lims { display: inline-flex; }
+.de-mx-last { font-size: 14px; line-height: 20px; color: var(--slate-600); }
+.de-mx-inw { display: flex; align-items: center; gap: 6px; }
+.de-mx-inw input { text-align: right; font-weight: 700; }
+.de-mx-inw.oor input { border-color: var(--warning-text); color: var(--warning-text); }
+.de-mx-u { font-size: 11px; color: var(--slate-400); flex: 0 0 auto; }
+.de-mx-filled { background: var(--slate-50, #F8FAFC); }
+/* pinned while the operator types down a long location, so it stays ONE row: the timestamp label
+   sits inline with its fields, and the count is the only shrinking child — it ellipsises rather
+   than wrapping the buttons onto a second row and doubling the bar's height. */
+.de-mxbar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 16px;
+  padding: 8px 20px; border-top: 1px solid var(--border); background: var(--surface); box-shadow: 0 -1px 3px rgba(0,0,0,.05); }
+.de-mxbar .de-when { flex-direction: row; align-items: center; gap: 10px; flex: 0 0 auto; position: relative; }
+.de-mxbar .de-when .de-field-l { white-space: nowrap; }
+/* the future-timestamp warning floats above the bar instead of growing it */
+.de-mxbar .de-when-warn { position: absolute; bottom: calc(100% + 6px); left: 0; white-space: nowrap;
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.de-mx-count { flex: 1 1 auto; min-width: 0; font-size: 12px; line-height: 16px; color: var(--slate-500);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.de-mxbar-b { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+/* list / table switch */
+.de-viewseg { display: flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: var(--r-sm, 8px); background: var(--slate-50, #F8FAFC); flex: 0 0 auto; }
+.de-viewbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 0; border-radius: 6px;
+  font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--slate-600); background: none; cursor: pointer; }
+.de-viewbtn:hover { color: var(--fg); }
+.de-viewbtn.on { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 
 .de-mgroup-h { display: flex; align-items: center; gap: 8px; padding: 12px 20px 8px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--slate-500); background: var(--slate-50, #F8FAFC); position: sticky; top: 0; z-index: 1; }
 .de-mgroup-h .data { color: var(--slate-400); }
@@ -2191,8 +2294,10 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 /* empty state */
 
 @media (max-width: 1120px) {
-  .de-layout { grid-template-columns: 1fr; height: auto; }
-  .de-rail { border-right: none; border-bottom: 1px solid var(--border); max-height: 240px; }
+  .de-layout { grid-template-columns: 1fr; }
+  .de-rail { border-right: none; border-bottom: 1px solid var(--border); }
+  /* the stacked rail's height cap lives in lib/responsive.css — that file loads last and owns
+     this breakpoint. Don't add a competing .de-rail-scroll rule here. */
 }
 @media (max-width: 560px) {
   .de-meas-read { text-align: left; flex-direction: row; gap: 10px; align-items: baseline; }
@@ -2203,6 +2308,12 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .de-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .de-form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-width: 0; }
 .de-form-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; min-width: 0; }
+.de-form-4col { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; min-width: 0; }
+/* section break inside a dialog form — alarm limits are a different concept from min/max */
+.de-form-sect { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid var(--border); }
+.de-form-sect .de-form-hint { font-size: 12px; line-height: 16px; color: var(--slate-500); }
+.de-stat-crit { color: var(--critical-text); background: var(--critical-bg); }
+.pe-warn-crit { color: var(--critical-text); }
 .de-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .de-field-l { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--slate-500); }
 .de-field-hint { font-size: 12px; color: var(--slate-400); }
@@ -2231,7 +2342,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .de-detail-cell .data, .de-detail-cell span:last-child { font-size: 14px; color: var(--fg); }
 .de-hist-head { display: flex; align-items: center; gap: 8px; }
 .de-hist-n { font-size: 12px; color: var(--slate-400); background: var(--slate-50); border: 1px solid var(--border); border-radius: var(--r-pill); padding: 2px 8px; }
-.de-hist { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow: hidden auto; }
+.de-hist { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
 .de-hist-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--slate-50, #F8FAFC); }
 .de-hist-l { display: flex; flex-direction: column; gap: 2px; }
 .de-hist-val { font-size: 16px; font-weight: 700; color: var(--fg); }
@@ -2293,7 +2404,7 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 
 
 /* ============================================================
-   NATIVE SELECTS â€” one chevron treatment for every dropdown.
+   NATIVE SELECTS — one chevron treatment for every dropdown.
    Placed last so it wins over the per-component rules above (several of
    which set the `background` shorthand and would wipe the chevron out).
    No dropdown shows the OS arrow flush against its right border.
@@ -2320,8 +2431,29 @@ select.select { padding-right: 28px; }
    Every tank in a department on ONE shared scale per parameter. The bar shows how full, the
    3px marker + the value carry the status colour, the faint band is the emergency zone and the
    dashed tick the dosing setpoint. Colour appears only when a value leaves its band. */
-.tv-body { padding-top: 4px; }
+.tv-body { padding-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .tv-head-r { display: inline-flex; align-items: center; gap: 12px; }
+/* departments INLINE and wrapping — as many per line as fit. The layout is identical open or
+   closed; collapsed only clips to the first line's height (no horizontal scroller, no reflow on
+   toggle). No vertical dividers: a group could start a line, and a hairline there reads as a
+   stray mark — the dept heads carry the separation. */
+.tv-flow { display: flex; align-items: flex-start; flex-wrap: wrap; column-gap: 28px; row-gap: 6px; }
+.tv-clip { overflow: hidden; }
+/* fallback for engines without inert: a clipped department must not be clickable either */
+.tv-grp[inert] { pointer-events: none; }
+.tv-grp { display: flex; flex-direction: column; gap: 6px; padding: 2px 0 8px; flex: 0 0 auto; }
+/* a department's rail is one unbroken line — wrapping inside a group would break the shared
+   scale that makes the outlier findable by shape */
+.tv-flow .tv-rail, .tv-flow .tv-tanks { flex-wrap: nowrap; }
+.tv-grp-head { display: flex; align-items: center; gap: 10px; }
+.tv-grp-name { font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--fg); white-space: nowrap; }
+.tv-grp-sub { font-size: 12px; line-height: 16px; color: var(--slate-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-grp-link { margin-left: auto; white-space: nowrap; }
+.tv-more { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 36px;
+  font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--slate-600);
+  background: none; border: 0; border-top: 1px dashed var(--slate-200); cursor: pointer; }
+.tv-more:hover { color: var(--primary); }
+.cm-morecharts { margin: -6px 0 16px; }
 .tv-rail { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .tv-tanks { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
 .tv-tank { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 10px 8px;
@@ -2356,16 +2488,6 @@ select.select { padding-right: 28px; }
 .tv-tag { font-size: 10px; color: var(--slate-400); }
 .tv-pump { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate-600); }
 .tv-pump .u { color: var(--slate-400); }
-/* Dashboard "Tank Vitals" card: stack of per-department groups (one rail per row) */
-.tv-body { padding-top: 4px; display: flex; flex-direction: column; }
-.tv-grp { padding: 12px 20px; border-top: 1px solid var(--slate-100); }
-.tv-grp:first-child { border-top: none; }
-.tv-grp-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-.tv-grp-name { font-size: 14px; font-weight: 700; color: var(--fg); }
-.tv-grp-sub { font-size: 12px; color: var(--slate-500); }
-.tv-grp-link { margin-left: auto; }
-.tv-more { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin: 6px 20px 12px; padding: 6px 10px; border: 1px solid var(--slate-200); border-radius: var(--r-md); background: var(--surface); color: var(--slate-600); font-size: 12px; font-weight: 600; cursor: pointer; }
-.tv-more:hover { background: var(--slate-50); border-color: var(--slate-300); color: var(--fg); }
 
 /* ---------- MANEUVER HISTORY ---------- */
 .mvr-scroll { overflow-x: auto; }
@@ -2373,7 +2495,7 @@ select.select { padding-right: 28px; }
 .mvr-cm { display: block; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; color: var(--slate-600); }
 .mvr-cm.none { color: var(--fg-subtle); font-family: var(--font-mono); }
 
-/* ---------- FISH WELFARE (registrations Â· 0â€“3 scoring Â· report) ---------- */
+/* ---------- FISH WELFARE (registrations · 0–3 scoring · report) ---------- */
 .wf-scroll { overflow-x: auto; }
 .tbl.wf-reg-tbl { min-width: 900px; }
 .wf-regname { display: flex; flex-direction: column; gap: 4px; }
@@ -2387,22 +2509,22 @@ select.select { padding-right: 28px; }
 .wf-dist > span { height: 100%; }
 .wf-distlist { padding: 6px 20px 4px; }
 /* The query container is the CARD, not .wf-distlist: the colour legend is a SIBLING of the
-   list, so a container on the list cannot reach it â€” and hiding the bars while keeping their
+   list, so a container on the list cannot reach it — and hiding the bars while keeping their
    key leaves a legend for colours that are no longer on screen. */
 .card:has(> .wf-distlist) { container-type: inline-size; }
 .wf-distrow { display: grid; grid-template-columns: 190px 1fr 88px; align-items: center; gap: 14px; padding: 8px 0; border-bottom: 1px solid var(--slate-100); }
-/* Below ~430px of CARD (a container query â€” this list sits in a clamped rail, so it can be
+/* Below ~430px of CARD (a container query — this list sits in a clamped rail, so it can be
    narrow at any viewport) the severity bar is too short to read a distribution from: a few px
    of colour carries no information and only squeezes the name and the count. Drop it and let
-   the two things that still read â€” indicator name and score â€” use the width. */
+   the two things that still read — indicator name and score — use the width. */
 @container (max-width: 430px) {
   /* .wf-distlist prefix so this beats the later @media rule on .wf-distrow (equal
      specificity would let the media query win on source order and leave a dead middle track) */
   .wf-distlist .wf-distrow { grid-template-columns: minmax(0, 1fr) auto; }
   .wf-distlist .wf-distrow .wf-dist { display: none; }
-  /* the bar's key goes with the bar. Scoped to this card â€” .chart-legend is shared.
+  /* the bar's key goes with the bar. Scoped to this card — .chart-legend is shared.
      Hide the legend ELEMENT itself (not just a wrapper) so it is removed from the
-     accessibility tree too, not merely collapsed to a 0Ã—0 box. */
+     accessibility tree too, not merely collapsed to a 0×0 box. */
   .card:has(> .wf-distlist) .chart-legend { display: none; }
 }
 .wf-distrow:last-child { border-bottom: none; }
@@ -2463,8 +2585,6 @@ select.select { padding-right: 28px; }
 .wf-guide-n{flex:0 0 auto;width:24px;height:24px;border-radius:var(--r-sm);display:inline-flex;align-items:center;justify-content:center;font:700 12px/1 var(--font-mono)}
 .wf-guide-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .wf-guide-body image-slot{display:block;width:100%;height:120px}
-.wf-guide-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 120px; border-radius: 8px; background: var(--slate-50); border: 1px dashed var(--slate-300); color: var(--slate-500); text-align: center; padding: 12px; }
-.wf-guide-slot-cap { font-size: 12px; line-height: 1.35; color: var(--slate-500); max-width: 240px; }
 .wf-guide-cap{font-size:14px;line-height:20px;color:var(--fg)}
 .wf-guide-cap-0{color:var(--slate-500);padding-top:4px}
 @media (max-width: 1000px) {
@@ -2474,7 +2594,7 @@ select.select { padding-right: 28px; }
 }
 
 
-/* ---------- COMMISSIONING (Analytics Â· Commissioning) ---------- */
+/* ---------- COMMISSIONING (Analytics · Commissioning) ---------- */
 .cm-status{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0;overflow:hidden;margin-bottom:16px}
 .cm-stat{padding:16px 20px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--slate-200)}
 .cm-stat:last-child{border-right:none}
@@ -2493,7 +2613,7 @@ select.select { padding-right: 28px; }
 .cm-th-grp{text-align:center!important;border-bottom:1px solid var(--slate-200)}
 .cm-th-basis{font-weight:500;letter-spacing:0;text-transform:none;color:var(--slate-500);margin-left:6px}
 .cm-th-v,.cm-th-n{text-align:right!important;white-space:nowrap}
-/* value headers hold a label + unit + the send-to-trends icon on ONE line â€” a wrapped label
+/* value headers hold a label + unit + the send-to-trends icon on ONE line — a wrapped label
    detached the icon from its column. The sheet scrolls horizontally, so width is the cheap axis. */
 .cm-th-v{white-space:nowrap!important;padding-left:10px!important;padding-right:10px!important}
 .cm-th-vin{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-width:0}
@@ -2537,7 +2657,7 @@ select.select { padding-right: 28px; }
 .cm-trendbtn.on{opacity:1}
 .cm-trendbtn:hover{opacity:1}
 .cm-empty{text-align:center;color:var(--slate-500);padding:28px 0!important}
-/* log / edit dialog â€” the full round */
+/* log / edit dialog — the full round */
 .cm-form{display:flex;flex-direction:column;gap:16px}
 .cm-form-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
 .cm-form-day{height:38px;display:flex;align-items:center;font-size:14px;color:var(--fg)}
@@ -2558,7 +2678,7 @@ select.select { padding-right: 28px; }
 .cm-note-in{height:auto;padding:10px 12px;resize:vertical;line-height:1.5}
 .cm-foot-meta{margin-right:auto;font-size:12px;color:var(--slate-500)}
 /* day record dialog */
-/* the modal itself does not scroll â€” the table does (a 16-column sheet in an 840px dialog) */
+/* the modal itself does not scroll — the table does (a 16-column sheet in an 840px dialog) */
 .dlg-body.cm-day{display:flex;flex-direction:column;gap:16px;overflow:hidden;min-height:0}
 .cm-day-scroll{flex:1 1 auto;min-height:120px;overflow:auto;border-radius:var(--r-md)}
 .dlg.dlg-tall{height:min(920px,88vh)}
@@ -2580,7 +2700,7 @@ select.select { padding-right: 28px; }
 .cm-day-note p{margin:4px 0 0;font-size:14px;color:var(--fg);line-height:1.55}
 
 .nocaps{text-transform:none;letter-spacing:0}
-/* ---------- BIOFILTER MATURATION (Analytics Â· MBBR startup) ---------- */
+/* ---------- BIOFILTER MATURATION (Analytics · MBBR startup) ---------- */
 .cm-status.mb-status{grid-template-columns:repeat(5,1fr)}
 .mb-stagecell .cm-stat-v{font-size:16px;font-weight:700}
 .mb-stagebar{display:flex;gap:4px;margin-top:2px}
@@ -2606,7 +2726,7 @@ select.select { padding-right: 28px; }
 .tbl.cm-log td.cm-td-auto{color:var(--slate-600);text-align:right;padding-right:20px;background:var(--slate-50);white-space:nowrap}
 .tbl.cm-log tbody tr:hover td.cm-td-auto{background:var(--slate-100)}
 .cm-tagpick-hint{margin:0 0 12px;font-size:14px;color:var(--slate-600);max-width:62ch}
-.cm-tagpick-list{margin-top:14px;display:flex;flex-direction:column;gap:16px;max-height:420px;overflow: hidden auto}
+.cm-tagpick-list{margin-top:14px;display:flex;flex-direction:column;gap:16px;max-height:420px;overflow-y:auto}
 .cm-tagpick-grp{display:flex;flex-direction:column;gap:2px}
 .cm-tagpick-grp .eyebrow{margin-bottom:4px}
 .cm-tagpick-row{display:flex;align-items:center;gap:10px;min-height:30px;padding:0 8px;border-radius:6px;cursor:pointer}
@@ -2623,6 +2743,49 @@ select.select { padding-right: 28px; }
 /* in-module plot */
 .cm-chartcard{padding:0;margin-bottom:16px;overflow:hidden}
 .cm-chart-head{display:flex;align-items:flex-start;gap:20px;padding:16px 20px 12px;flex-wrap:wrap}
+/* which series the maturation plot shows — chips, in the CHART's head */
+.mb-chartpick{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cm-chartsel{display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.cm-chartsel .eyebrow{margin-right:4px}
+.mb-logbtn{margin-left:auto}
+.mb-volin{width:96px}
+
+/* ── Biofilter Maturation · daily chemical additions (the tab's primary job) ── */
+.mbd{margin-bottom:16px}
+.mbd-head-r{display:flex;align-items:center;gap:12px}
+.mbd-datef{display:flex;align-items:center;gap:8px}
+.mbd-datel{font-size:10px;line-height:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--slate-500)}
+.mbd-date{width:150px}
+.mbd-day{font-size:12px;line-height:16px;color:var(--slate-500)}
+.mbd-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;padding:0}
+.mbd-col{display:flex;flex-direction:column;gap:12px;padding:16px 20px 18px;min-width:0}
+.mbd-out{border-left:1px solid var(--border);background:var(--slate-50,#F8FAFC)}
+.mbd-colh{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.mbd-prog{font-size:12px;line-height:16px;color:var(--slate-500)}
+.mbd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.mbd-inp{display:flex;flex-direction:column;gap:4px;min-width:0}
+.mbd-inp-l{display:flex;align-items:baseline;gap:6px;font-size:12px;line-height:16px;font-weight:600;color:var(--fg)}
+.mbd-u{font-size:11px;color:var(--slate-400);font-weight:400}
+.mbd-inherit{font-size:11px;line-height:14px;color:var(--slate-400)}
+.mbd-meta{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px}
+.mbd-doses{display:flex;flex-direction:column;gap:2px}
+.mbd-dose{display:flex;align-items:center;gap:12px;justify-content:space-between;min-height:44px;padding:6px 0;border-bottom:1px solid var(--border)}
+.mbd-dose:last-child{border-bottom:none}
+.mbd-dose-l{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mbd-dose-n{font-size:14px;line-height:20px;font-weight:700;color:var(--fg)}
+.mbd-dose-why{font-size:11px;line-height:14px;color:var(--slate-500)}
+.mbd-dose-vw{display:flex;align-items:baseline;gap:6px;flex:0 0 auto}
+.mbd-dose-in{width:92px;text-align:right;font-weight:700}
+.mbd-dose-u{font-size:11px;color:var(--slate-400)}
+.mbd-dose-v{font-size:20px;line-height:28px;font-weight:700}
+.mbd-dash{color:var(--slate-300)}
+.mbd-blocked .mbd-dose-n{color:var(--slate-400)}
+.mbd-blocked .mbd-dose-why{color:var(--warning-text)}
+.mbd-zero .mbd-dose-n,.mbd-zero .mbd-dose-in{color:var(--slate-400)}
+.mbd-foot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.mbd-foot-t{font-size:12px;line-height:16px;color:var(--slate-500)}
+.mbd-foot-b{display:flex;align-items:center;gap:10px}
+@media (max-width:1120px){.mbd-body{grid-template-columns:1fr}.mbd-out{border-left:none;border-top:1px solid var(--border)}}
 .cm-chart-id{display:flex;flex-direction:column;gap:4px}
 .cm-chart-t{font-size:16px;font-weight:700;color:var(--fg);display:flex;align-items:baseline;gap:10px}
 .cm-chart-basis{font-size:12px;font-weight:500;color:var(--slate-500)}
@@ -2662,7 +2825,7 @@ select.select { padding-right: 28px; }
 .cm-calc-fns{margin-left:auto}
 .cm-calc-sect{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 8px}
 .cm-calc-search{margin-left:auto;max-width:260px}
-.cm-calc-tokens{display:flex;flex-direction:column;gap:12px;max-height:230px;overflow: hidden auto}
+.cm-calc-tokens{display:flex;flex-direction:column;gap:12px;max-height:230px;overflow-y:auto}
 .cm-tokgrp{display:flex;flex-direction:column;gap:6px}
 .cm-tokrow{display:flex;flex-wrap:wrap;gap:6px}
 .cm-tok{display:inline-flex;align-items:baseline;gap:8px;padding:6px 10px;border:1px solid var(--slate-200);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;text-align:left}
@@ -2689,7 +2852,7 @@ select.select { padding-right: 28px; }
 .mb-model-list{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--slate-600)}
 .mb-model-c{font-weight:700;color:var(--fg)}
 
-/* â”€â”€ alarm lifecycle governance (shelving gate, change record, review, performance, channels) â”€â”€ */
+/* ── alarm lifecycle governance (shelving gate, change record, review, performance, channels) ── */
 /* Block refusal + partial-selection notice (Alarm Philosophy ch. 5) */
 .shelve-deny { display: flex; gap: 10px; padding: 12px 14px; border: 1px solid var(--critical-bg); background: color-mix(in srgb, var(--critical) 7%, transparent); border-radius: var(--r-md); }
 .shelve-deny p { margin: 0 0 6px; font-size: 12px; color: var(--fg); line-height: 1.5; }
@@ -2846,7 +3009,7 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .cons-dash-v .u{font-size:12px;color:var(--slate-500)}
 .cons-dash-d{font-family:var(--font-mono);font-size:12px;color:var(--slate-600)}
 
-/* â”€â”€ delivery verification (Settings Â· On-call) + delivery log â”€â”€ */
+/* ── delivery verification (Settings · On-call) + delivery log ── */
 .dv-card{margin-top:20px}
 .dv-head-l{display:flex;flex-direction:column;gap:2px}
 .dv-head-act{display:flex;align-items:center;gap:14px}
@@ -2880,7 +3043,7 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .dv-msg-t{font-size:12px;color:var(--fg)}
 .dv-test-head{display:flex;align-items:center;justify-content:space-between}
 .dv-test-sum{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--success-text)}
-.dv-test-list{display:flex;flex-direction:column;gap:6px;max-height:230px;overflow: hidden auto}
+.dv-test-list{display:flex;flex-direction:column;gap:6px;max-height:230px;overflow-y:auto}
 .dv-test-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--slate-200);border-radius:var(--r-md);font-size:14px}
 .dv-test-n{font-weight:600;color:var(--fg)}
 .dv-test-tier{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--slate-600)}
@@ -2910,7 +3073,7 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .dv-fail-chip.on{background:var(--critical-bg);border-color:var(--critical);color:var(--critical-text)}
 .dv-fail-chip .data{font-weight:700}
 
-/* â”€â”€ Reports: pinned tabs + catalog browser â”€â”€ */
+/* ── Reports: pinned tabs + catalog browser ── */
 .rep-tabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .rep-tabs .segmented { flex-wrap: wrap; }
 .rep-seg-temp { font-style: italic; }
@@ -2946,7 +3109,7 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .rb-hint { display: inline-flex; align-items: center; gap: 6px; color: var(--slate-500); margin-right: 4px; }
 
 /* Add value dialog: last-value timestamp + the last three readings (moved here from the
-   deleted touch drawer â€” desktop density, no keypad) */
+   deleted touch drawer — desktop density, no keypad) */
 .de-rec-ts{font-size:12px;line-height:16px;color:var(--slate-400)}
 .de-rec-hist{border-top:1px solid var(--slate-100);padding-top:10px;display:flex;flex-direction:column;gap:2px}
 .de-rec-hist-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:14px;line-height:20px}

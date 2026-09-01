@@ -11,9 +11,9 @@ const DE_BUILDINGS = ["DPT 1", "DPT 2", "DPT 3", "DPT 4", "Building 1", "Buildin
 const DE_SEED = [
   { id: "mt1", path: "Manual Measurements / DPT 1", name: "Water Temperature", value: "14.5", unit: "°C", decimals: 1, min: 10, max: 18, building: "DPT 1", department: "Operations",
     history: [{ value: "14.5", comment: "Morning round", ts: "05.03.2026, 08:10" }, { value: "14.2", comment: "", ts: "04.03.2026, 08:05" }] },
-  { id: "mt2", path: "Manual Measurements / DPT 1", name: "Oxygen Level", value: "8.2", unit: "mg/L", decimals: 1, min: 6, max: 12, building: "DPT 1", department: "Operations",
+  { id: "mt2", path: "Manual Measurements / DPT 1", name: "Oxygen Level", value: "8.2", unit: "mg/L", decimals: 1, min: 6, max: 12, alHi: 12, alLo: 6, alLoLo: 5, building: "DPT 1", department: "Operations",
     history: [{ value: "8.2", comment: "", ts: "05.03.2026, 08:12" }] },
-  { id: "mt3", path: "Manual Measurements / DPT 1", name: "pH Level", value: "7.2", unit: "", decimals: 1, min: 6.5, max: 8.5, building: "DPT 1", department: "Operations",
+  { id: "mt3", path: "Manual Measurements / DPT 1", name: "pH Level", value: "7.2", unit: "", decimals: 1, min: 6.5, max: 8.5, alHiHi: 8.5, alHi: 8, alLo: 6.8, alLoLo: 6.5, building: "DPT 1", department: "Operations",
     history: [{ value: "7.2", comment: "", ts: "05.03.2026, 08:13" }] },
   { id: "mt4", path: "Manual Measurements / DPT 1", name: "Biomass", value: "12500", unit: "kg", decimals: 0, min: null, max: null, building: "DPT 1", department: "Operations",
     history: [{ value: "12500", comment: "Post-grading estimate", ts: "03.03.2026, 15:40" }] },
@@ -33,13 +33,28 @@ const DE_SEED = [
     history: [{ value: "Clean", comment: "Backwash completed", ts: "04.03.2026, 22:15" }] },
 ];
 
+/* A stored record predates any field added to DE_SEED later, and load() restores the persisted
+   array wholesale — so alarm limits added to the seed would never reach a browser that had
+   already opened the module. Merge missing keys in from the seed by id, per field, without
+   touching anything the operator has actually set. Additive only: never overwrite a stored value. */
+function deMigrate(stored) {
+  if (!Array.isArray(stored)) return DE_SEED.map((t) => ({ ...t }));
+  return stored.map((t) => {
+    const seed = DE_SEED.find((s) => s.id === t.id);
+    if (!seed) return t;
+    const out = { ...t };
+    Object.keys(seed).forEach((k) => { if (!(k in out)) out[k] = seed[k]; });
+    return out;
+  });
+}
+
 const deStore = {
   tags: null,
   folders: null,
   subs: new Set(),
   load() {
     if (deStore.tags) return;
-    try { const raw = localStorage.getItem(DE_KEY); deStore.tags = raw ? JSON.parse(raw) : DE_SEED.map((t) => ({ ...t })); }
+    try { const raw = localStorage.getItem(DE_KEY); deStore.tags = raw ? deMigrate(JSON.parse(raw)) : DE_SEED.map((t) => ({ ...t })); }
     catch (e) { deStore.tags = DE_SEED.map((t) => ({ ...t })); }
     try { const raw = localStorage.getItem(DE_FKEY); deStore.folders = raw ? JSON.parse(raw) : [...new Set(deStore.tags.map((t) => t.path))].sort(); }
     catch (e) { deStore.folders = [...new Set(deStore.tags.map((t) => t.path))].sort(); }
@@ -90,21 +105,130 @@ const deStore = {
     deStore.persist();
   },
   moveTag(id, path) { deStore.load(); deStore.tags = deStore.tags.map((t) => (t.id === id ? { ...t, path } : t)); deStore.ensureFolder(path); deStore.persist(); },
-  record(id, value, comment) {
+  // ts is the reading's own timestamp — optional, defaults to now. A reading is often written down
+  // at the tank and typed in later, so the operator must be able to say when it was actually taken.
+  // A recorded value past an alarm limit RAISES an alarm — that is what separates the limits from
+  // the expected range. One entry per recorded value; the toast names the limit crossed.
+  raiseIfAlarm(tag, value, ts) {
+    const c = deLimitCross(tag, parseFloat(value));
+    if (!c) return null;
+    njToast(`${c.level === "critical" ? "Critical" : "High"} alarm raised · ${tag.name} ${value}${tag.unit ? " " + tag.unit : ""} past ${c.name.toLowerCase()} limit ${tag[c.k]}`, "Alarms", () => { if (window.__njNavigate) window.__njNavigate("alarms"); });
+    return c;
+  },
+  record(id, value, comment, ts) {
     deStore.load();
-    const now = new Date();
-    const ts = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}, ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    deStore.tags = deStore.tags.map((t) => (t.id === id ? { ...t, value, history: [{ value, comment: comment || "", ts }, ...(t.history || [])] } : t));
+    const stamp = ts || deTsNow();
+    deStore.tags = deStore.tags.map((t) => (t.id === id ? { ...t, value, history: [{ value, comment: comment || "", ts: stamp }, ...(t.history || [])] } : t));
     deStore.persist();
+    const tag = deStore.tags.find((t) => t.id === id);
+    if (tag) deStore.raiseIfAlarm(tag, value, stamp);
+  },
+  // one round of readings, one timestamp, one write — the table view's save
+  recordMany(entries, ts) {
+    deStore.load();
+    const stamp = ts || deTsNow();
+    const by = {};
+    entries.forEach((e) => { by[e.id] = e; });
+    deStore.tags = deStore.tags.map((t) => {
+      const e = by[t.id];
+      if (!e) return t;
+      return { ...t, value: e.value, history: [{ value: e.value, comment: e.comment || "", ts: stamp }, ...(t.history || [])] };
+    });
+    deStore.persist();
+    // one toast per crossing, so a round that trips two limits reports both
+    entries.forEach((e) => { const t = deStore.tags.find((x) => x.id === e.id); if (t) deStore.raiseIfAlarm(t, e.value, stamp); });
   },
 };
 function useManualTags() { return React.useSyncExternalStore(deStore.subscribe, deStore.tagsSnap); }
 function useManualFolders() { return React.useSyncExternalStore(deStore.subscribe, deStore.foldersSnap); }
 
-const deNum = (t) => { const n = parseFloat(t.value); return isNaN(n) ? null : n; };
-const deIsNumeric = (t) => deNum(t) != null;
+const deNum = (t) => { const n = parseFloat(t.value); return isNaN(n) ? null : n; };const deIsNumeric = (t) => deNum(t) != null;
 const deFmtRange = (t) => (t.min == null && t.max == null) ? "—" : `${t.min == null ? "—" : t.min}…${t.max == null ? "—" : t.max}${t.unit ? " " + t.unit : ""}`;
 function deOutOfRange(t) { const n = deNum(t); if (n == null) return false; return (t.min != null && n < t.min) || (t.max != null && n > t.max); }
+
+/* ── Alarm limits are SEPARATE from min/max. ──
+   min/max is the expected range — guidance for the person typing. The four alarm limits raise a
+   real alarm when a recorded value crosses them, and when a measurement has any of them they are
+   what the in-range indicator reads. A measurement can carry one set, both, or neither. */
+const DE_LIMITS = [
+  { k: "alHiHi", kind: "hihi", label: "HH", name: "High high", level: "critical", cmp: (n, v) => n > v },
+  { k: "alHi", kind: "hi", label: "H", name: "High", level: "high", cmp: (n, v) => n > v },
+  { k: "alLo", kind: "lo", label: "L", name: "Low", level: "high", cmp: (n, v) => n < v },
+  { k: "alLoLo", kind: "lolo", label: "LL", name: "Low low", level: "critical", cmp: (n, v) => n < v },
+];
+const deHasLimits = (t) => DE_LIMITS.some((l) => t[l.k] != null);
+// worst limit a value crosses — critical outranks high, so HH wins over H
+function deLimitCross(t, n) {
+  if (n == null || isNaN(n)) return null;
+  const hit = DE_LIMITS.filter((l) => t[l.k] != null && l.cmp(n, t[l.k]));
+  if (!hit.length) return null;
+  return hit.find((l) => l.level === "critical") || hit[0];
+}
+const deFmtLimits = (t) => DE_LIMITS.filter((l) => t[l.k] != null).map((l) => l.label + " " + t[l.k]).join(" · ") || "—";
+/* The limits cell was one mono string, so HH / H / L / LL read as data alongside the numbers and
+   the whole cell turned into an undifferentiated block. The system's split applies here as much as
+   anywhere: the LIMIT NAME is a label (sans, badge weight, muted) and only the THRESHOLD is mono.
+   deFmtLimits stays as-is for tooltips and the record dialog, where it is a single line of text. */
+function DeLimits({ t }) {
+  const set = DE_LIMITS.filter((l) => t[l.k] != null);
+  if (!set.length) return null;
+  return (
+    <span className="de-lims">
+      {set.map((l) => (
+        <span key={l.k} className={"de-lim de-lim-" + l.level}>
+          <span className="de-lim-l">{l.label}</span>
+          <span className="de-lim-v">{t[l.k]}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+const deHasRange = (t) => t.min != null || t.max != null;
+/* The dash is a CELL glyph for "no value here", never a word in a sentence: splicing it into a
+   tooltip produced "expected range —". Every prose call site asks these two first and says the
+   absence in words instead. */
+const deRangeText = (t) => (deHasRange(t) ? "expected range " + deFmtRange(t) : "no expected range set");
+const deLimitsTitle = (t) => (deHasLimits(t) ? "Alarm limits " + deFmtLimits(t) : "No alarm limits");
+function deState(t) {
+  const n = deNum(t);
+  if (deHasLimits(t)) {
+    const c = deLimitCross(t, n);
+    return c ? { kind: "alarm", level: c.level, label: c.name + " alarm" } : { kind: "ok", label: "In range" };
+  }
+  if (t.min != null || t.max != null) return deOutOfRange(t) ? { kind: "oor", label: "Out of range" } : { kind: "ok", label: "In range" };
+  return null;
+}
+
+/* ── timestamps. The app's display format is DD.MM.YYYY, HH:MM; the <input>s want ISO parts. ── */
+const dePad = (n) => String(n).padStart(2, "0");
+const deTsOf = (d) => `${dePad(d.getDate())}.${dePad(d.getMonth() + 1)}.${d.getFullYear()}, ${dePad(d.getHours())}:${dePad(d.getMinutes())}`;
+const deTsNow = () => deTsOf(new Date());
+const deDateInput = (d) => `${d.getFullYear()}-${dePad(d.getMonth() + 1)}-${dePad(d.getDate())}`;
+const deTimeInput = (d) => `${dePad(d.getHours())}:${dePad(d.getMinutes())}`;
+function deTsParse(dateStr, timeStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const [h, mi] = (timeStr || "00:00").split(":").map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1, h || 0, mi || 0);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+/* ── when the reading was taken — shared by the Add value dialog and the table view ── */
+function DeWhen({ date, time, onDate, onTime, label = "Reading taken" }) {
+  const dt = deTsParse(date, time);
+  const future = dt && dt.getTime() > Date.now() + 60000;
+  return (
+    <div className="de-when">
+      <span className="de-field-l">{label}</span>
+      <div className="de-when-row">
+        <input className="de-input de-when-d" type="date" value={date} onChange={(e) => onDate(e.target.value)} aria-label={label + " · date"} />
+        <input className="de-input de-when-t" type="time" value={time} onChange={(e) => onTime(e.target.value)} aria-label={label + " · time"} />
+        <button type="button" className="linkbtn de-when-now" onClick={() => { const n = new Date(); onDate(deDateInput(n)); onTime(deTimeInput(n)); }}>Now</button>
+      </div>
+      {future && <span className="de-when-warn"><Icon name="alert-triangle" size={12} /> That is in the future. The reading will be stamped as written.</span>}
+    </div>
+  );
+}
 
 /* ── field primitives ── */
 function DeField({ label, hint, children }) {
@@ -121,19 +245,17 @@ function DeField({ label, hint, children }) {
 function TagDialog({ tag, existingPaths, seedPath }) {
   const editing = !!tag;
   const [f, setF] = React.useState(() => tag
-    ? { path: tag.path, name: tag.name, value: tag.value, unit: tag.unit || "", decimals: tag.decimals == null ? "" : String(tag.decimals), min: tag.min == null ? "" : String(tag.min), max: tag.max == null ? "" : String(tag.max), building: tag.building || "", department: tag.department || "", comment: "" }
-    : { path: seedPath || "", name: "", value: "", unit: "", decimals: "", min: "", max: "", building: "", department: "", comment: "" });
+    ? { path: tag.path, name: tag.name, value: tag.value, unit: tag.unit || "", decimals: tag.decimals == null ? "" : String(tag.decimals), min: tag.min == null ? "" : String(tag.min), max: tag.max == null ? "" : String(tag.max), alHiHi: tag.alHiHi == null ? "" : String(tag.alHiHi), alHi: tag.alHi == null ? "" : String(tag.alHi), alLo: tag.alLo == null ? "" : String(tag.alLo), alLoLo: tag.alLoLo == null ? "" : String(tag.alLoLo), building: tag.building || "", department: tag.department || "", comment: "" }
+    : { path: seedPath || "", name: "", value: "", unit: "", decimals: "", min: "", max: "", alHiHi: "", alHi: "", alLo: "", alLoLo: "", building: "", department: "", comment: "" });
   const [showCtx, setShowCtx] = React.useState(editing);
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const valid = f.path.trim() && f.name.trim() && f.value.trim();
   const parseN = (v) => (v.trim() === "" ? null : (isNaN(parseFloat(v)) ? null : parseFloat(v)));
   const save = () => {
-    const base = { path: f.path.trim(), name: f.name.trim(), value: f.value.trim(), unit: f.unit.trim(), decimals: f.decimals.trim() === "" ? null : parseInt(f.decimals, 10), min: parseN(f.min), max: parseN(f.max), building: f.building.trim(), department: f.department.trim() };
+    const base = { path: f.path.trim(), name: f.name.trim(), value: f.value.trim(), unit: f.unit.trim(), decimals: f.decimals.trim() === "" ? null : parseInt(f.decimals, 10), min: parseN(f.min), max: parseN(f.max), alHiHi: parseN(f.alHiHi), alHi: parseN(f.alHi), alLo: parseN(f.alLo), alLoLo: parseN(f.alLoLo), building: f.building.trim(), department: f.department.trim() };
     if (editing) { deStore.update(tag.id, base); njToast(`Tag "${base.name}" updated.`); }
     else {
-      const now = new Date();
-      const ts = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}, ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      deStore.add({ id: "mt" + Date.now(), ...base, history: [{ value: base.value, comment: f.comment.trim(), ts }] });
+      deStore.add({ id: "mt" + Date.now(), ...base, history: [{ value: base.value, comment: f.comment.trim(), ts: deTsNow() }] });
       njToast(`Tag "${base.name}" created in ${base.path}.`);
     }
     closeDialog();
@@ -155,8 +277,19 @@ function TagDialog({ tag, existingPaths, seedPath }) {
           <DeField label="Decimals"><input className="de-input data" type="number" min="0" placeholder="1" value={f.decimals} onChange={(e) => set("decimals", e.target.value)} /></DeField>
         </div>
         <div className="de-form-2col">
-          <DeField label="Min"><input className="de-input data" placeholder="—" value={f.min} onChange={(e) => set("min", e.target.value)} /></DeField>
-          <DeField label="Max"><input className="de-input data" placeholder="—" value={f.max} onChange={(e) => set("max", e.target.value)} /></DeField>
+          <DeField label="Min" hint="Expected range, guidance only"><input className="de-input data" placeholder="—" value={f.min} onChange={(e) => set("min", e.target.value)} /></DeField>
+          <DeField label="Max" hint="Never raises an alarm"><input className="de-input data" placeholder="—" value={f.max} onChange={(e) => set("max", e.target.value)} /></DeField>
+        </div>
+        <div className="de-form-sect">
+          <span className="eyebrow">Alarm limits</span>
+          <span className="de-form-hint">Separate from the expected range: a recorded value past one of these raises an alarm, and when any limit is set these drive the in-range indicator.</span>
+        </div>
+        <div className="de-form-4col">
+          {DE_LIMITS.map((l) => (
+            <DeField key={l.k} label={l.name}>
+              <input className="de-input data" placeholder="—" value={f[l.k]} onChange={(e) => set(l.k, e.target.value)} />
+            </DeField>
+          ))}
         </div>
         {!editing && (
           <DeField label="Comment (optional)"><textarea className="de-input de-ta" rows={2} placeholder="Add a note about this value…" value={f.comment} onChange={(e) => set("comment", e.target.value)} /></DeField>
@@ -192,11 +325,15 @@ function RecordValueDialog({ tag }) {
   const hist = (tag.history || []).slice(0, 3);
   const [value, setValue] = React.useState("");
   const [comment, setComment] = React.useState("");
+  const [date, setDate] = React.useState(() => deDateInput(new Date()));
+  const [time, setTime] = React.useState(() => deTimeInput(new Date()));
   const num = parseFloat(value);
   const oor = numeric && value.trim() !== "" && !isNaN(num) && ((tag.min != null && num < tag.min) || (tag.max != null && num > tag.max));
+  const cross = value.trim() === "" ? null : deLimitCross(tag, num);
   const valid = value.trim() !== "";
   const save = () => {
-    deStore.record(tag.id, value.trim(), comment.trim());
+    const dt = deTsParse(date, time);
+    deStore.record(tag.id, value.trim(), comment.trim(), dt ? deTsOf(dt) : null);
     njToast(`Added ${value.trim()}${tag.unit ? " " + tag.unit : ""} to ${tag.name}.`, numeric ? "Trends" : null, numeric ? () => njSendToTrend(tag.name, { name: tag.name, unit: tag.unit, value: num, group: "Manual" }) : null);
     closeDialog();
   };
@@ -215,7 +352,10 @@ function RecordValueDialog({ tag }) {
           </div>
         </DeField>
         {(tag.min != null || tag.max != null) && <div className="de-rec-range">Expected range {deFmtRange(tag)}</div>}
-        {oor && <div className="pe-warn"><Icon name="alert-triangle" size={14} /> <span>Value is outside the expected range.</span></div>}
+        {deHasLimits(tag) && <div className="de-rec-range">Alarm limits <DeLimits t={tag} /></div>}
+        {cross && <div className={"pe-warn" + (cross.level === "critical" ? " pe-warn-crit" : "")}><Icon name="alert-triangle" size={14} /> <span>Past the {cross.name.toLowerCase()} alarm limit ({tag[cross.k]}{tag.unit ? " " + tag.unit : ""}) · saving raises a {cross.level} alarm.</span></div>}
+        {!cross && oor && <div className="pe-warn"><Icon name="alert-triangle" size={14} /> <span>Value is outside the expected range.</span></div>}
+        <DeWhen date={date} time={time} onDate={setDate} onTime={setTime} />
         <DeField label="Comment (optional)"><input className="de-input" placeholder="Add a note about this reading…" value={comment} onChange={(e) => setComment(e.target.value)} /></DeField>
         {hist.length > 0 && (
           <div className="de-rec-hist">
@@ -231,6 +371,99 @@ function RecordValueDialog({ tag }) {
         <button className="btn btn-primary" disabled={!valid} onClick={save}><Icon name="check" size={16} /> Add</button>
       </div>
     </Dialog>
+  );
+}
+
+/* ── Table view: one round, many measurements, one timestamp ──
+   The list is built for "find one measurement and log it". A round is the other job: the operator
+   walks a location with a clipboard and comes back with eight readings. Typing eight dialogs for
+   that is the Excel-beats-the-HMI moment, so the table takes them all in one pass and writes them
+   with ONE timestamp — the time the round was taken, not the time each field lost focus. */
+function DeMatrix({ rows, showPath, onDone }) {
+  const [vals, setVals] = React.useState({});
+  const [notes, setNotes] = React.useState({});
+  const [date, setDate] = React.useState(() => deDateInput(new Date()));
+  const [time, setTime] = React.useState(() => deTimeInput(new Date()));
+  const set = (id, v) => setVals((s) => ({ ...s, [id]: v }));
+  const entries = rows.filter((t) => (vals[t.id] || "").trim() !== "")
+    .map((t) => ({ id: t.id, value: vals[t.id].trim(), comment: (notes[t.id] || "").trim() }));
+  const oorOf = (t) => {
+    const n = parseFloat(vals[t.id]);
+    if (isNaN(n)) return false;
+    if (deHasLimits(t)) return !!deLimitCross(t, n);
+    return (t.min != null && n < t.min) || (t.max != null && n > t.max);
+  };
+  const oorN = rows.filter(oorOf).length;
+  const cellRef = React.useRef({});
+  // Enter moves DOWN the column, like every spreadsheet the operators came from
+  const onKey = (e, i) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const next = rows[i + (e.shiftKey ? -1 : 1)];
+    if (next && cellRef.current[next.id]) cellRef.current[next.id].focus();
+  };
+  const save = () => {
+    const dt = deTsParse(date, time);
+    deStore.recordMany(entries, dt ? deTsOf(dt) : null);
+    njToast(`${entries.length} reading${entries.length === 1 ? "" : "s"} logged · ${dt ? deTsOf(dt) : deTsNow()}`, "clipboard-check");
+    setVals({}); setNotes({});
+    if (onDone) onDone();
+  };
+  return (
+    <div className="de-mx">
+      <div className="de-mx-scroll">
+      <table className="tbl de-mxtbl">
+        <thead>
+          <tr>
+            <th>Measurement</th>
+            {showPath && <th className="de-mx-th-p">Location</th>}
+            <th className="de-mx-th-n">Last value</th>
+            <th className="de-mx-th-lim">Limits</th>
+            <th className="de-mx-th-v">New value</th>
+            <th className="de-mx-th-c">Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((t, i) => {
+            const filled = (vals[t.id] || "").trim() !== "";
+            return (
+              <tr key={t.id} className={filled ? "de-mx-filled" : ""}>
+                <td className="de-mx-name">{t.name}</td>
+                {showPath && <td className="de-mx-p">{t.path}</td>}
+                <td className="de-mx-last data">{t.value}{t.unit ? <span className="de-u"> {t.unit}</span> : null}</td>
+                <td className="de-mx-exp" title={deHasLimits(t) ? "Alarm limits · a value past one of these raises an alarm" : "No alarm limits · " + deRangeText(t)}>
+                  {deHasLimits(t) ? <DeLimits t={t} />
+                    : deHasRange(t) ? <span className="de-mx-nolim">exp <span className="de-lim-v">{deFmtRange(t)}</span></span>
+                    : null}</td>
+                <td className="de-mx-v">
+                  <span className={"de-mx-inw" + (oorOf(t) ? " oor" : "")}>
+                    <input className="de-input data" inputMode={deIsNumeric(t) ? "decimal" : "text"} placeholder="—"
+                      ref={(el) => { cellRef.current[t.id] = el; }} onKeyDown={(e) => onKey(e, i)}
+                      aria-label={"New value for " + t.name} value={vals[t.id] || ""} onChange={(e) => set(t.id, e.target.value)} />
+                    {t.unit && <span className="de-mx-u">{t.unit}</span>}
+                  </span>
+                </td>
+                <td className="de-mx-c">
+                  <input className="de-input" placeholder={filled ? "Optional note…" : ""} disabled={!filled}
+                    aria-label={"Comment for " + t.name} value={notes[t.id] || ""} onChange={(e) => setNotes((s) => ({ ...s, [t.id]: e.target.value }))} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      </div>
+      <div className="de-mxbar">
+        <DeWhen date={date} time={time} onDate={setDate} onTime={setTime} label="Round taken" />
+        <span className="de-mx-count">{entries.length
+          ? entries.length + " of " + rows.length + " filled" + (oorN ? " · " + oorN + " past a limit" : "")
+          : "Type the readings you have · blank rows are left alone"}</span>
+        <div className="de-mxbar-b">
+          <button className="btn btn-secondary" disabled={!entries.length} onClick={() => { setVals({}); setNotes({}); }}>Clear</button>
+          <button className="btn btn-primary" disabled={!entries.length} onClick={save}><Icon name="check" size={16} /> Save {entries.length || ""} reading{entries.length === 1 ? "" : "s"}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -422,6 +655,7 @@ function MeasurementRow({ tag, paths, onEnter, showPath }) {
   const [menu, setMenu] = React.useState(false);
   const numeric = deIsNumeric(tag);
   const oor = deOutOfRange(tag);
+  const st = deState(tag);
   const last = (tag.history || [])[0];
   const items = [
     { icon: "pencil", label: "Edit tag details", onClick: () => openDialog(<TagDialog tag={tag} existingPaths={paths} />) },
@@ -433,7 +667,7 @@ function MeasurementRow({ tag, paths, onEnter, showPath }) {
     { icon: "trash-2", label: "Delete tag", danger: true, onClick: () => openDialog(<DeleteTagConfirm tag={tag} />) },
   ];
   return (
-    <div className={"de-meas" + (oor ? " de-meas-oor" : "")}>
+    <div className={"de-meas" + (st && st.kind !== "ok" ? " de-meas-oor" : "")}>
       <div className="de-meas-main">
         <div className="de-meas-name">{tag.name}</div>
         <div className="de-meas-meta">
@@ -442,10 +676,14 @@ function MeasurementRow({ tag, paths, onEnter, showPath }) {
         </div>
       </div>
       <div className="de-meas-read">
-        <span className={"data de-meas-val" + (oor ? " de-oor" : "")}>{tag.value}{tag.unit ? <span className="de-u"> {tag.unit}</span> : null}</span>
-        {oor
-          ? <span className="de-stat de-stat-warn"><Icon name="alert-triangle" size={12} /> Out of range</span>
-          : (tag.min != null || tag.max != null) ? <span className="de-stat de-stat-ok"><span className="de-stat-dot" /> In range</span> : <span className="de-meas-range data">{deFmtRange(tag)}</span>}
+        <span className={"data de-meas-val" + (st && st.kind !== "ok" ? " de-oor" : "")}>{tag.value}{tag.unit ? <span className="de-u"> {tag.unit}</span> : null}</span>
+        {st
+          ? st.kind === "ok"
+            ? <span className="de-stat de-stat-ok"><span className="de-stat-dot" /> In range</span>
+            : <span className={"de-stat " + (st.kind === "alarm" && st.level === "critical" ? "de-stat-crit" : "de-stat-warn")}
+                title={st.kind === "alarm" ? deLimitsTitle(tag) : "Expected range " + deFmtRange(tag)}>
+                <Icon name="alert-triangle" size={12} /> {st.label}</span>
+          : deHasRange(tag) ? <span className="de-meas-range data">{deFmtRange(tag)}</span> : null}
       </div>
       <button className="btn btn-secondary btn-sm de-enter-btn" onClick={() => onEnter(tag)}><Icon name="plus" size={14} /> Add value</button>
       <div className="de-meas-morewrap">
@@ -491,6 +729,9 @@ function DataEntryScreen({ tab, onTab }) {
   const [q, setQ] = React.useState("");
   const [active, setActive] = React.useState("");
   const [collapsed, setCollapsed] = React.useState(() => new Set());
+  // list vs table is a working preference, so it survives a reload
+  const [view, setView] = React.useState(() => { try { return localStorage.getItem("nj_de_view_v1") === "table" ? "table" : "list"; } catch (e) { return "list"; } });
+  React.useEffect(() => { try { localStorage.setItem("nj_de_view_v1", view); } catch (e) {} }, [view]);
   const SEP = " / ";
   const paths = [...new Set([...folders, ...tags.map((t) => t.path)])].sort();
   const query = q.trim().toLowerCase();
@@ -568,6 +809,13 @@ function DataEntryScreen({ tab, onTab }) {
             </div>
             <div className="de-panel-tools">
               <div className="field de-search"><Icon name="search" size={16} color="var(--slate-400)" /><input placeholder="Search all tags…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+              <div className="de-viewseg" role="group" aria-label="View">
+                {[{ k: "list", icon: "list", label: "List" }, { k: "table", icon: "table-2", label: "Table" }].map((v) => (
+                  <button key={v.k} className={"de-viewbtn" + (view === v.k ? " on" : "")} aria-pressed={view === v.k}
+                    title={v.k === "table" ? "Enter several readings at once, with one timestamp" : "One measurement at a time"}
+                    onClick={() => setView(v.k)}><Icon name={v.icon} size={14} /> {v.label}</button>
+                ))}
+              </div>
               <button className="btn btn-secondary" onClick={() => openDialog(<TagDialog existingPaths={paths} seedPath={active || ""} />)}><Icon name="plus" size={16} /> New tag</button>
             </div>
           </div>
@@ -581,7 +829,7 @@ function DataEntryScreen({ tab, onTab }) {
           <div className="de-panel-scroll">
             {visible.length === 0 && (
               query
-                ? <NjEmpty size="card" reason="search" title={"No measurements match “" + query + "”"}
+                ? <NjEmpty size="card" reason="search" title={"No measurements match \u201c" + query + "\u201d"}
                     body="Search covers the tag, the name and the location."
                     action={<button className="btn btn-secondary" onClick={() => setQ("")}>Clear search</button>} />
                 : <NjEmpty size="card" icon="clipboard-list"
@@ -589,14 +837,16 @@ function DataEntryScreen({ tab, onTab }) {
                     body={subfolders.length ? "Open a subfolder above to reach its measurement points." : "Create the first tag for this location to start logging readings against it."}
                     action={!subfolders.length ? <button className="btn btn-primary" onClick={() => openDialog(<TagDialog existingPaths={paths} seedPath={active || ""} />)}><Icon name="plus" size={16} /> New tag</button> : null} />
             )}
-            {grouped
-              ? groupOrder.map((p) => (
-                  <div className="de-mgroup" key={p}>
-                    <div className="de-mgroup-h"><Icon name="folder" size={14} color="var(--slate-400)" /> {p} <span className="data">{byPath[p].length}</span></div>
-                    {byPath[p].map((t) => <MeasurementRow key={t.id} tag={t} paths={paths} onEnter={openEnter} showPath={false} />)}
-                  </div>
-                ))
-              : visible.map((t) => <MeasurementRow key={t.id} tag={t} paths={paths} onEnter={openEnter} showPath={false} />)}
+            {visible.length > 0 && (view === "table"
+              ? <DeMatrix rows={visible} showPath={showPath} />
+              : grouped
+                ? groupOrder.map((p) => (
+                    <div className="de-mgroup" key={p}>
+                      <div className="de-mgroup-h"><Icon name="folder" size={14} color="var(--slate-400)" /> {p} <span className="data">{byPath[p].length}</span></div>
+                      {byPath[p].map((t) => <MeasurementRow key={t.id} tag={t} paths={paths} onEnter={openEnter} showPath={false} />)}
+                    </div>
+                  ))
+                : visible.map((t) => <MeasurementRow key={t.id} tag={t} paths={paths} onEnter={openEnter} showPath={false} />))}
           </div>
         </section>
       </div>
@@ -606,4 +856,4 @@ function DataEntryScreen({ tab, onTab }) {
 
 window.DataEntryScreen = DataEntryScreen;
 // exported so the mobile app records against the SAME manual-measurement store (nj_manual_tags_v1)
-Object.assign(window, { deStore, useManualTags, useManualFolders, deNum, deIsNumeric, deOutOfRange, deFmtRange, DE_DEPTS, DE_BUILDINGS });
+Object.assign(window, { deStore, useManualTags, useManualFolders, deNum, deIsNumeric, deOutOfRange, deFmtRange, deHasRange, DE_DEPTS, DE_BUILDINGS, deTsNow, deTsOf, deDateInput, deTimeInput, deTsParse, DE_LIMITS, deHasLimits, deLimitCross, deFmtLimits, deState });
