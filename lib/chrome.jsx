@@ -46,7 +46,7 @@ function Check({ on, onClick, indeterminate }) {
     <span className={"cbx" + (on ? " on" : "") + (indeterminate ? " ind" : "") + (onClick ? " cbx-btn" : "")}
       onClick={onClick ? (e) => { e.stopPropagation(); onClick(e); } : undefined}
       role={onClick ? "checkbox" : undefined} aria-checked={indeterminate ? "mixed" : !!on} tabIndex={onClick ? 0 : undefined}>
-      {indeterminate ? <Icon name="minus" size={11} strokeWidth={3} /> : (on && <Icon name="check" size={11} strokeWidth={3} />)}
+      {indeterminate ? <Icon name="minus" size={12} strokeWidth={3} /> : (on && <Icon name="check" size={12} strokeWidth={3} />)}
     </span>
   );
 }
@@ -58,7 +58,7 @@ function KpiCard({ label, value, unit, delta, deltaDir, icon, onClick }) {
     <div className={"kpi" + (onClick ? " kpi-link" : "")} onClick={onClick} role={onClick ? "button" : undefined} {...(onClick ? njActivate(onClick) : null)}>
       <div className="kpi-top">
         <span className="eyebrow">{label}</span>
-        <Icon name={onClick ? "arrow-up-right" : icon} size={17} color="var(--slate-400)" />
+        <Icon name={onClick ? "arrow-up-right" : icon} size={16} color="var(--slate-400)" />
       </div>
       <div className="kpi-val">
         <span className="metric">{value}</span>
@@ -75,7 +75,7 @@ function Card({ title, icon, action, children, style, bodyStyle, headRight }) {
       {(title || headRight) && (
         <div className="card-head">
           <div className="card-head-l">
-            {icon && <Icon name={icon} size={17} color="var(--slate-600)" />}
+            {icon && <Icon name={icon} size={16} color="var(--slate-600)" />}
             {title && <span className="card-title">{title}</span>}
           </div>
           {headRight || (action && <button className="linkbtn">{action} <Icon name="arrow-up-right" size={14} /></button>)}
@@ -343,7 +343,7 @@ function AreaLink({ area, strong }) {
     <button className="area-link" title={"Open process screen · " + area}
       onClick={(e) => { e.stopPropagation(); njGoArea(area); }}>
       <span className="area-link-txt">{area}</span>
-      <Icon name="arrow-up-right" size={13} />
+      <Icon name="arrow-up-right" size={14} />
     </button>
   );
 }
@@ -375,7 +375,7 @@ function BreadcrumbScope() {
     return () => document.removeEventListener("pointerdown", f, true);
   }, [open]);
   const pick = (b, d) => { njPickContext(b, d); setOpen(null); };
-  const caret = <Icon name="chevron-down" size={13} color="var(--slate-400)" />;
+  const caret = <Icon name="chevron-down" size={14} color="var(--slate-400)" />;
   return (
     <span className="tb-scope" ref={ref}>
       <span className="crumb-pick-wrap">
@@ -393,7 +393,7 @@ function BreadcrumbScope() {
           </div>
         )}
       </span>
-      <span className="tb-sep"><Icon name="chevron-right" size={15} color="var(--slate-300)" /></span>
+      <span className="tb-sep"><Icon name="chevron-right" size={16} color="var(--slate-300)" /></span>
       <span className="crumb-pick-wrap">
         <button className={"crumb-pick" + (open === "d" ? " on" : "")} onClick={() => setOpen((o) => (o === "d" ? null : "d"))} title="Switch department">
           <span className="crumb-pick-lbl">{dept.name}</span> {caret}
@@ -449,7 +449,7 @@ function Sidebar({ active }) {
         {!collapsed && <img className="sb-wordmark" src={(window.__resources && window.__resources.njWordmark) || "assets/njord-wordmark.png"} alt="NJORD" />}
         {!collapsed && (
           <button className="sb-collapse" onClick={() => collapseStore.toggle()} title="Collapse sidebar" aria-label="Collapse sidebar">
-            <Icon name="chevrons-left" size={18} color="var(--slate-400)" />
+            <Icon name="chevrons-left" size={20} color="var(--slate-400)" />
           </button>
         )}
         {collapsed && (
@@ -466,7 +466,7 @@ function Sidebar({ active }) {
             <button key={n.id} className={"sb-item" + (isActive ? " active" : "")} title={collapsed ? n.label : undefined}
               onClick={() => { if (n.id === "navigation" && window.__njGoPlan) { window.__njGoPlan(); } else if (window.__njNavigate) { window.__njNavigate(n.id); } }}>
               <span className="sb-item-l">
-                <Icon name={n.icon} size={18} />
+                <Icon name={n.icon} size={20} />
                 {!collapsed && <span className="sb-label">{n.label}</span>}
               </span>
               {!collapsed && (
@@ -500,7 +500,7 @@ function Sidebar({ active }) {
               <div className="sb-user-role">Shift Supervisor</div>
             </div>
           )}
-          {!collapsed && <Icon name="chevron-up" size={15} color="var(--slate-400)" className="sb-user-caret" />}
+          {!collapsed && <Icon name="chevron-up" size={16} color="var(--slate-400)" className="sb-user-caret" />}
         </button>
       </div>
     </aside>
@@ -519,7 +519,7 @@ window.__njGoAlarms = function (tab, filter) {
 function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
   useAlarmHub();
   const ac = alarmCounts();
-  const sep = <span className="tb-sep"><Icon name="chevron-right" size={15} color="var(--slate-300)" /></span>;
+  const sep = <span className="tb-sep"><Icon name="chevron-right" size={16} color="var(--slate-300)" /></span>;
   return (
     <div className="topbar">
       <div className="topbar-l">
@@ -544,10 +544,11 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
       <div className="topbar-r">
         <NjClock />
         <button className="tb-search" title="Search (⌘K)" onClick={() => window.__njOpenCommandPalette && window.__njOpenCommandPalette()}>
-          <Icon name="search" size={15} color="var(--slate-500)" />
+          <Icon name="search" size={16} color="var(--slate-500)" />
           <span className="tb-search-lbl">Search</span>
           <span className="tb-search-kbd">⌘K</span>
         </button>
+        <span className="tb-div" />
         <button className="tb-pill" title={`View ${ac.critical} active critical alarms`} onClick={() => window.__njGoAlarms("Active", "critical")} style={{ background: "var(--critical-solid)", color: "#fff" }}>
           <span className="d" style={{ background: "#fff" }} /> {ac.critical}
         </button>
@@ -555,12 +556,11 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
           <span className="d" style={{ background: "var(--warning)" }} /> {ac.high}
         </button>
         <button className="tb-bell" title={`View all alarms · ${ac.unack} unacknowledged`} onClick={() => window.__njGoAlarms("All Alarms")}>
-          <Icon name="bell" size={19} />
+          <Icon name="bell" size={20} />
           {ac.unack > 0 && <span className="tb-bell-badge">{ac.unack}</span>}
         </button>
-        <button className="tb-icnbtn" title="Notes" onClick={() => window.openNotes && window.openNotes()}><Icon name="notebook-pen" size={19} /></button>
-        <button className="tb-icnbtn" title="Maneuver history" onClick={() => window.__njNavigate && window.__njNavigate("maneuver")}><Icon name="history" size={19} /></button>
-        <button className="tb-icnbtn" title="Help" onClick={() => window.openHelp && window.openHelp()}><Icon name="help-circle" size={19} /></button>
+        <span className="tb-div" />
+        <button className="tb-icnbtn" title="Notes" onClick={() => window.openNotes && window.openNotes()}><Icon name="notebook-pen" size={20} /></button>
       </div>
     </div>
   );
@@ -580,7 +580,7 @@ function AlarmAnnunciator() {
   if (unacked.length === 0) {
     return (
       <div className="annun annun-clear" role="status" aria-live="polite">
-        <Icon name="check-circle-2" size={15} color="var(--success)" />
+        <Icon name="check-circle-2" size={16} color="var(--success)" />
         <span className="annun-clear-t">All active alarms acknowledged</span>
       </div>
     );
@@ -601,9 +601,9 @@ function AlarmAnnunciator() {
         </span>
       </button>
       <div className="annun-actions">
-        <button className="annun-ack" onClick={() => ackAlarms(top.id)} title="Acknowledge this alarm"><Icon name="check" size={15} /> Acknowledge</button>
+        <button className="annun-ack" onClick={() => ackAlarms(top.id)} title="Acknowledge this alarm"><Icon name="check" size={16} /> Acknowledge</button>
         <button className="annun-more" onClick={() => window.__njGoAlarms && window.__njGoAlarms("Active", null)} title="View all active alarms">
-          {rest > 0 ? "+" + rest + " more unacknowledged" : "View active"} <Icon name="arrow-up-right" size={13} />
+          {rest > 0 ? "+" + rest + " more unacknowledged" : "View active"} <Icon name="arrow-up-right" size={14} />
         </button>
       </div>
     </div>

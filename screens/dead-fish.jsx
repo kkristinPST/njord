@@ -253,7 +253,7 @@ function DeadFishScreen() {
 
       <div className="card rasm-card">
         <div className="card-head">
-          <div className="card-head-l"><Icon name="skull" size={16} color="var(--slate-600)" /><span className="card-title">Dead Fish · DFS0-FHA0 · Building 2</span></div>
+          <div className="card-head-l"><Icon name="fish-off" size={16} color="var(--slate-600)" /><span className="card-title">Dead Fish · DFS0-FHA0 · Building 2</span></div>
           <span className="caption">Click equipment for controls · tap a value's trend icon to send it to Trends</span>
         </div>
         <div className="card-body rasm-body"><DeadFishMimic /></div>
@@ -269,7 +269,7 @@ function DeadFishScreen() {
       {full && (
         <div className="rasm-full" role="dialog" aria-label="SCADA view">
           <div className="rasm-full-bar">
-            <span className="rasm-full-title"><Icon name="skull" size={16} /> Dead Fish · DFS0-FHA0 · SCADA view</span>
+            <span className="rasm-full-title"><Icon name="fish-off" size={16} /> Dead Fish · DFS0-FHA0 · SCADA view</span>
             <div className="rasm-full-bar-r">
               <button className="btn btn-secondary btn-sm" onClick={() => window.openTrendWindow && window.openTrendWindow()}><Icon name="line-chart" size={14} /> Trends</button>
               <button className="rasm-full-x" title="Close (Esc)" onClick={() => setFull(false)}><Icon name="x" size={20} /></button>

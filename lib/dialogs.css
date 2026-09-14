@@ -185,6 +185,39 @@
 .help-powered { font-size: 12px; color: var(--slate-500); }
 .help-powered strong { color: var(--warning-text); font-weight: 700; }
 
+/* ── Discover Njord (capability discovery inside Help) ── */
+.dsc-body { display: flex; flex-direction: column; gap: 20px; padding: 16px 18px 18px; max-height: min(74vh, 760px); overflow-y: auto; overflow-x: hidden; }
+.dsc-grp-h { font: 700 10px/1.4 var(--font-sans); letter-spacing: 1px; text-transform: uppercase; color: var(--slate-500); margin-bottom: 8px; }
+.dsc-grp-s { font-size: 12px; color: var(--slate-500); margin: -4px 0 10px; }
+.dsc-pkg { border: 1px solid var(--border); border-radius: var(--r-md); background: var(--slate-50); padding: 12px 14px; }
+.dsc-pkg-h { display: flex; align-items: center; gap: 8px; }
+.dsc-pkg-n { font-size: 14px; font-weight: 700; color: var(--fg); }
+.dsc-pkg-tag { margin-left: auto; font: 700 10px/1 var(--font-sans); letter-spacing: 1px; color: var(--success-text); background: var(--success-bg); border-radius: var(--r-sm); padding: 4px 6px; }
+.dsc-pkg-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.dsc-inc { font-size: 12px; color: var(--slate-600); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px 8px; }
+.dsc-mod { display: flex; align-items: flex-start; gap: 14px; width: 100%; text-align: left; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--slate-200); border-radius: var(--r-md); background: var(--surface); cursor: pointer; }
+.dsc-mod:last-child { margin-bottom: 0; }
+.dsc-mod:hover { background: var(--slate-50); border-color: var(--slate-300); }
+.dsc-mod-icn { width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--r-md); background: var(--slate-100); color: var(--slate-600); display: inline-flex; align-items: center; justify-content: center; }
+.dsc-mod-txt { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.dsc-mod-n { font-size: 14px; font-weight: 600; color: var(--fg); }
+.dsc-mod-c { font: 500 12px/1.4 var(--font-mono); color: var(--primary-text); }
+.dsc-mod-s { font-size: 12px; color: var(--slate-500); }
+.dsc-fb { border-top: 1px solid var(--border); padding-top: 16px; }
+.dsc-fb-t { font-size: 13px; font-weight: 600; color: var(--fg); }
+.dsc-fb-s { font-size: 12px; color: var(--slate-500); margin: 3px 0 10px; }
+.dsc-fb-row { display: flex; gap: 8px; }
+.dsc-fb-in { flex: 1; min-width: 0; }
+.dsc-mod-body { padding: 18px 0 16px; max-height: min(74vh, 760px); overflow-y: auto; overflow-x: hidden; }
+.dsc-back { display: inline-flex; align-items: center; gap: 4px; margin: 0 22px 14px; padding: 4px 8px 4px 4px; border: 0; border-radius: var(--r-sm); background: none; color: var(--slate-500); font: 600 12px/1 var(--font-sans); cursor: pointer; }
+.dsc-back:hover { background: var(--slate-100); color: var(--fg); }
+.dsc-mod-body .man-lead, .dsc-mod-body .man-sec { padding-left: 22px; padding-right: 22px; }
+.dsc-mod-body .man-lead { padding-bottom: 14px; margin-bottom: 18px; }
+.dsc-caps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.dsc-cap { font: 700 10px/1 var(--font-sans); letter-spacing: .6px; text-transform: uppercase; color: var(--primary-text); background: var(--primary-bg); border-radius: var(--r-sm); padding: 5px 8px; }
+.dsc-avail { display: flex; align-items: flex-start; gap: 10px; margin: 0 22px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--slate-50); font-size: 13px; line-height: 1.5; color: var(--slate-600); }
+.dsc-avail strong { color: var(--fg); font-weight: 600; }
+
 /* ── profile & preferences ── */
 .prof-id { display: flex; align-items: center; gap: 14px; padding-bottom: 4px; }
 .prof-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 16px; font-weight: 700; flex: none; }

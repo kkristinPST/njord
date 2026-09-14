@@ -38,6 +38,7 @@ const JS_FILES = [
   "lib/dialogs.jsx",
   "lib/states.jsx",
   "lib/manuals.jsx",
+  "lib/discover.jsx", // after manuals.jsx — reuses its ManBlocks renderer
   "lib/notes.jsx",
   "lib/trends.jsx",
   "lib/trend-window.jsx",

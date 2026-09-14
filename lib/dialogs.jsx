@@ -200,6 +200,7 @@ function HelpDialog() {
     { icon: "book-open", label: "SCADA Manual", sub: "Operating the process mimics & controls", onClick: () => openManual("scada") },
     { icon: "utensils", label: "Feeding Manual", sub: "Feed maneuvers, dosing & schedules", onClick: () => openManual("feeding") },
     { icon: "life-buoy", label: "Create Ticket", sub: "Raise a support request to PST", onClick: () => openCreateTicket() },
+    { icon: "compass", label: "Discover Njord", sub: "What your package includes & further modules", onClick: () => window.openDiscover && window.openDiscover() },
     { icon: "info", label: "About NJORD", sub: "Version, licence & release notes", onClick: () => openAbout() },
   ];
   return (
@@ -544,6 +545,10 @@ function PreferencesDialog() {
   const [scr, setScr] = React.useState(() => { try { return localStorage.getItem("nj_default_screen") || "start"; } catch (e) { return "start"; } });
   const [temp, setTemp] = React.useState(() => { try { return localStorage.getItem("nj_units_temp") || "C"; } catch (e) { return "C"; } });
   const [wt, setWt] = React.useState(() => { try { return localStorage.getItem("nj_units_weight") || "kg"; } catch (e) { return "kg"; } });
+  const [lang, setLang] = React.useState(() => { try { return localStorage.getItem("nj_lang") || "en"; } catch (e) { return "en"; } });
+  const [lbl, setLbl] = React.useState(() => { try { return localStorage.getItem("nj_equip_label") || "both"; } catch (e) { return "both"; } });
+  const setLangV = (v) => { setLang(v); try { localStorage.setItem("nj_lang", v); } catch (e) {} };
+  const setLblV = (v) => { setLbl(v); try { localStorage.setItem("nj_equip_label", v); } catch (e) {} };
   const setDefScreen = (v) => { setScr(v); try { localStorage.setItem("nj_default_screen", v); } catch (e) {} };
   const setTempU = (v) => { setTemp(v); try { localStorage.setItem("nj_units_temp", v); } catch (e) {} };
   const setWtU = (v) => { setWt(v); try { localStorage.setItem("nj_units_weight", v); } catch (e) {} };
@@ -551,10 +556,18 @@ function PreferencesDialog() {
     <Dialog width={600}>
       <DlgHeader icon="sliders-horizontal" name="Preferences" onClose={closeDialog} />
       <div className="dlg-body">
-        <div className="pref-note"><Icon name="info" size={14} color="var(--slate-400)" /> <span>Applies to this device. Theme, density and text size change instantly; default screen takes effect at next sign-in.</span></div>
+        <div className="pref-note"><Icon name="info" size={14} color="var(--slate-400)" /> <span>Applies to you on this device — nobody else's console changes. Theme, density and text size take effect instantly; language and default screen at next sign-in.</span></div>
         <PrefSeg label="Theme" options={[["light", "Light"], ["dark", "Dark"], ["legacy", "Legacy"]]} value={theme} onChange={(v) => window.njSetTheme && window.njSetTheme(v)} />
         <PrefSeg label="Table density" options={[["comfortable", "Comfortable"], ["compact", "Compact"]]} value={compact ? "compact" : "comfortable"} onChange={(v) => window.densityStore && window.densityStore.set(v === "compact")} />
         <PrefSeg label="Text size" options={[["normal", "Normal"], ["large", "Large"], ["xlarge", "Extra large"]]} value={tsize} onChange={(v) => window.textSizeStore && window.textSizeStore.set(v)} />
+        <div className="pref-row">
+          <span className="pref-lbl">Interface language</span>
+          <select className="de-input pref-select" value={lang} onChange={(e) => setLangV(e.target.value)}><option value="en">English</option><option value="nb">Norsk bokmål</option></select>
+        </div>
+        <div className="pref-row">
+          <span className="pref-lbl">Equipment labels</span>
+          <select className="de-input pref-select" value={lbl} onChange={(e) => setLblV(e.target.value)}><option value="both">Tag / description</option><option value="tag">Tag only</option><option value="desc">Description only</option></select>
+        </div>
         <div className="pref-row">
           <span className="pref-lbl">Default screen</span>
           <select className="de-input pref-select" value={scr} onChange={(e) => setDefScreen(e.target.value)}>{PREF_SCREENS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
