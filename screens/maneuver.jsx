@@ -127,7 +127,7 @@ function ManeuverHistoryScreen() {
             ))}
             {rows.length === 0 && (
               <NjEmptyRow colSpan={7} reason={ql ? "search" : "filtered"}
-                title={ql ? "No maneuvers match “" + q + "”" : "No maneuvers match the current filters"}
+                title={ql ? "No maneuvers match \u201c" + q + "\u201d" : "No maneuvers match the current filters"}
                 action={<button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setSrc("All"); }}>Clear filters</button>} />
             )}
           </tbody>

@@ -36,6 +36,12 @@ function buildCommandIndex() {
     kind: "Parameter", label: p.name, hint: tag + " · " + (p.group || "") + " → Trends", sub: tag,
     run: () => { if (window.njSendToTrend) window.njSendToTrend(tag); if (window.__njNavigate) window.__njNavigate("analytics"); },
   }); });
+  [
+    { label: "Help & manuals", sub: "help manual documentation user guide", hint: "Open the user manual", run: () => window.openHelp && window.openHelp() },
+    { label: "Preferences", sub: "theme density text size units default screen", hint: "Your per-device view settings", run: () => window.openPreferences && window.openPreferences() },
+    { label: "Notes", sub: "shift handover note", hint: "Open notes", run: () => window.openNotes && window.openNotes() },
+    { label: "Discover Njord", sub: "modules add-ons package licence upgrade", hint: "Your package & further modules", run: () => window.openDiscover && window.openDiscover() },
+  ].forEach((a) => items.push(Object.assign({ kind: "Action" }, a)));
   return items;
 }
 

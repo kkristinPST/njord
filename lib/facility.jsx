@@ -42,7 +42,7 @@ const FACILITY = [
       { label: "Water Treatment", icon: "droplets", status: "ok" },
       { label: "Fish Barrier", icon: "shield", status: "ok" },
       { label: "Lye Dosing", icon: "flask-conical", status: "warning" },
-      { label: "Dead Fish", icon: "skull", status: "ok" },
+      { label: "Dead Fish", icon: "fish-off", status: "ok" },
       { label: "Seawater Exchange", icon: "waves", status: "ok" },
       { label: "HyFlow Feeding", icon: "utensils", status: "ok" },
     ]},

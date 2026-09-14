@@ -42,6 +42,7 @@ const CM_PARAMS = [
   { id: "alk", label: "Alkalinity", unit: "mg CaCO₃/L", dec: 0, base: 112, spread: 26, band: { min: 80, max: 150 }, fill: .5, locs: CM_FILT },
   { id: "tss", label: "TSS", unit: "mg/L", dec: 1, base: 15, spread: 7, band: { max: 25 }, fill: .4, locs: ["inlet", "filtrate", "grab"] },
 ];
+const CM_ALL = "__all";
 const cmParam = (id) => CM_PARAMS.find((p) => p.id === id) || CM_PARAMS[0];
 
 // Read straight off the plant — never typed. The legacy sheet ended with a fixed block of ~20 of
@@ -339,7 +340,7 @@ function CmLogDialog({ deptId, deptLabel, entry }) {
           ))}
         </div>
         <label className="de-field"><span className="de-field-l">Comment and observations</span>
-          <textarea className="de-input cm-note-in" rows={3} placeholder="Anything the numbers don't say — dosing changes, suspected mis-reading, sampling conditions…" value={note} onChange={(e) => setNote(e.target.value)} />
+          <textarea className="de-input cm-note-in" rows={3} placeholder="Anything the numbers don't say: dosing changes, suspected mis-reading, sampling conditions…" value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
       </div>
       <div className="dlg-foot">
@@ -452,7 +453,7 @@ function CmTagsDialog({ sel, onApply }) {
     <Dialog width={640}>
       <DlgHeader icon="columns-3" name="Plant tag columns" tag={pick.size + " selected"} onClose={closeDialog} />
       <div className="dlg-body cm-tagpick">
-        <p className="cm-tagpick-hint">These are read automatically and cannot be typed into. Pick the ones worth seeing beside the manual readings — the rest stay available in Trends.</p>
+        <p className="cm-tagpick-hint">These are read automatically and cannot be typed into. Pick the ones worth seeing beside the manual readings. The rest stay available in Trends.</p>
         <input className="de-input" placeholder="Search tags…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search plant tags" />
         <div className="cm-tagpick-list">
           {grps.map((g) => { const items = g.items.filter(match); if (!items.length) return null; return (
@@ -500,7 +501,7 @@ function CmCalcDialog({ cols, sample, seed, onApply }) {
       <DlgHeader icon="function-square" name={form ? (form.id ? "Edit calculated column" : "New calculated column") : "Calculated columns"} tag={form ? undefined : list.length + " defined"} onClose={closeDialog} />
       {!form && (
         <div className="dlg-body cm-calcbody">
-          <p className="cm-tagpick-hint">A calculated column derives a figure from values already on the sheet — a hand reading against its installed sensor, a rise across a tank. It is written for every round that has the values it needs, and is never typed into.</p>
+          <p className="cm-tagpick-hint">A calculated column derives a figure from values already on the sheet: a hand reading against its installed sensor, a rise across a tank. It is written for every round that has the values it needs, and is never typed into.</p>
           <div className="cm-calc-list">
             {list.map((c) => (
               <div className="cm-calc-row" key={c.id}>
@@ -581,7 +582,7 @@ function CmPeriodDialog({ length }) {
     <Dialog width={480}>
       <DlgHeader icon="calendar-range" name="Commissioning period" onClose={closeDialog} />
       <div className="dlg-body">
-        <p className="cm-tagpick-hint">Day {CM_ELAPSED} of the trial period has been logged. Extending the period keeps coverage honest — it does not remove any round.</p>
+        <p className="cm-tagpick-hint">Day {CM_ELAPSED} of the trial period has been logged. Extending the period keeps coverage honest; it does not remove any round.</p>
         <label className="de-field"><span className="de-field-l">Planned length, days</span>
           <input className="de-input data" inputMode="numeric" value={v} onChange={(e) => setV(e.target.value)} />
         </label>
@@ -620,7 +621,7 @@ function CmAddRowDialog({ deptId, deptLabel, length, onAdded }) {
           {dup ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> {cmFmt(date)} is already on the sheet.</span>
             : !date || isNaN(day) ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Pick a date.</span>
             : day < 1 ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Before the trial period started.</span>
-            : day > length ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Past the planned period — extend it first.</span>
+            : day > length ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Past the planned period. Extend it first.</span>
             : <span className="cm-calc-ok"><Icon name="check" size={14} /> Day {day} of {length}{day > CM_ELAPSED ? " · not yet reached" : ""}</span>}
         </p>
         {missed.length > 0 && (
@@ -699,7 +700,7 @@ function CmChart({ p, rows, hidden, onToggle, onOpen }) {
       </div>
       <div className="cm-chart" ref={ref}>
         {total < 2
-          ? <p className="cm-chart-empty">{data.length ? "No " + p.label + " readings on the visible rounds — pick a wider range or another parameter." : "No rounds in this range to plot."}</p>
+          ? <p className="cm-chart-empty">{data.length ? "No " + p.label + " readings on the visible rounds. Pick a wider range or another parameter." : "No rounds in this range to plot."}</p>
           : (
             <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={`${p.label} at each sample point over the visible commissioning period`}>
               {(p.band.min != null || p.band.max != null) && <rect className="cmc-band" x={L} y={bandTop} width={W - L - R} height={Math.max(0, bandBot - bandTop)} />}
@@ -723,9 +724,9 @@ function CmChart({ p, rows, hidden, onToggle, onOpen }) {
                     const oor = cmOut(p, o.v);
                     if (!oor) return <circle key={o.date} className="cmc-pt" cx={X(o.day)} cy={Y(o.v)} r={2.4} fill={color(l)}><title>{`${cmFmt(o.date)} · ${cmLoc(l).label} · ${o.v.toFixed(p.dec)} ${p.unit}`}</title></circle>;
                     return (
-                      <g key={o.date} className="cmc-oorg" role="button" aria-label={`${p.label} ${cmLoc(l).label} ${o.v.toFixed(p.dec)} ${p.unit} on ${cmFmt(o.date)} is outside the design basis — open the round`} {...njActivate(() => onOpen(o.date))} onClick={() => onOpen(o.date)}>
+                      <g key={o.date} className="cmc-oorg" role="button" aria-label={`${p.label} ${cmLoc(l).label} ${o.v.toFixed(p.dec)} ${p.unit} on ${cmFmt(o.date)} is outside the design basis · open the round`} {...njActivate(() => onOpen(o.date))} onClick={() => onOpen(o.date)}>
                         <circle className="cmc-oor" cx={X(o.day)} cy={Y(o.v)} r={4.2} />
-                        <title>{`${cmFmt(o.date)} · ${cmLoc(l).label} · ${o.v.toFixed(p.dec)} ${p.unit} — outside design basis`}</title>
+                        <title>{`${cmFmt(o.date)} · ${cmLoc(l).label} · ${o.v.toFixed(p.dec)} ${p.unit} · outside design basis`}</title>
                       </g>
                     );
                   })}
@@ -734,8 +735,28 @@ function CmChart({ p, rows, hidden, onToggle, onOpen }) {
             </svg>
           )}
       </div>
-      <p className="cm-chart-foot">Shaded band is the design basis. A ringed point is outside it — open it to see the round.</p>
+      <p className="cm-chart-foot">Shaded band is the design basis. A ringed point is outside it; open it to see the round.</p>
     </div>
+  );
+}
+
+/* small multiples: one plot per parameter, folded so "all parameters" does not open sixteen
+   charts deep. Every parameter has its own design basis, so they cannot share an axis. */
+function CmCharts({ params, rows, hidden, onToggle, onOpen }) {
+  const CAP = 3;
+  const [open, setOpen] = React.useState(false);
+  const shown = open ? params : params.slice(0, CAP);
+  const more = params.length - shown.length;
+  return (
+    <React.Fragment>
+      {shown.map((q) => <CmChart key={q.id} p={q} rows={rows} hidden={hidden} onToggle={onToggle} onOpen={onOpen} />)}
+      {(more > 0 || open) && params.length > CAP && (
+        <button className="tv-more cm-morecharts" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+          <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
+          {open ? "Show fewer plots" : "Show " + more + " more parameter" + (more === 1 ? "" : "s")}
+        </button>
+      )}
+    </React.Fragment>
   );
 }
 
@@ -743,9 +764,9 @@ function CommissioningScreen({ tab, onTab }) {
   useCommissioning();
   const opts = cmDepts();
   const [deptId, setDeptId] = React.useState(() => (opts[0] ? opts[0].d.id : ""));
-  const [pid, setPid] = React.useState("co2");
+  const [pid, setPid] = React.useState(CM_ALL);
   const [range, setRange] = React.useState(30);
-  const [edit, setEdit] = React.useState(null);              // {date, col}  col = locId | "note"
+  const [edit, setEdit] = React.useState(null);              // {date, col}  col = "<paramId>|<locId>" | "note"
   const [flash, setFlash] = React.useState(() => new Set());
   const [tagSel, setTagSel] = React.useState(() => {
     try { const s = JSON.parse(localStorage.getItem(CM_TAGKEY) || "null"); if (Array.isArray(s)) return s; } catch (e) {}
@@ -768,6 +789,13 @@ function CommissioningScreen({ tab, onTab }) {
   const scope = opts.find((o) => o.d.id === deptId) || opts[0];
   const deptLabel = scope ? `${scope.b.name} · ${scope.d.name}` : "—";
   const p = cmParam(pid);
+  // "All parameters" is the default: the legacy sheet IS every parameter × every sample point, and a
+  // filter that starts on one of sixteen hides the round the operator just logged. The table then
+  // carries a column group per parameter (it scrolls — that is the sheet), and the plot becomes
+  // small multiples, folded so the page does not open sixteen charts deep.
+  const allParams = pid === CM_ALL;
+  const shownParams = allParams ? CM_PARAMS : [p];
+  const nVal = shownParams.reduce((n, q) => n + q.locs.length, 0);
   const all = scope ? cmStore.rows(scope.d.id) : [];
   const inRange = range === 0 ? all : all.filter((r) => r.day > CM_ELAPSED - range);
   // today is always a row, even before anything is logged — so the grid can be typed into directly
@@ -775,15 +803,15 @@ function CommissioningScreen({ tab, onTab }) {
     ? inRange
     : [{ date: CM_TODAY_KEY, day: CM_ELAPSED, time: "—", by: "", note: "", vals: {}, ghost: true }, ...inRange];
 
-  const cols = [...p.locs, "note"];
+  const cols = [...shownParams.reduce((a, q) => a.concat(q.locs.map((l) => q.id + "|" + l)), []), "note"];
   // fixed columns: date 150 · day 72 · sampled 88 · open 44. The rest is split so a
   // two-column parameter widens its value columns instead of leaving a vast comment column.
   const extraCols = autoCols.length + calcOn.length;
   const CM_FIXED = 354, CM_VMIN = 104, CM_VMAX = 220, CM_NOTEMIN = 260, CM_NOTEMAX = 560;
   const avail = Math.max(0, wrapW - CM_FIXED);
-  const valW = wrapW ? Math.min(CM_VMAX, Math.max(CM_VMIN, Math.round((avail - CM_NOTEMAX) / Math.max(p.locs.length, 1)))) : CM_VMIN;
-  const noteW = wrapW ? Math.min(CM_NOTEMAX, Math.max(CM_NOTEMIN, avail - valW * p.locs.length)) : CM_NOTEMIN;
-  const fillW = extraCols ? 0 : Math.max(0, avail - valW * p.locs.length - noteW);   // leftover, so the comment keeps a readable measure
+  const valW = wrapW ? Math.min(CM_VMAX, Math.max(CM_VMIN, Math.round((avail - CM_NOTEMAX) / Math.max(nVal, 1)))) : CM_VMIN;
+  const noteW = wrapW ? Math.min(CM_NOTEMAX, Math.max(CM_NOTEMIN, avail - valW * nVal)) : CM_NOTEMIN;
+  const fillW = extraCols ? 0 : Math.max(0, avail - valW * nVal - noteW);   // leftover, so the comment keeps a readable measure
   const deptSeed = cmHash(deptId);
   const move = (dx, dy) => {
     if (!edit) return setEdit(null);
@@ -798,11 +826,12 @@ function CommissioningScreen({ tab, onTab }) {
   const commit = (date, col, v) => {
     if (v === undefined) return;                             // unparseable — leave as it was
     const row = cmStore.row(deptId, date);
-    const prev = col === "note" ? ((row && row.note) || "") : (row && row.vals[p.id] ? row.vals[p.id][col] : null);
+    const [qid, lid] = col === "note" ? [null, null] : col.split("|");
+    const prev = col === "note" ? ((row && row.note) || "") : (row && row.vals[qid] ? row.vals[qid][lid] : null);
     const next = col === "note" ? String(v).trim() : v;
     if ((prev == null ? null : prev) === (next === "" ? null : next)) return;   // nothing changed — no write, no highlight
     if (col === "note") cmStore.setField(deptId, date, "note", next);
-    else cmStore.setValue(deptId, date, p.id, col, next);
+    else cmStore.setValue(deptId, date, qid, lid, next);
     setFlash((s) => new Set(s).add(date));
     setTimeout(() => setFlash((s) => { const n = new Set(s); n.delete(date); return n; }), 3400);
   };
@@ -850,7 +879,7 @@ function CommissioningScreen({ tab, onTab }) {
         </div>
       </div>
 
-      <CmChart p={p} rows={rows} hidden={hiddenLocs} onToggle={toggleLoc}
+      <CmCharts params={shownParams} rows={rows} hidden={hiddenLocs} onToggle={toggleLoc}
         onOpen={(d) => openDialog(<CmDayDialog deptId={deptId} deptLabel={deptLabel} date={d} />)} />
 
       <div className="card">
@@ -864,6 +893,7 @@ function CommissioningScreen({ tab, onTab }) {
           <div className="rep-field">
             <span className="rep-lbl">Parameter</span>
             <select className="nj-select" value={pid} onChange={(e) => { setPid(e.target.value); setEdit(null); }} aria-label="Parameter">
+              <option value={CM_ALL}>All parameters ({CM_PARAMS.length})</option>
               {CM_PARAMS.map((x) => <option key={x.id} value={x.id}>{x.label}{x.unit ? " (" + x.unit + ")" : ""}</option>)}
             </select>
           </div>
@@ -898,7 +928,7 @@ function CommissioningScreen({ tab, onTab }) {
           <table className="tbl cm-tbl cm-log">
             <colgroup>
               <col style={{ width: 150 }} /><col style={{ width: 72 }} /><col style={{ width: 88 }} />
-              {p.locs.map((lid) => <col key={lid} style={{ width: valW }} />)}
+              {cols.filter((c) => c !== "note").map((c) => <col key={c} style={{ width: valW }} />)}
               <col style={{ width: noteW }} />{fillW > 0 && <col style={{ width: fillW }} />}
               {autoCols.map((a) => <col key={a.id} style={{ width: 132 }} />)}
               {calcOn.map((c) => <col key={c.id} style={{ width: 138 }} />)}
@@ -909,7 +939,9 @@ function CommissioningScreen({ tab, onTab }) {
                 <th rowSpan={2} className="cm-th-d">Date</th>
                 <th rowSpan={2} className="cm-th-n">Day</th>
                 <th rowSpan={2} className="cm-th-n">Sampled</th>
-                <th colSpan={p.locs.length} className="cm-th-grp"><span className="nocaps">{p.label}{p.unit ? " · " + p.unit : ""}</span> <span className="cm-th-basis nocaps">design basis {cmBandLabel(p)}</span></th>
+                {shownParams.map((q) => (
+                  <th key={q.id} colSpan={q.locs.length} className="cm-th-grp"><span className="nocaps">{q.label}{q.unit ? " · " + q.unit : ""}</span> <span className="cm-th-basis nocaps">design basis {cmBandLabel(q)}</span></th>
+                ))}
                 <th rowSpan={2} className="cm-th-note">Comment and observations</th>
                 {fillW > 0 && <th rowSpan={2} className="cm-th-fill" />}
                 {autoCols.length > 0 && <th colSpan={autoCols.length} className="cm-th-grp">From plant tags <span className="cm-th-basis nocaps">read-only</span></th>}
@@ -917,15 +949,15 @@ function CommissioningScreen({ tab, onTab }) {
                 <th rowSpan={2} className="cm-th-open" aria-label="Open round" />
               </tr>
               <tr>
-                {p.locs.map((lid) => (
-                  <th key={lid} className="cm-th-v" title={cmLoc(lid).full || cmLoc(lid).label}>
+                {shownParams.map((q) => q.locs.map((lid) => (
+                  <th key={q.id + "|" + lid} className="cm-th-v" title={q.label + " · " + (cmLoc(lid).full || cmLoc(lid).label)}>
                     <span className="cm-th-vin">{cmLoc(lid).label}
-                      <TrendBtn className="cm-trendbtn" id={`CM-${deptId}-${p.id}-${lid}`.toUpperCase()} name={`${p.label} · ${cmLoc(lid).label}`} unit={p.unit} value={p.base} group={"Commissioning · " + deptLabel} title={`Send ${p.label} ${cmLoc(lid).label} to trends`} />
+                      <TrendBtn className="cm-trendbtn" id={`CM-${deptId}-${q.id}-${lid}`.toUpperCase()} name={`${q.label} · ${cmLoc(lid).label}`} unit={q.unit} value={q.base} group={"Commissioning · " + deptLabel} title={`Send ${q.label} ${cmLoc(lid).label} to trends`} />
                     </span>
                   </th>
-                ))}
+                )))}
                 {autoCols.map((a) => (
-                  <th key={a.id} className="cm-th-v" title={a.grp + " · " + a.label + (a.unit ? " · " + a.unit : "") + " — " + a.tag}>
+                  <th key={a.id} className="cm-th-v" title={a.grp + " · " + a.label + (a.unit ? " · " + a.unit : "") + " · " + a.tag}>
                     <span className="cm-th-vin"><span className="nocaps">{a.label}{a.unit ? " · " + a.unit : ""}</span>
                       <TrendBtn className="cm-trendbtn" id={a.tag} name={a.grp + " · " + a.label} unit={a.unit} value={a.base} group={"Commissioning · " + deptLabel} title={"Send " + a.label + " to trends"} />
                     </span>
@@ -942,23 +974,23 @@ function CommissioningScreen({ tab, onTab }) {
             </thead>
             <tbody>
               {rows.map((r) => {
-                const pv = r.vals[p.id] || {};
                 return (
                   <tr key={r.date} className={"cm-row" + (r.ghost ? " cm-ghost" : "") + (r.date === CM_TODAY_KEY ? " cm-today" : "") + (flash.has(r.date) ? " row-just-edited" : "")}>
                     <td className="cm-td-d data"><span className="cm-td-din">{cmFmt(r.date)}{r.date === CM_TODAY_KEY && <span className="cm-todaytag">Today</span>}</span></td>
                     <td className="cm-td-n data">{r.day}</td>
                     <td className="cm-td-n data">{r.time}</td>
-                    {p.locs.map((lid) => {
-                      const v = pv[lid];
+                    {shownParams.map((q) => q.locs.map((lid) => {
+                      const col = q.id + "|" + lid;
+                      const v = (r.vals[q.id] || {})[lid];
                       return (
-                        <td key={lid} className="cm-td-v cm-td-edit">
-                          <CmCell value={v} dec={p.dec} oor={cmOut(p, v)} label={`${p.label} ${cmLoc(lid).label} on ${cmFmt(r.date)}`}
-                            editing={!!edit && edit.date === r.date && edit.col === lid}
-                            onStart={() => setEdit({ date: r.date, col: lid })}
-                            onCommit={(val) => commit(r.date, lid, val)} onNav={move} />
+                        <td key={col} className="cm-td-v cm-td-edit">
+                          <CmCell value={v} dec={q.dec} oor={cmOut(q, v)} label={`${q.label} ${cmLoc(lid).label} on ${cmFmt(r.date)}`}
+                            editing={!!edit && edit.date === r.date && edit.col === col}
+                            onStart={() => setEdit({ date: r.date, col })}
+                            onCommit={(val) => commit(r.date, col, val)} onNav={move} />
                         </td>
                       );
-                    })}
+                    }))}
                     <td className="cm-td-note cm-td-edit">
                       <CmCell text value={r.note} label={`Comment on ${cmFmt(r.date)}`}
                         editing={!!edit && edit.date === r.date && edit.col === "note"}
@@ -977,7 +1009,7 @@ function CommissioningScreen({ tab, onTab }) {
                   </tr>
                 );
               })}
-              {rows.length === 0 && <tr><td colSpan={p.locs.length + 5 + extraCols} className="cm-cellempty">No rounds logged in this range.</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={nVal + 5 + extraCols} className="cm-cellempty">No rounds logged in this range.</td></tr>}
             </tbody>
           </table>
         </div>

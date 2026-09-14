@@ -693,6 +693,9 @@ function DisplayRow({ label, desc, options, value, onChange }) {
   );
 }
 
+// NOTE: AppearanceCard is no longer rendered in Settings. Theme / density / text size are
+// per-operator, per-device state and live in Preferences (lib/dialogs.jsx) — one home, not two.
+// Kept here only as the full-size form of that group if a personal-settings screen is ever added.
 function AppearanceCard() {
   const theme = useTheme();
   const compact = window.useDensity ? window.useDensity() : false;
@@ -799,37 +802,34 @@ function AlarmTargetsCard() {
 function njOpenAlarmTargets() { window.__njSettingsFocus = "targets"; if (window.__njNavigate) window.__njNavigate("settings"); }
 Object.assign(window, { njOpenAlarmTargets });
 
+// Settings · General is the FACILITY's record — one shared truth for everyone on the plant.
+// Anything that is per-operator or per-device (theme, density, text size, language, equipment
+// label mode, units, default screen) lives in Preferences and is NOT duplicated here.
 function GeneralTab() {
   const [idle, setIdle] = React.useState(() => { try { return localStorage.getItem("nj_idle_logout_min") || "20"; } catch (e) { return "20"; } });
   const setIdleVal = (v) => { setIdle(v); try { localStorage.setItem("nj_idle_logout_min", v); } catch (e) {} };
   return (
     <div className="set-grid">
-      <AppearanceCard />
       <AlarmTargetsCard />
-      <div className="card">
-        <div className="card-head"><span className="card-title">General Settings</span></div>
-        <div className="set-form">
-          <div className="set-row">
-            <div className="set-row-l"><span className="set-row-name">Display language</span><span className="set-row-desc">Interface & report language</span></div>
-            <span className="select">English <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
-          </div>
-          <div className="set-row">
-            <div className="set-row-l"><span className="set-row-name">Show tags & description</span><span className="set-row-desc">Equipment label display mode</span></div>
-            <span className="select">Tag / description <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
-          </div>
-        </div>
-      </div>
-
       <div className="card">
         <div className="card-head"><span className="card-title">Project Settings</span></div>
         <div className="set-form">
           <div className="set-row">
-            <div className="set-row-l"><span className="set-row-name">Inactivity logout</span><span className="set-row-desc">Auto sign-out after idle</span></div>
+            <div className="set-row-l"><span className="set-row-name">Inactivity logout</span><span className="set-row-desc">Auto sign-out after idle · applies to every operator</span></div>
             <span className="set-num"><input type="number" min="1" max="120" value={idle} onChange={(e) => setIdleVal(e.target.value)} onBlur={() => { const n = Math.min(120, Math.max(1, parseInt(idle, 10) || 20)); setIdleVal(String(n)); }} /> <span className="u">min</span></span>
           </div>
           <div className="set-row">
-            <div className="set-row-l"><span className="set-row-name">Default landing page</span><span className="set-row-desc">Screen shown after login</span></div>
-            <span className="select">Dashboard <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
+            <div className="set-row-l"><span className="set-row-name">Report language</span><span className="set-row-desc">Language of generated reports and exports</span></div>
+            <span className="select">English <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
+          </div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-head"><div className="card-head-l"><Icon name="sliders-horizontal" size={16} color="var(--slate-600)" /><span className="card-title">Your Preferences</span></div></div>
+        <div className="set-form">
+          <div className="set-row">
+            <div className="set-row-l"><span className="set-row-name">Theme, density, text size, interface language, equipment labels, units, default screen</span><span className="set-row-desc">Saved for you on this device — they do not change what anyone else sees</span></div>
+            <button className="btn btn-secondary btn-sm" onClick={() => window.openPreferences && window.openPreferences()}><Icon name="sliders-horizontal" size={14} /> Preferences</button>
           </div>
         </div>
       </div>

@@ -30,3 +30,6 @@ __pycache__/
 
 # Misc
 *.tgz
+
+# Scratch: files fetched from Claude Design for diffing (not part of the app)
+.design-fetch/
