@@ -277,7 +277,7 @@ function DeadfishTable({ rows, upd, addRow, removeRow, rowN, rowReady, rowIncomp
           <div className="dfl-head">
             <span className="dfl-n">Line <span className="data">{i + 1}</span></span>
             {lockedLoc && <span className="dfl-loc" title="Registering to the tank you opened this from"><Icon name="lock" size={12} color="var(--slate-400)" />{lockedLoc}</span>}
-            {rowIncomplete(r) && <span className="dfl-warn"><Icon name="alert-triangle" size={12} /> Not registered — add {missing(r)}</span>}
+            {rowIncomplete(r) && <span className="dfl-warn"><Icon name="alert-triangle" size={12} /> Not registered · add {missing(r)}</span>}
             <button className="dfx-x" title={last ? "Clear line" : "Remove line"} aria-label={last ? `Clear line ${i + 1}` : `Remove line ${i + 1}`} onClick={() => removeRow(r.key)}><Icon name="trash-2" size={16} /></button>
           </div>
           <div className={"dfl-grid" + (lockedLoc ? "" : " withloc")}>
@@ -314,7 +314,7 @@ function DeadfishTable({ rows, upd, addRow, removeRow, rowN, rowReady, rowIncomp
       ))}
       <div className="dfl-foot">
         <button className="df-add dfx-add" onClick={addRow}><Icon name="plus" size={16} /> Add line</button>
-        <span className="dfx-add-hint">{lockedLoc ? "Add a line per cause of death — all lines register to " + lockedLoc : "A location can appear on several lines for multiple causes"}</span>
+        <span className="dfx-add-hint">{lockedLoc ? "Add a line per cause of death · all lines register to " + lockedLoc : "A location can appear on several lines for multiple causes"}</span>
       </div>
     </div>
   );
@@ -377,7 +377,7 @@ function DeadfishRegisterDialog({ tank }) {
     <Dialog width={860}>
       <DlgHeader icon="clipboard-list" name="Mortality Registration" tag={"Tank " + tank.n} onClose={closeDialog} />
       <div className="dlg-body dfx-dlg-body">
-        <p className="caption" style={{ margin: "0 0 12px" }}>Log mortality for {initialLoc || "Tank " + tank.n} by cause — one line per cause. Registered 05 Mar 2026 · 13:21.</p>
+        <p className="caption" style={{ margin: "0 0 12px" }}>Log mortality for {initialLoc || "Tank " + tank.n} by cause, one line per cause. Registered 05 Mar 2026 · 13:21.</p>
         <div className="card dfx-card">
           <DeadfishTable rows={rows} upd={upd} addRow={addRow} removeRow={removeRow} rowN={rowN} rowReady={rowReady} rowIncomplete={rowIncomplete} locOptions={DF_TANKS} lockedLoc={initialLoc} />
         </div>
@@ -479,4 +479,3 @@ function njOpenDeadfishRegistration(tank) {
 }
 
 Object.assign(window, { FishBiologyScreen, njOpenDeadfishRegistration, DeadfishRegisterDialog });
-

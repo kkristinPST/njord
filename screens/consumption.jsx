@@ -78,7 +78,7 @@ function ConsCard({ input, period, selected, onSelect }) {
       <div className="cons-card-head">
         <Icon name={input.icon} size={16} color="var(--slate-500)" />
         <span className="cons-card-l">{input.label}</span>
-        {input.est && <span className="cons-est" title="Derived by integrating a flow reading — not a counter">EST.</span>}
+        {input.est && <span className="cons-est" title="Derived by integrating a flow reading, not a counter">EST.</span>}
       </div>
       <div className="cons-card-v">
         <span className="data cons-v">{input.est ? "≈" : ""}{consFmt(total, input.unit)}</span>
@@ -214,7 +214,7 @@ function ConsumptionScreen() {
                   ? <span className="cons-none">Single source</span>
                   : <span className="cons-cross"><span className="data">{consFmt(cross, i.unit)}</span> <span className="cons-crossl">{i.cross.label}</span></span>}</td>
                 <td className="num">{varPct == null ? <span className="cons-none">—</span>
-                  : <span className={"cons-var" + (flag ? " flag" : "")} title={flag ? "The two sources disagree by more than 5 % — the integrated figure is the one to distrust" : "Sources agree within 5 %"}>
+                  : <span className={"cons-var" + (flag ? " flag" : "")} title={flag ? "The two sources disagree by more than 5 % · the integrated figure is the one to distrust" : "Sources agree within 5 %"}>
                     {varPct >= 0 ? "+" : "−"}{Math.abs(varPct).toFixed(1)} %</span>}</td>
                 <td><span className="tag">{i.tag}</span></td>
               </tr>
@@ -227,7 +227,7 @@ function ConsumptionScreen() {
               ? flagged + (flagged > 1 ? " rows measured by integrating a flow disagree with their" : " row measured by integrating a flow disagrees with its") + " stock count by more than 5 % · install a totalizer to close the gap"
               : "All rows reconcile with their second source within 5 %"}
           </span>
-          <span className="caption">Totals are the sum of the charted period — no extrapolation</span>
+          <span className="caption">Totals are the sum of the charted period · no extrapolation</span>
         </div>
       </div>
     </AppShell>
