@@ -271,4 +271,6 @@ function RasDock() {
   );
 }
 
-Object.assign(window, { RasDock });
+// RAS_LIMITS is the per-signal alarm-limit registry — exported so the trend chart can draw the
+// focused pen's limits from the same source the limit editor writes.
+Object.assign(window, { RasDock, RAS_LIMITS });

@@ -86,7 +86,7 @@ function njShelveRule(row) {
   if (!allow) {
     return { ok: false, code: "record", why: "Blocking is not allowed for this alarm. Change Allow shelving in Rationalization first.", src: "Master record · Allow shelving" };
   }
-  return { ok: true, why: "", src: rec ? "Master record · Allow shelving" : "Not in the master record — default allowed" };
+  return { ok: true, why: "", src: rec ? "Master record · Allow shelving" : "Not in the master record · default allowed" };
 }
 function njShelveSplit(rows) {
   const ok = [], no = [];
@@ -103,7 +103,7 @@ const RATN_CONTROLLED = ["priority", "setpoint", "deadband", "onDelay", "offDela
 const RATN_CTRL_SET = new Set(RATN_CONTROLLED);
 function njIsControlled(field) { return RATN_CTRL_SET.has(field); }
 const RATN_CHANGE_REASONS = [
-  "Nuisance alarm — re-parameterised after review",
+  "Nuisance alarm · re-parameterised after review",
   "Setpoint corrected against process design basis",
   "Consequence re-assessed, priority adjusted",
   "Commissioning finding",

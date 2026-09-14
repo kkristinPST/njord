@@ -79,16 +79,16 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
 .ratn-kpis{overflow:hidden}
 
 /* A .bulkbar that is a direct child of a card is full-bleed (the card has no padding), so
-   its own radius + bottom margin read as a stray floating pill. Flush band instead — but it
+   its own radius + bottom margin read as a stray floating pill. Flush band instead \u2014 but it
    is an OPAQUE square band inside a rounded, non-clipping card, so as the first child (the
    Deactivated list, which has no filterbar above it) it must keep the card's top corners.
-   Don't fix that with overflow:hidden on the card — it would clip the column-chooser and
+   Don't fix that with overflow:hidden on the card \u2014 it would clip the column-chooser and
    row-action popovers. */
 .card > .bulkbar{border-radius:0;margin-bottom:0}
 .card > .bulkbar:first-child{border-radius:var(--r-lg) var(--r-lg) 0 0}
 /* Same class of defect, same cure: a table header is also opaque, square and full-bleed, so
-   when the table (or its scroll wrapper) is the card's first child — Deactivated Alarms with
-   nothing selected — the header paints over the card's top corners. The compact 16px card
+   when the table (or its scroll wrapper) is the card's first child \u2014 Deactivated Alarms with
+   nothing selected \u2014 the header paints over the card's top corners. The compact 16px card
    padding used to inset it off the arc; removing that padding exposed it. */
 /* The WRAPPER takes the radius rather than th:last-child, because a scrolled table puts a
    MIDDLE column at the visible right edge. .tbl-scroll already clips overflow-x, so this
@@ -111,9 +111,11 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
    (screens.css's own 1120px rule was being overridden by the line above). */
 @media (max-width:1120px){
   .de-layout{grid-template-columns:minmax(0,1fr);height:auto;min-height:0}
-  /* stacked: the location tree flows at full height — no second scroll region */
+  /* Stacked, the tree sits ABOVE the readings, so an unbounded rail pushes the whole measurement
+     list below the fold. This is the ONE place the rail keeps a scrollport of its own — the page
+     still scrolls the readings; only the tree is capped. */
   .de-rail{max-height:none;border-right:none;border-bottom:1px solid var(--border)}
-  .de-rail-scroll{flex:none;overflow:visible;max-height:none;max-width:460px}
+  .de-rail-scroll{flex:none;max-width:460px;max-height:240px;overflow-y:auto}
   .de-panel-scroll{overflow:visible}
 }
 .start-grid,.bio-grid2{gap:var(--gap-lg)}
