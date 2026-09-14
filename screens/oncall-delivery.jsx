@@ -135,7 +135,7 @@ function TestDispatchDialog({ groupId }) {
     <Dialog width={620}>
       <DlgHeader icon="send" name="Send test alarm" onClose={closeDialog} />
       <div className="dlg-body dv-test">
-        <p className="dv-test-intro">A test message runs the real dispatch chain — same modem, same UHF sender, same recipients — so the duty phone can confirm it actually rings. Nothing is written to the alarm register.</p>
+        <p className="dv-test-intro">A test message runs the real dispatch chain (same modem, same UHF sender, same recipients), so the duty phone can confirm it actually rings. Nothing is written to the alarm register.</p>
         <div className="dv-test-row">
           <span className="oc-field-l">On-call group</span>
           <select className="nj-select" value={gid} onChange={(e) => { setGid(e.target.value); setRows(null); }} disabled={sending}>
@@ -277,7 +277,7 @@ function DeliveryLogDialog({ initial }) {
                 </tr>
               ))}
               {!rows.length && <NjEmptyRow colSpan={5} reason={ql ? "search" : "filtered"}
-                title={ql ? "No messages match “" + q + "”" : "No messages match the current filters"}
+                title={ql ? "No messages match \u201c" + q + "\u201d" : "No messages match the current filters"}
                 action={<button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setType("All"); setKind("all"); setFailOnly(false); }}>Clear filters</button>} />}
             </tbody>
           </table>
@@ -285,7 +285,7 @@ function DeliveryLogDialog({ initial }) {
         <window.PageFoot pg={pg} noun="messages" extra={fails + " undelivered in the period"} />
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="info" size={14} /> A failure here means the message never left on that path — the alarm itself is unaffected</span>
+        <span className="dlg-foot-meta"><Icon name="info" size={14} /> A failure here means the message never left on that path · the alarm itself is unaffected</span>
         <div className="dlg-foot-btns">
           <button className="btn btn-secondary" onClick={() => { closeDialog(); njOpenTestDispatch(null); }}><Icon name="send" size={16} /> Send test</button>
           <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
@@ -309,7 +309,7 @@ function DeliveryVerificationCard() {
       <div className="card-head">
         <div className="dv-head-l">
           <span className="card-title">Delivery verification</span>
-          <span className="caption">Prove the alarm actually reaches a phone — before it has to</span>
+          <span className="caption">Prove the alarm actually reaches a phone, before it has to</span>
         </div>
         <div className="dv-head-act">
           <button className="btn btn-secondary btn-sm" onClick={() => njOpenTestDispatch(null)}><Icon name="send" size={14} /> Send test alarm</button>
@@ -355,7 +355,7 @@ function DeliveryVerificationCard() {
                 </div>
               );
             })}
-            {!hb.list.length && <NjInline align="left">No scheduled test — the paths are only exercised by real alarms.</NjInline>}
+            {!hb.list.length && <NjInline align="left">No scheduled test. The paths are only exercised by real alarms.</NjInline>}
           </div>
           <button className="member-add" onClick={() => openDialog(<HeartbeatDialog hb={null} />)}><Icon name="plus" size={14} /> Add scheduled test</button>
         </div>
