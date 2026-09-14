@@ -514,7 +514,7 @@ function TrendsWorkspace({ tab, onTab }) {
               ? <EventTimeline alarm={timelineAlarm} onOpen={njGoAlarm} onRelated={(s) => njInvestigateAlarm(s)} />
               : visCount > 0
                 ? (loadingRange
-                  ? <NjSkeleton variant="chart" height={280} note={`Sampling ${visCount} ${visCount === 1 ? "signal" : "signals"} over the last ${range}…`} />
+                  ? <NjSkeleton variant="chart" height={280} note={`Sampling ${visCount} ${visCount === 1 ? "signal" : "signals"} over the last ${range}\u2026`} />
                   : <MultiTrendChart series={series} view={view} focus={store.focus} markers={markers} showMarkers={store.showMarkers} axisMode={store.axisMode}
                       onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} />)
                 : (

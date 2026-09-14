@@ -147,7 +147,7 @@ function WfRegistrationsCard({ onOpen, onNew, limit }) {
               );
             })}
             {rows.length === 0 && <NjEmptyRow colSpan={7} reason={ql ? "search" : "filtered"}
-              title={ql ? "No registrations match “" + q + "”" : "No registrations match the filter"}
+              title={ql ? "No registrations match \u201c" + q + "\u201d" : "No registrations match the filter"}
               action={<button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setScope("All"); }}>Clear filters</button>} />}
           </tbody>
         </table>
@@ -318,7 +318,7 @@ function WfScoring({ reg, onDone }) {
             <div className="score-row" key={ind}>
               <span className="score-name">{ind}
                 <button className="wf-guide-btn" onClick={() => openDialog(<WfScoreGuide indicator={ind} />)}
-                  title={"How to score " + ind + " — reference photos"} aria-label={"Scoring guide for " + ind}><Icon name="info" size={14} /></button>
+                  title={"How to score " + ind + " · reference photos"} aria-label={"Scoring guide for " + ind}><Icon name="info" size={14} /></button>
               </span>
               <WfScoreSelect value={scores[ind]} onChange={(n) => setScores((s) => ({ ...s, [ind]: n }))} />
             </div>

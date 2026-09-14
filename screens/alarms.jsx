@@ -339,7 +339,7 @@ function BlockRefusal({ rows, onDone }) {
         <div className="shelve-deny">
           <Icon name="shield" size={16} color="var(--critical-text)" />
           <div>
-            {crit.length > 0 && <p><b>{crit.length === 1 ? "Critical priority." : crit.length + " critical alarms."}</b> Blocking a critical alarm is not permitted — Alarm Philosophy ch. 5, ISA-18.2 §11.</p>}
+            {crit.length > 0 && <p><b>{crit.length === 1 ? "Critical priority." : crit.length + " critical alarms."}</b> Blocking a critical alarm is not permitted per Alarm Philosophy ch. 5, ISA-18.2 §11.</p>}
             {rec.length > 0 && <p><b>{rec.length === 1 ? "Not permitted by the master record." : rec.length + " alarms are not permitted by the master record."}</b> Allow shelving is set to No during rationalization. Change it there, with a reason, before blocking here.</p>}
           </div>
         </div>
@@ -567,8 +567,8 @@ function ActiveAlarmsScreen({ filter = null }) {
                  dangerous thing this component could say. */
               <NjEmptyRow colSpan={8}
                 reason={q.trim() ? "search" : filter ? "filtered" : "resolved"}
-                title={q.trim() ? "No standing alarms match “" + q.trim() + "”"
-                  : filter ? "No standing " + fLabel + " alarms — " + counts.total + " standing on other priorities"
+                title={q.trim() ? "No standing alarms match \u201c" + q.trim() + "\u201d"
+                  : filter ? "No standing " + fLabel + " alarms \u2014 " + counts.total + " standing on other priorities"
                   : "No standing alarms."}
                 action={(q.trim() || filter) ? <button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setFilter(null); }}>Clear filters</button> : null} />
             )}
@@ -759,7 +759,7 @@ function DeactivatedAlarmsScreen() {
             })}
             {rows.length === 0 && (
               <NjEmptyRow colSpan={8} reason={all.length ? "filtered" : "resolved"}
-                title={all.length ? "No deactivated alarms match this filter." : "No deactivated alarms — every alarm is annunciating normally."} />
+                title={all.length ? "No deactivated alarms match this filter." : "No deactivated alarms. Every alarm is annunciating normally."} />
             )}
           </tbody>
         </table>
@@ -780,4 +780,3 @@ function Th({ children }) {
 
 Object.assign(window, { AlarmHistoricalScreen, AllAlarmsScreen, ActiveAlarmsScreen, DeactivatedAlarmsScreen, SuppressedAlarmsScreen,
   AlarmTabs, useRowSelection, BulkBar, Th, AlarmDrawer, openAlarmDrawer });
-

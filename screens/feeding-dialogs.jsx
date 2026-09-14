@@ -266,16 +266,16 @@ function FeedDistributionDialog({ n, todayTarget }) {
   const reset = () => { pushHist(); setVals(EVEN24()); setSelId(null); };
 
   const sel = curves.find((c) => c.id === selId) || null;
-  const newCurve = () => openDialog(<CurveSaveAsDialog onSave={(name) => { const id = feedCurveAdd(name, vals); setSelId(id); if (window.njToast) window.njToast("Curve “" + name + "” saved"); }} />);
+  const newCurve = () => openDialog(<CurveSaveAsDialog onSave={(name) => { const id = feedCurveAdd(name, vals); setSelId(id); if (window.njToast) window.njToast("Curve \u201c" + name + "\u201d saved"); }} />);
   const overwrite = () => {
     if (!sel) return;
-    openDialog(<ConfirmDialog title="Overwrite curve" message={"Replace “" + sel.name + "” with the current distribution?"} confirmLabel="Overwrite"
-      onConfirm={() => { feedCurveUpdate(sel.id, { vals }); if (window.njToast) window.njToast("Curve “" + sel.name + "” updated"); }} />);
+    openDialog(<ConfirmDialog title="Overwrite curve" message={"Replace \u201c" + sel.name + "\u201d with the current distribution?"} confirmLabel="Overwrite"
+      onConfirm={() => { feedCurveUpdate(sel.id, { vals }); if (window.njToast) window.njToast("Curve \u201c" + sel.name + "\u201d updated"); }} />);
   };
   const del = () => {
     if (!sel) return;
-    openDialog(<ConfirmDialog title="Delete curve" tone="danger" message={"Delete “" + sel.name + "”? This cannot be undone."} confirmLabel="Delete"
-      onConfirm={() => { feedCurveRemove(sel.id); setSelId(null); if (window.njToast) window.njToast("Curve “" + sel.name + "” deleted"); }} />);
+    openDialog(<ConfirmDialog title="Delete curve" tone="danger" message={"Delete \u201c" + sel.name + "\u201d? This cannot be undone."} confirmLabel="Delete"
+      onConfirm={() => { feedCurveRemove(sel.id); setSelId(null); if (window.njToast) window.njToast("Curve \u201c" + sel.name + "\u201d deleted"); }} />);
   };
   const openPicker = () => openDialog(<CurvePickerDialog selId={selId} onPick={(c) => { loadCurve(c); closeDialog(); }} />);
   const SHOW_CURVES = 3;
