@@ -399,6 +399,17 @@
 .stat-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 
 .as-range { display: flex; align-items: center; gap: 8px; padding: 12px 20px; font-size: 12px; color: var(--slate-500); }
+/* second filter row: priority / area / alarm group. These refine the set the historian
+   already returned, so they apply live and carry no Search button of their own. */
+.as-fbar2 { border-top: 1px solid var(--slate-100); flex-wrap: wrap; row-gap: 10px; }
+.as-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.as-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--slate-600); background: var(--surface);
+  border: 1px solid var(--slate-200); border-radius: 999px; }
+.as-chip:hover { border-color: var(--primary); }
+.as-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.as-chip-n { font-size: 11px; color: var(--slate-500); }
+.as-chip.on .as-chip-n { color: rgba(255,255,255,.72); }
 .as-note { display: flex; align-items: center; gap: 8px; padding: 12px 20px 0; font-size: 12px; color: var(--slate-500); }
 .as-note .linkbtn { font-size: 12px; }
 .as-range .as-dirty { margin-left: auto; color: var(--warning-text); font-weight: 600; }
@@ -574,7 +585,10 @@
 .perm-toggle button.deny.on { background: var(--critical); color: #fff; }
 
 /* on-call */
-.oncall-group { border: 1px solid var(--slate-200); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 16px; }
+/* NOT overflow:hidden — the Assign popover is an absolutely-positioned child of a tier column
+   and a clipping ancestor cut it off at the card edge. The two filled bands carry the radius
+   themselves instead. */
+.oncall-group { border: 1px solid var(--slate-200); border-radius: var(--r-lg); overflow: visible; margin-bottom: 16px; }
 .oncall-head { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--slate-50); border-bottom: 1px solid var(--slate-200); }
 .oncall-head .name { font-size: 14px; font-weight: 700; color: var(--fg); }
 .oncall-head .sched { font-family: var(--font-mono); font-size: 12px; color: var(--slate-500); }
@@ -609,7 +623,7 @@
 
 /* group card */
 .oncall-group.oc-off { opacity: .72; }
-.oncall-head { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--slate-50); border-bottom: 1px solid var(--slate-200); }
+.oncall-head { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--slate-50); border-bottom: 1px solid var(--slate-200); border-radius: calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px) 0 0; }
 .oc-head-main { display: flex; flex-direction: column; gap: 2px; min-width: 150px; }
 .oc-head-main .caption { font-size: 12px; color: var(--slate-500); }
 .oc-cover { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; font-weight: 600; color: var(--slate-600); white-space: nowrap; }
@@ -638,18 +652,22 @@
 .oc-chip-x:hover { color: var(--critical); background: var(--critical-bg); }
 .oc-add-wrap { position: relative; }
 
-/* add-member popover */
+/* add-member popover. Flips above the button when the column sits near the bottom of the
+   viewport, so the list is never half off-screen. */
 .oc-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40; background: var(--surface); border: 1px solid var(--slate-200); border-radius: var(--r-md); box-shadow: 0 10px 28px rgba(15,24,43,.16); overflow: hidden; }
+.oc-menu.up { top: auto; bottom: calc(100% + 4px); }
 .oc-menu-search { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--slate-100); }
 .oc-menu-search input { flex: 1; border: none; outline: none; background: none; font-size: 14px; color: var(--fg); }
 .oc-menu-list { max-height: 240px; overflow: hidden auto; padding: 4px; }
 .oc-menu-grp { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--slate-400); padding: 8px 8px 4px; }
 .oc-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: none; border-radius: var(--r-sm); padding: 8px 10px; font-size: 14px; color: var(--fg); cursor: pointer; }
 .oc-menu-item:hover { background: var(--slate-50); }
-.oc-menu-item > span:first-of-type { flex: 1; }
+/* The NAME fills the row, not the icon. `> span:first-of-type` matched the Icon's own span,
+   which stretched and shoved every name to the right edge. Target the name by class. */
+.oc-menu-name { flex: 1; min-width: 0; text-align: left; }
 .oc-menu-role { font-size: 12px; color: var(--slate-400); }
 
-.oc-paused-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--slate-500); background: var(--slate-50); border-top: 1px solid var(--slate-100); }
+.oc-paused-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--slate-500); background: var(--slate-50); border-top: 1px solid var(--slate-100); border-radius: 0 0 calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px); }
 
 /* editor dialog */
 .oc-editor { display: flex; flex-direction: column; gap: 16px; }
@@ -670,6 +688,14 @@
 .oc-days-hint { grid-column: 1 / -1; margin: 4px 0 0; font-size: 12px; color: var(--slate-500); line-height: 1.5; }
 .oc-days-hint code, .oc-mininfo code { font-family: var(--font-mono); font-size: 12px; background: var(--slate-100); border-radius: 4px; padding: 2px 6px; }
 .oc-mininfo { margin: 0; font-size: 12px; color: var(--slate-500); line-height: 1.5; }
+.oc-area-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.oc-area { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--slate-600); background: var(--surface);
+  border: 1px solid var(--slate-200); border-radius: var(--r-md); }
+.oc-area:hover { border-color: var(--primary); }
+.oc-area.sel { background: var(--ink); color: #fff; border-color: var(--ink); }
+.oc-area-b { font-size: 11px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: var(--slate-400); }
+.oc-area.sel .oc-area-b { color: rgba(255,255,255,.66); }
 .oc-min-row { display: flex; gap: 24px; }
 .oc-min { display: flex; flex-direction: column; gap: 8px; }
 .oc-min-l { font-size: 12px; font-weight: 600; color: var(--slate-600); }
@@ -1200,9 +1226,17 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .fs-stat-v .u { font-size: 12px; font-weight: 400; color: var(--slate-400); }
 
 /* ---------- NAVIGATION — FACILITY SITE PLAN ---------- */
-.plan-legend { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
-.pl-item { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--slate-500); }
+.plan-legend { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+/* a tally that filters, not a colour key: each chip is a real button */
+.pl-item { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 10px; font-family: var(--font-sans);
+  font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--slate-500);
+  background: transparent; border: 1px solid transparent; border-radius: var(--r-md); cursor: pointer; }
+.pl-item:hover:not(:disabled) { background: var(--slate-100); color: var(--fg); }
+.pl-item.on { background: var(--slate-100); border-color: var(--slate-200); color: var(--fg); }
+.pl-item:disabled { cursor: default; opacity: .55; }
 .pl-item .data { font-family: var(--font-mono); color: var(--fg); font-weight: 700; letter-spacing: 0; }
+.pnode-dim { opacity: .3; }
+.pnode-dim:hover { opacity: 1; }
 
 /* plan = a stack of building blocks, no outer container box */
 .siteplan { display: flex; flex-direction: column; gap: 0; }
@@ -1428,6 +1462,12 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .an-rb-res { margin-left: auto; display: flex; flex-direction: column; gap: 2px; align-items: flex-end; padding-bottom: 8px; }
 .an-rb-res-v { font-family: var(--font-mono); font-size: 14px; line-height: 20px; font-weight: 700; color: var(--fg); }
 .an-rb-res-l { font-size: 11px; line-height: 14px; color: var(--slate-400); }
+/* query cost, stated before Apply. Historian speed is a backend limit; the honest UI move is
+   to name the size and offer the download path instead of pretending the plot will be quick. */
+.an-rb-cost { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-top: 2px; padding: 8px 10px;
+  font-size: 12px; line-height: 18px; color: var(--slate-600); text-wrap: pretty;
+  background: var(--warning-bg); border: 1px solid var(--warning-mid); border-radius: var(--r-md); }
+.an-rb-cost .linkbtn { margin-left: auto; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 /* pen details dialog */
 /* No horizontal scroll: `1fr` is minmax(auto,1fr), and a number input's intrinsic minimum is
    wider than its share — which is what pushed the dialog body sideways. */
@@ -1722,6 +1762,22 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
   border: none; background: transparent; border-radius: var(--r-md); padding: 8px 10px; cursor: pointer; }
 .an-pop-item:hover { background: var(--primary-bg); }
 .an-pop-name { font-size: 14px; color: var(--fg); }
+/* the add menu now hangs off a button at the BOTTOM of the list, so it opens upward from its
+   left edge — downward it would have run off the card and, on a tall pen list, off the viewport */
+.an-pop-up { top: auto; bottom: calc(100% + 8px); right: auto; left: 0; }
+/* set-level overflow (Undo / Clear): not daily actions, and Clear keeps Undo beside it */
+.an-setmenu-scrim { position: fixed; inset: 0; z-index: 40; }
+.an-setmenu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 41; width: 216px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--slate-200); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); }
+.an-setmenu-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: none; background: transparent;
+  border-radius: var(--r-md); padding: 8px 10px; cursor: pointer; color: var(--slate-600); font: 500 14px/20px var(--font-sans); }
+.an-setmenu-item:hover:not(:disabled) { background: var(--slate-100); color: var(--fg); }
+.an-setmenu-item:disabled { opacity: .45; cursor: default; }
+.an-setmenu-name { flex: 1; min-width: 0; }
+.an-setmenu-meta { font-size: 12px; color: var(--slate-400); }
+/* adding a row belongs where the next row would land */
+.an-pens-add { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--slate-100); }
+.an-pens-n { font-size: 12px; line-height: 16px; color: var(--slate-400); }
 .an-pop-tag { font-family: var(--font-mono); font-size: 10px; color: var(--slate-400); }
 
 /* ---------- SEND-TO-TRENDS affordance (explicit icon button) ---------- */
@@ -2446,6 +2502,24 @@ select.select { padding-right: 28px; }
    scale that makes the outlier findable by shape */
 .tv-flow .tv-rail, .tv-flow .tv-tanks { flex-wrap: nowrap; }
 .tv-grp-head { display: flex; align-items: center; gap: 10px; }
+/* the department NAME is the door to its process sheet — the rail is the selector, so the
+   affordance has to live on the thing the operator is already reading. It is drawn as the SAME
+   resting pill as the no-tank chips below (which users found first, because a bordered pill reads
+   as a control at rest while a hover-only button does not) — one family, one gesture. */
+.tv-grp-pick { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 7px; margin-left: -1px;
+  background: var(--surface); border: 1px solid var(--slate-200); border-radius: 999px; color: var(--slate-500); cursor: pointer; font: inherit; }
+.tv-grp-pick:hover { background: var(--slate-50); border-color: var(--primary); color: var(--primary-text); }
+.tv-grp-pick:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-bg); }
+.tv-grp-head.on .tv-grp-pick { background: var(--ink); border-color: var(--ink); color: #fff; }
+.tv-grp-head.on .tv-grp-name { color: #fff; }
+/* the verb rides on the chip itself rather than in a permanent how-to line: it is what turns a
+   pill into a named door, and it is hidden on the open one (the sheet below already says so) */
+.tv-grp-do { font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-400); }
+/* the label stays on the open pill too — hiding it (either way) is what made the selection
+   look like it changed width or lost a word under the cursor. Light slate on the ink fill. */
+.tv-grp-head.on .tv-grp-do { color: var(--slate-300); }
+.tv-grp-pick:hover .tv-grp-do { color: var(--primary-text); }
+.tv-grp-head.on .tv-grp-pick:hover .tv-grp-do { color: #fff; }
 .tv-grp-name { font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--fg); white-space: nowrap; }
 .tv-grp-sub { font-size: 12px; line-height: 16px; color: var(--slate-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tv-grp-link { margin-left: auto; white-space: nowrap; }
@@ -2488,6 +2562,31 @@ select.select { padding-right: 28px; }
 .tv-tag { font-size: 10px; color: var(--slate-400); }
 .tv-pump { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--slate-600); }
 .tv-pump .u { color: var(--slate-400); }
+/* departments with no tanks own no row in the rail, so they get a chip each — unreachable is
+   not an option just because a department has no fish in it */
+.tv-nt { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0 2px; border-top: 1px dashed var(--slate-200); }
+.tv-nt-l { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-400); }
+.tv-nt-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 7px; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--slate-600); background: var(--surface);
+  border: 1px solid var(--slate-200); border-radius: 999px; }
+.tv-nt-chip:hover { border-color: var(--primary); color: var(--primary-text); }
+.tv-nt-chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.tv-nt-b { font-size: 11px; color: var(--slate-400); }
+.tv-nt-chip.on .tv-nt-b { color: rgba(255,255,255,.66); }
+/* the process sheet drawer: part of the same card, so it is separated by a hairline rather
+   than given its own border and shadow */
+.tv-sheet { border-top: 1px solid var(--slate-200); }
+.tv-sheet-head { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: var(--slate-50); }
+.tv-sheet-t { font-size: 14px; line-height: 20px; font-weight: 700; color: var(--fg); }
+.tv-sheet-sub { font-size: 12px; line-height: 16px; color: var(--slate-500); }
+.tv-sheet-x { margin-left: auto; }
+.tv-sheet-x2 { margin-left: 0; }
+.tv-sheet-body { border-top: 1px solid var(--slate-100); }
+/* a small department's sheet must not be UPSCALED to fill the card — the mimic carries its own
+   natural size (maxWidth = its viewBox width) and centres. The stage rows WRAP to the measured
+   container width, so the viewBox never exceeds it and no label is ever scaled down. */
+.do-wrap { width: 100%; }
+.tv-sheet-body .rasm { margin: 0 auto; }
 
 /* ---------- MANEUVER HISTORY ---------- */
 .mvr-scroll { overflow-x: auto; }
@@ -2946,7 +3045,9 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .as-perf-foot { margin: 14px 0 0; font-size: 12px; color: var(--slate-500); display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
 .as-perf-foot .linkbtn { font-size: 12px; }
 /* on-call channels (NS 9416) */
-.oc-chans { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 0; }
+/* Sits between the tier header and the member list: it belongs to the tier, not to the first
+   member, so it needs its own bottom gap (and no extra indent inside an already-padded column). */
+.oc-chans { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0; margin: -4px 0 10px; }
 .oc-chan { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: var(--r-sm); background: var(--slate-100); color: var(--slate-600); }
 .oc-chan-warn { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: var(--r-sm); background: var(--warning-bg); color: var(--warning-text); }
 .oc-chan-grid { display: flex; flex-direction: column; gap: 8px; }
@@ -3115,3 +3216,14 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .de-rec-hist-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:14px;line-height:20px}
 .de-rec-hist-v{font-weight:700;color:var(--fg)}
 .de-rec-hist-ts{color:var(--slate-400);font-size:12px;line-height:16px}
+
+/* ── Department Overview (screens/dept-overview.jsx) ────────────────────────────────────
+   One combined sheet per department, drawn in the RAS mimic language: the text classes below
+   follow .rasm-tag / .rasm-desc (halo stroke so a label stays legible over a pipe). */
+.do-t-cap{font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:.6px;fill:var(--slate-400);text-anchor:end}
+.do-sp{font-family:var(--font-mono);font-size:10px;font-weight:700;fill:var(--slate-400);paint-order:stroke;stroke:var(--sc-halo);stroke-width:4px;stroke-linejoin:round}
+.do-sp.off{fill:var(--warning-text)}
+.do-sub{font-family:var(--font-mono);font-size:11px;fill:var(--slate-500);paint-order:stroke;stroke:var(--sc-halo);stroke-width:4px;stroke-linejoin:round}
+.do-foot{font-family:var(--font-sans);font-size:11px;fill:var(--slate-400)}
+/* Dashboard card chrome. The process sheet is a drawer on the Tank Vitals card (.tv-sheet),
+   so it needs no card chrome or rail of its own. */

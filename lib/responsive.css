@@ -123,6 +123,9 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
 @media (max-width:1180px){
   .ras-layout,.an-layout,.ratn-overview,.stat-charts,.role-layout,
   .bio-grid2,.perf-grid{grid-template-columns:minmax(0,1fr)}
+  /* Every grid-area name used by a .start-grid child must exist in THIS template too: an
+     unmatched name is not ignored, it generates implicit named lines, so the card lands last
+     and the single column silently resolves as three. Add new dashboard cards in both rules. */
   .start-grid{grid-template-columns:minmax(0,1fr);
     grid-template-areas:"alarms" "facility" "notes" "vitals" "consumption" "maneuver"}
   .stat-charts > *{min-width:0}

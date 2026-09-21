@@ -13,6 +13,11 @@ function njDeptNav(tab) {
 }
 // derive the sub-tabs from the active department's systems (single source of truth);
 // production departments also get a Fish Summary tab.
+// NOTE: the combined department Overview is NOT a tab. It lives on the Dashboard, where one
+// selector switches between departments (screens/dept-overview.jsx → DashDeptOverview). As a
+// tab it took first position but nothing ever routed to it, so every arrival landed on the
+// SECOND tab. Building 3 · DPT2 still owns a system literally called "Overview" (its legacy
+// hand-drawn combined mimic) and that one is a real tab, because it is a real system entry.
 function njDeptTabLabels(dept) {
   const labels = dept.systems.map((s) => s.label);
   if (labels.includes("Fish Tank") && !labels.includes("Fish Summary")) labels.push("Fish Summary");

@@ -155,7 +155,7 @@ function AlarmHistoricalScreen() {
         <div className="filterbar">
           <div className="field">
             <Icon name="search" size={16} color="var(--slate-400)" />
-            <input placeholder="Filter tag, area, description…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input placeholder="Filter alarms…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
@@ -340,7 +340,7 @@ function BlockRefusal({ rows, onDone }) {
           <Icon name="shield" size={16} color="var(--critical-text)" />
           <div>
             {crit.length > 0 && <p><b>{crit.length === 1 ? "Critical priority." : crit.length + " critical alarms."}</b> Blocking a critical alarm is not permitted per Alarm Philosophy ch. 5, ISA-18.2 §11.</p>}
-            {rec.length > 0 && <p><b>{rec.length === 1 ? "Not permitted by the master record." : rec.length + " alarms are not permitted by the master record."}</b> Allow shelving is set to No during rationalization. Change it there, with a reason, before blocking here.</p>}
+            {rec.length > 0 && <p><b>{rec.length === 1 ? "Not permitted by the master record." : rec.length + " alarms are not permitted by the master record."}</b> Allow blocking is set to No during rationalization. Change it there, with a reason, before blocking here.</p>}
           </div>
         </div>
         <ul className="shelve-denylist">
@@ -489,9 +489,9 @@ function ActiveAlarmsScreen({ filter = null }) {
 
       <div className="card">
         <div className="filterbar">
-          <div className="field" style={{ minWidth: 220 }}>
+          <div className="field" style={{ minWidth: 200, maxWidth: 240 }}>
             <Icon name="search" size={16} color="var(--slate-400)" />
-            <input placeholder="Filter tag, area, description…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input placeholder="Filter alarms…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
@@ -526,6 +526,7 @@ function ActiveAlarmsScreen({ filter = null }) {
               onClick={() => {
                 const ids = rows.filter((r) => r.state === "unack").map((r) => r.id);
                 openDialog(<ConfirmDialog title={"Acknowledge all " + ids.length + " alarms?"}
+                  danger
                   message={"This accepts every standing unacknowledged alarm at once."}
                   detail="Alarms whose condition has not returned to normal stay active in the list. Undo is offered for a few seconds afterwards."
                   confirmLabel={"Acknowledge " + ids.length} onConfirm={() => njAckUndo(ids)} />);
@@ -612,9 +613,9 @@ function AllAlarmsScreen() {
 
       <div className="card">
         <div className="filterbar">
-          <div className="field" style={{ minWidth: 220 }}>
+          <div className="field" style={{ minWidth: 200, maxWidth: 240 }}>
             <Icon name="search" size={16} color="var(--slate-400)" />
-            <input placeholder="Filter tag, area, description…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input placeholder="Filter alarms…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">
@@ -710,9 +711,9 @@ function DeactivatedAlarmsScreen() {
 
       <div className="card">
         <div className="filterbar">
-          <div className="field" style={{ minWidth: 220 }}>
+          <div className="field" style={{ minWidth: 200, maxWidth: 240 }}>
             <Icon name="search" size={16} color="var(--slate-400)" />
-            <input placeholder="Filter tag, area, description…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input placeholder="Filter alarms…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <span className="fbar-div" />
           <span className="fbar-group">

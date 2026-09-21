@@ -82,6 +82,7 @@ const JS_FILES = [
   "screens/consumption.jsx",
   "screens/overview.jsx",
   "screens/systems-c.jsx",
+  "screens/dept-overview.jsx", // after systems-c, before trend-groups (matches Redesign.html)
   "screens/trend-groups.jsx",
   "screens/data-entry.jsx",
   "screens/commissioning.jsx",

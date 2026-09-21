@@ -23,10 +23,10 @@ function njPlanOpen(bId, dId, label) {
   else if (window.__njNavigate) window.__njNavigate("navigation");
 }
 
-function PlanNode({ bId, dId, label, icon, status }) {
+function PlanNode({ bId, dId, label, icon, status, hi }) {
   const sev = planSev(status);
   return (
-    <button className="pnode" data-st={sev} onClick={() => njPlanOpen(bId, dId, label)} title={"Open " + label}>
+    <button className={"pnode" + (hi && sev !== hi ? " pnode-dim" : "")} data-st={sev} onClick={() => njPlanOpen(bId, dId, label)} title={"Open " + label}>
       <Icon name={icon} size={14} color="var(--slate-500)" />
       <span className="pnode-l">{label}</span>
       <span className="pnode-go"><Icon name="chevron-right" size={14} /></span>
@@ -43,15 +43,18 @@ const PLAN_EXP_LS = "nj_plan_expand_v1";
 function planExpLoad() { try { const v = JSON.parse(localStorage.getItem(PLAN_EXP_LS)); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
 function planExpSave(m) { try { localStorage.setItem(PLAN_EXP_LS, JSON.stringify(m)); } catch (e) {} }
 
-function DeptZone({ bId, dept }) {
+function DeptZone({ bId, dept, hi }) {
   const worst = planWorst(dept.systems);
   const all = dept.systems;
   const [open, setOpen] = React.useState(() => !!planExpLoad()[dept.id]);
   const toggle = () => setOpen((o) => { const n = !o; const m = planExpLoad(); if (n) m[dept.id] = 1; else delete m[dept.id]; planExpSave(m); return n; });
   const alerting = all.filter((s) => planSev(s.status) !== "ok");
+  // a status filter must never leave a matching system inside a fold — same rule as the alarm
+  // exemption below: the plan exists to surface these
+  const forceOpen = !!hi && all.some((s) => planSev(s.status) === hi);
   // fold as soon as anything would be cut — "Show 1 more" is still worth the row
   const foldable = all.length > PLAN_CAP;
-  const shown = !foldable || open ? all
+  const shown = !foldable || open || forceOpen ? all
     : (() => {
       const keep = new Set(alerting); // every alarm stays, even past the cap
       for (const s of all) { if (keep.size >= PLAN_CAP) break; keep.add(s); }
@@ -67,11 +70,11 @@ function DeptZone({ bId, dept }) {
       </div>
       <div className="zone-grid">
         {shown.map((s, i) => (
-          <PlanNode key={i} bId={bId} dId={dept.id} label={s.label} icon={s.icon} status={s.status} />
+          <PlanNode key={i} bId={bId} dId={dept.id} label={s.label} icon={s.icon} status={s.status} hi={hi} />
         ))}
       </div>
       {foldable && (
-        <button className="zone-more" onClick={toggle} aria-expanded={open}>
+        <button className="zone-more" onClick={toggle} aria-expanded={open || forceOpen}>
           <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
           {open ? "Show fewer" : "Show " + hidden + " more"}
           {!open && <span className="zone-more-note">all nominal</span>}
@@ -88,7 +91,7 @@ function njOtherOpen(route) {
   window.__njNavSub = "plan"; // keep Navigation's sub-router parked on the plan
   if (window.__njNavigate) window.__njNavigate(route);
 }
-function OtherFootprint() {
+function OtherFootprint({ hi }) {
   return (
     <section className="bfoot bfoot-other" data-worst="ok">
       <header className="bfoot-head">
@@ -110,7 +113,7 @@ function OtherFootprint() {
           </div>
           <div className="zone-grid">
             {FACILITY_OTHER.map((u, i) => (
-              <button key={i} className="pnode" data-st={planSev(u.status)} onClick={() => njOtherOpen(u.route)} title={"Open " + u.label}>
+              <button key={i} className={"pnode" + (hi && planSev(u.status) !== hi ? " pnode-dim" : "")} data-st={planSev(u.status)} onClick={() => njOtherOpen(u.route)} title={"Open " + u.label}>
                 <Icon name={u.icon} size={14} color="var(--slate-500)" />
                 <span className="pnode-l">{u.label}</span>
                 <span className="pnode-go"><Icon name="chevron-right" size={14} /></span>
@@ -124,7 +127,7 @@ function OtherFootprint() {
   );
 }
 
-function BuildingFootprint({ building }) {
+function BuildingFootprint({ building, hi }) {
   const allSys = building.depts.reduce((a, d) => a.concat(d.systems), []);
   const worst = planWorst(allSys);
   return (
@@ -143,7 +146,7 @@ function BuildingFootprint({ building }) {
       </header>
       <div className="bfoot-rule"></div>
       <div className="bfoot-body">
-        {building.depts.map((d) => <DeptZone key={d.id} bId={building.id} dept={d} />)}
+        {building.depts.map((d) => <DeptZone key={d.id} bId={building.id} dept={d} hi={hi} />)}
       </div>
     </section>
   );
@@ -152,13 +155,27 @@ function BuildingFootprint({ building }) {
 function FacilitySitePlan() {
   const totals = React.useMemo(() => {
     let depts = 0, systems = 0, warn = 0, crit = 0;
+    const tally = (s) => { const v = planSev(s.status); if (v === "critical") crit += 1; else if (v === "high") warn += 1; };
     FACILITY.forEach((b) => b.depts.forEach((d) => {
       depts += 1; systems += d.systems.length;
-      d.systems.forEach((s) => { const v = planSev(s.status); if (v === "critical") crit += 1; else if (v === "high") warn += 1; });
+      d.systems.forEach(tally);
     }));
+    // the Other group renders in the plan and the status filter dims it too, so it has to be in
+    // the tally — counting buildings only claimed 34 systems while 37 nodes rendered, and the
+    // chips lit 34. A count that does not match what its own filter affects is the defect this
+    // row was rewritten to remove. (It is not a department, so `depts` is unchanged.)
+    systems += FACILITY_OTHER.length;
+    FACILITY_OTHER.forEach(tally);
     return { depts, systems, warn, crit };
   }, []);
   const facilityWorst = totals.crit ? "critical" : totals.warn ? "high" : "ok";
+  // This row used to be half legend, half tally: "Nominal" carried no number while Warning and
+  // Critical did, so it read as a colour key that happened to have counts — and nothing was
+  // clickable, though anyone seeing "CRITICAL 1" tries to click it. All three now carry their
+  // count AND filter the plan (matching systems stay, the rest dim; folds holding a match open).
+  const [hi, setHi] = React.useState(null);
+  const sevCounts = { ok: totals.systems - totals.warn - totals.crit, high: totals.warn, critical: totals.crit };
+  const SEV_CHIPS = [["ok", "Nominal"], ["high", "Warning"], ["critical", "Critical"]];
 
   return (
     <AppShell active="navigation" title="Site Plan" crumbs={["Facility layout"]} statusLevel={facilityWorst} scope="facility">
@@ -169,17 +186,22 @@ function FacilitySitePlan() {
               Land-based RAS facility · {FACILITY.length} buildings · {totals.depts} departments · <span className="data">{totals.systems}</span> systems. Select any system to open its controls.
             </p>
           </div>
-          <div className="plan-legend">
-            <span className="pl-item"><Dot level="ok" size={8} /> Nominal</span>
-            <span className="pl-item"><Dot level="high" size={8} /> Warning <span className="data">{totals.warn}</span></span>
-            <span className="pl-item"><Dot level="critical" size={8} /> Critical <span className="data">{totals.crit}</span></span>
+          <div className="plan-legend" role="group" aria-label="Filter the plan by system status">
+            {SEV_CHIPS.map(([lvl, label]) => (
+              <button key={lvl} className={"pl-item" + (hi === lvl ? " on" : "")} aria-pressed={hi === lvl}
+                disabled={!sevCounts[lvl]}
+                onClick={() => setHi((v) => (v === lvl ? null : lvl))}
+                title={sevCounts[lvl] ? (hi === lvl ? "Show all systems again" : "Dim everything except the " + sevCounts[lvl] + " " + label.toLowerCase() + " system" + (sevCounts[lvl] === 1 ? "" : "s")) : "No " + label.toLowerCase() + " systems"}>
+                <Dot level={lvl} size={8} /> {label} <span className="data">{sevCounts[lvl]}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="siteplan">
-        {FACILITY.map((b) => <BuildingFootprint key={b.id} building={b} />)}
-        <OtherFootprint />
+        {FACILITY.map((b) => <BuildingFootprint key={b.id} building={b} hi={hi} />)}
+        <OtherFootprint hi={hi} />
       </div>
     </AppShell>
   );

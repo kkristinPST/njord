@@ -317,6 +317,9 @@ const trendStore = {
     this.clearFocus(); // emits
   },
   toggle(id) { this.snap("show/hide signal"); this.pens = this.pens.map((p) => p.id === id ? { ...p, hidden: !p.hidden } : p); this.emit(); },
+  // show ONE pen and hide the rest (reversible via the undo stack) — the "clean view" an
+  // operator wants when a trend was opened from an alarm into an already-busy pen set.
+  solo(id) { this.snap("show only one signal"); this.pens = this.pens.map((p) => ({ ...p, hidden: p.id !== id })); this.emit(); },
   // ── per-pen vertical scale (legacy pen table: Range Min / Range Max / Dyn. Scale) ──
   // Turning Dynamic off without a range yet seeds it from the pen's own operating band, so the
   // operator never lands on an empty plot.
@@ -438,13 +441,22 @@ function resolveAlarmMeas(alarm) {
 }
 
 // ── FROM AN ALARM → the trend, centered on the event (the core investigation entry) ──
+// The pen is ADDED to whatever is already plotted — context usually helps, and an operator who
+// came from an alarm has not asked us to throw their working set away. When that set is already
+// busy, the toast offers the other reading of the click: show only this signal (undoable).
 function njInvestigateAlarm(alarm) {
   const a = resolveAlarmMeas(alarm);
+  let penId = null, others = 0;
   if (window.alarmIsAnalog(a)) {
-    if (!trendStore.pens.some((p) => p.id === a.meas.tag)) trendStore.add(alarmMeasPen(a));
+    penId = a.meas.tag;
+    others = trendStore.pens.filter((p) => p.id !== penId && !p.hidden).length;
+    if (!trendStore.pens.some((p) => p.id === penId)) trendStore.add(alarmMeasPen(a));
   }
   trendStore.centerOn(a);
   if (window.__njNavigate) window.__njNavigate("analytics");
+  if (penId && others > 0) {
+    njToast("Added to " + others + " signal" + (others === 1 ? "" : "s") + " already plotted", "Show only this", () => trendStore.solo(penId));
+  }
 }
 
 // ── FROM A TREND MARKER (or a status banner) → the alarm's row in the list (highlighted) ──

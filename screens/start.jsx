@@ -89,6 +89,9 @@ function StartScreen() {
   const tanks = window.TANK_PANELS || [];
   const o2s = window.o2Status;
   const activeTanks = tanks.filter((t) => t.active);
+  // facility-wide tank register (see the KPI below) — TANK_PANELS is DPT1 only
+  const regTanks = (window.njAllTanks ? window.njAllTanks().length : 0) || tanks.length;
+  const deactTanks = tanks.length - activeTanks.length;
   const outBand = o2s ? activeTanks.filter((t) => o2s(t.o2, t) !== "ok") : [];
   const worstO2 = outBand.length ? outBand.reduce((m, t) => (t.o2 < m.o2 ? t : m)) : null;
   const overCap = activeTanks.filter((t) => t.maxBiomass && t.biomass > t.maxBiomass);
@@ -129,8 +132,12 @@ function StartScreen() {
         <KpiCard label="Min O₂ Sat" value={o2MinTank ? o2MinTank.o2.toFixed(1) : "—"} unit="%"
           delta={o2MinTank ? `Tank ${o2MinTank.n} · emergency O₂ limit ${o2MinTank.emgLimit} %` : "no active tanks"}
           deltaDir={o2St === "ok" ? "up" : "down"} icon="droplet" onClick={goFishTank} />
-        <KpiCard label="Tanks in Operation" value={String(activeTanks.length)} unit={"of " + tanks.length}
-          delta={tanks.length - activeTanks.length ? (tanks.length - activeTanks.length) + " deactivated" : "all tanks active"}
+        {/* Facility-scoped page: the TOTAL comes from the tank REGISTER (26 tanks across five
+            departments), never from TANK_PANELS — that is the DPT1 instrumented fixture, and
+            reading it here reported "3 of 4" on a page headed Facility overview. Deactivation is
+            only known for instrumented tanks, so it is subtracted from the register total. */}
+        <KpiCard label="Tanks in Operation" value={String(regTanks - deactTanks)} unit={"of " + regTanks}
+          delta={deactTanks ? deactTanks + " deactivated" : "all tanks active"}
           deltaDir="flat" icon="waves" onClick={goFishTank} />
         <KpiCard label="Max TAN" value={tan ? tan.base.toFixed(2) : "0.62"} unit="mg/L"
           delta={`Biofilter · alarm limit ${tan ? tan.thr.value.toFixed(2) : "1.50"} mg/L`}
@@ -208,7 +215,8 @@ function StartScreen() {
           </div>
         </div>
 
-        {/* full-width: comparative tank vitals (O₂ / level / pump sump) for one department */}
+        {/* full-width: comparative tank vitals for every department, and the process sheet
+            drawer that a department's name opens (screens/dept-overview.jsx draws the sheet) */}
         {window.DashTankVitals ? <DashTankVitals /> : null}
 
         {/* full-width: input consumption glance → Consumption Overview */}

@@ -280,17 +280,19 @@ const OC_PRIOS = [
 ];
 function ocPrio(id) { return OC_PRIOS.find((p) => p.id === id) || OC_PRIOS[3]; }
 
-// on-call windows (which alarms reach the group by time of day)
+// on-call PAGING WINDOWS — when the GROUP is paged, not when a person works.
+// Assigning someone to a group does not schedule them: it says an alarm inside this window
+// reaches them. Keep every label in this file on that side of the line.
 const OC_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 const OC_DAY_LABEL = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 function ocWin(all, we) { return { mon: all, tue: all, wed: all, thu: all, fri: all, sat: we != null ? we : all, sun: we != null ? we : all }; }
 const OC_SHIFTS = [
-  { id: "247", label: "24/7", summary: "00:00–24:00 · every day", win: () => ocWin("00:00-24:00") },
+  { id: "247", label: "Around the clock", summary: "00:00–24:00 · every day", win: () => ocWin("00:00-24:00") },
   { id: "day", label: "Daytime", summary: "07:00–15:00 · Mon–Fri", win: () => ocWin("07:00-15:00", "") },
   { id: "evening", label: "Evening", summary: "15:00–23:00 · Mon–Fri", win: () => ocWin("15:00-23:00", "") },
   { id: "night", label: "Night", summary: "23:00–07:00 · every day", win: () => ocWin("23:00-07:00") },
   { id: "weekend", label: "Weekend", summary: "00:00–24:00 · Sat–Sun", win: () => ({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "00:00-24:00", sun: "00:00-24:00" }) },
-  { id: "custom", label: "Custom", summary: "Per-day schedule", win: () => ocWin("00:00-24:00") },
+  { id: "custom", label: "Custom", summary: "Per-day windows", win: () => ocWin("00:00-24:00") },
 ];
 function ocShift(id) { return OC_SHIFTS.find((s) => s.id === id) || OC_SHIFTS[0]; }
 function ocSchedSummary(g) {
@@ -321,12 +323,25 @@ const OC_SEED = [
   { id: "g_crit", name: "Critical alarms", desc: "Critical only, immediate response", enabled: true, shift: "247", win: ocWin("00:00-24:00"), minPriority: "critical", tiers: { p1: ["ov"], p2: ["sk"], p3: [] }, minUsers: { p1: 1, p2: 1, p3: 0 }, chan: { p1: ["sms", "voice", "uhf"], p2: ["sms", "uhf"], p3: ["voice"] } },
   { id: "g_night", name: "Night shift", desc: "After-hours coverage, high & critical", enabled: true, shift: "night", win: ocShift("night").win(), minPriority: "high", tiers: { p1: ["vt1"], p2: ["kgr"], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["voice"], p3: [] } },
 ];
+// ── area coverage ──
+// A group used to be facility-wide by definition, so the only way to page one building's duty
+// phone was to lean on priority. Coverage is now an explicit set of departments; empty means
+// the whole facility, which is what every existing group loads as.
+const OC_AREAS = FACILITY.reduce((out, b) => out.concat(b.depts.map((d) => ({ id: d.id, b: b.name, d: d.name, label: b.name + " · " + d.name }))), []);
+function ocArea(id) { return OC_AREAS.find((a) => a.id === id) || null; }
+function ocAreaSummary(g) {
+  const ids = (g.areas || []).filter((id) => ocArea(id));
+  if (!ids.length) return "Whole facility";
+  if (ids.length <= 2) return ids.map((id) => ocArea(id).label).join(" · ");
+  return ids.length + " departments";
+}
+
 function ocNormalize(g) {
   const c = Object.assign({ p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"] }, g.chan || {});
-  return Object.assign({}, g, { chan: c });
+  return Object.assign({}, g, { chan: c, areas: g.areas || [] });
 }
 function ocClone(g) { return JSON.parse(JSON.stringify(g)); }
-function ocLoad() { try { const r = JSON.parse(localStorage.getItem(OC_LS)); if (r && Array.isArray(r.groups)) return Object.assign({}, r, { groups: r.groups.map(ocNormalize) }); } catch (e) {} return { groups: OC_SEED.map(ocClone), policy: { resendMin: 5, upscaleAfter: 3 } }; }
+function ocLoad() { try { const r = JSON.parse(localStorage.getItem(OC_LS)); if (r && Array.isArray(r.groups)) return Object.assign({}, r, { groups: r.groups.map(ocNormalize) }); } catch (e) {} return { groups: OC_SEED.map((g) => ocNormalize(ocClone(g))), policy: { resendMin: 5, upscaleAfter: 3 } }; }
 
 const oncallStore = {
   data: ocLoad(), subs: new Set(),
@@ -364,7 +379,14 @@ function OcMemberChip({ m, onRemove }) {
 // ── add-member popover ──
 function OcAddMenu({ used, onPick, onClose }) {
   const [q, setQ] = React.useState("");
+  const [up, setUp] = React.useState(false);
   const ref = React.useRef(null);
+  // flip above the Assign button when the column sits low in the viewport, so the list is
+  // never half off-screen (the group card no longer clips it, so it can genuinely hang out)
+  React.useLayoutEffect(() => {
+    const r = ref.current && ref.current.getBoundingClientRect();
+    if (r) setUp(r.top + 300 > window.innerHeight && r.top > 320);
+  }, []);
   React.useEffect(() => {
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -376,13 +398,13 @@ function OcAddMenu({ used, onPick, onClose }) {
   const phones = avail.filter((m) => m.kind === "phone");
   const people = avail.filter((m) => m.kind === "person");
   return (
-    <div className="oc-menu" ref={ref}>
+    <div className={"oc-menu" + (up ? " up" : "")} ref={ref}>
       <div className="oc-menu-search"><Icon name="search" size={14} color="var(--slate-400)" /><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search people & phones…" /></div>
       <div className="oc-menu-list">
         {phones.length > 0 && <div className="oc-menu-grp">Duty phones</div>}
-        {phones.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="smartphone" size={14} color="var(--slate-400)" /> {m.name}</button>)}
+        {phones.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="smartphone" size={14} color="var(--slate-400)" /> <span className="oc-menu-name">{m.name}</span></button>)}
         {people.length > 0 && <div className="oc-menu-grp">Personnel</div>}
-        {people.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="user" size={14} color="var(--slate-400)" /> <span>{m.name}</span> <span className="oc-menu-role">{m.role}</span></button>)}
+        {people.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="user" size={14} color="var(--slate-400)" /> <span className="oc-menu-name">{m.name}</span> <span className="oc-menu-role">{m.role}</span></button>)}
         {!avail.length && <NjInline>Everyone is already assigned.</NjInline>}
       </div>
     </div>
@@ -434,7 +456,8 @@ function OcGroupCard({ g }) {
           <span className="caption">{g.desc}</span>
         </div>
         <span className="oc-cover" title="Alarms this group is paged for"><span className="oc-cover-dot" style={{ background: ocPrioColor(g.minPriority) }} /> {prio.covers}</span>
-        <span className="sched"><Icon name="clock" size={12} color="var(--slate-400)" /> {ocSchedSummary(g)}</span>
+        <span className="sched" title="Where an alarm has to come from to reach this group"><Icon name="building-2" size={12} color="var(--slate-400)" /> {ocAreaSummary(g)}</span>
+        <span className="sched" title="When an alarm reaches this group — the group's paging window, not anyone's working hours"><Icon name="clock" size={12} color="var(--slate-400)" /> {ocSchedSummary(g)}</span>
         <div className="oc-head-actions">
           <button className="icon-btn" title="Send a test alarm to this group and see who receives it" onClick={() => window.njOpenTestDispatch && window.njOpenTestDispatch(g.id)}><Icon name="send" size={16} /></button>
           <button className="icon-btn" title="Edit group" onClick={() => openOnCallEditor(g)}><Icon name="pencil" size={16} /></button>
@@ -455,7 +478,8 @@ function OcGroupCard({ g }) {
 // ── group editor dialog ──
 function OnCallEditorDialog({ group }) {
   const editing = !!group;
-  const [g, setG] = React.useState(() => group ? ocClone(ocNormalize(group)) : { id: "g" + Date.now(), name: "", desc: "", enabled: true, shift: "247", win: ocWin("00:00-24:00"), minPriority: "critical", tiers: { p1: [], p2: [], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"] } });
+  const [g, setG] = React.useState(() => group ? ocClone(ocNormalize(group)) : { id: "g" + Date.now(), name: "", desc: "", enabled: true, shift: "247", win: ocWin("00:00-24:00"), minPriority: "critical", areas: [], tiers: { p1: [], p2: [], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"] } });
+  const toggleArea = (id) => setG((s) => { const cur = s.areas || []; return Object.assign({}, s, { areas: cur.includes(id) ? cur.filter((x) => x !== id) : cur.concat([id]) }); });
   const set = (patch) => setG((s) => Object.assign({}, s, patch));
   const setWin = (day, val) => setG((s) => Object.assign({}, s, { win: Object.assign({}, s.win, { [day]: val }) }));
   const pickShift = (id) => { const sh = ocShift(id); set({ shift: id, win: id === "custom" ? (g.win || ocWin("00:00-24:00")) : sh.win() }); };
@@ -484,7 +508,24 @@ function OnCallEditorDialog({ group }) {
           <input className="oos-input" value={g.desc} onChange={(e) => set({ desc: e.target.value })} placeholder="What this coverage is for" /></label>
 
         <div className="oc-ed-sec">
-          <span className="oc-field-l">On-call schedule</span>
+          <span className="oc-field-l">Area coverage</span>
+          <p className="oc-mininfo">Where an alarm has to come from to reach this group. Leave everything off for the whole facility. Pick departments to give a building its own duty phone.</p>
+          <div className="oc-area-grid">
+            <button type="button" className={"oc-area" + (!(g.areas || []).length ? " sel" : "")} onClick={() => set({ areas: [] })}>
+              <Icon name="globe" size={14} /> Whole facility
+            </button>
+            {OC_AREAS.map((a) => (
+              <button key={a.id} type="button" className={"oc-area" + ((g.areas || []).includes(a.id) ? " sel" : "")}
+                aria-pressed={(g.areas || []).includes(a.id)} onClick={() => toggleArea(a.id)}>
+                <span className="oc-area-b">{a.b}</span> {a.d}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="oc-ed-sec">
+          <span className="oc-field-l">Paging window</span>
+          <p className="oc-mininfo">When an alarm reaches this group. This is the <b>group's</b> window: assigning someone to a tier below makes them reachable in it, it does not set their working hours.</p>
           <div className="oc-shift-row">
             {OC_SHIFTS.map((s) => <button key={s.id} type="button" className={"oc-shift" + (g.shift === s.id ? " sel" : "")} onClick={() => pickShift(s.id)}>{s.label}</button>)}
           </div>
@@ -492,7 +533,7 @@ function OnCallEditorDialog({ group }) {
             ? <div className="oc-days">{OC_DAYS.map((d) => (
                 <div className="oc-day" key={d}><span className="oc-day-l">{OC_DAY_LABEL[d]}</span>
                   <input className="oos-input oc-day-in" value={g.win[d]} onChange={(e) => setWin(d, e.target.value)} placeholder="off" /></div>
-              ))}<p className="oc-days-hint">Format <code>HH:MM-HH:MM</code>. Leave blank for a day with no coverage. Example outside work hours: <code>00:00-07:00, 15:00-24:00</code>.</p></div>
+              ))}<p className="oc-days-hint">Format <code>HH:MM-HH:MM</code>. Leave blank for a day this group is not paged. Two windows in one day: <code>00:00-07:00, 15:00-24:00</code>.</p></div>
             : <p className="oc-sched-note"><Icon name="clock" size={14} color="var(--slate-400)" /> {ocShift(g.shift).summary}</p>}
         </div>
 
