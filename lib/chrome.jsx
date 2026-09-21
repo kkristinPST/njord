@@ -154,6 +154,13 @@ const themeStore = {
 };
 // apply current theme immediately (covers re-render / first paint)
 document.documentElement.setAttribute("data-theme", themeStore.v);
+// the phone app (or a second desk tab) changing the SAME preference on this device
+window.addEventListener("storage", (e) => {
+  if (e.key !== THEME_KEY || !e.newValue || e.newValue === themeStore.v) return;
+  themeStore.v = e.newValue;
+  document.documentElement.setAttribute("data-theme", themeStore.v);
+  themeStore.subs.forEach((f) => f());
+});
 function useTheme() { return React.useSyncExternalStore(themeStore.subscribe, themeStore.snapshot); }
 function njSetTheme(t) { themeStore.set(t); }
 
@@ -471,7 +478,7 @@ function Sidebar({ active }) {
               </span>
               {!collapsed && (
                 <span className="sb-item-r">
-                  {badge && <span className="sb-badge">{badge}</span>}
+                  {badge && <span className="sb-badge" title={n.id === "alarms" ? badge + " alarms await acknowledgement" : undefined}>{badge}</span>}
                   {n.caret && <Icon name="chevron-right" size={14} color="var(--slate-400)" />}
                 </span>
               )}
@@ -522,7 +529,7 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
   const sep = <span className="tb-sep"><Icon name="chevron-right" size={16} color="var(--slate-300)" /></span>;
   return (
     <div className="topbar">
-      <div className="topbar-l">
+      <div className={"topbar-l" + (scope !== "facility" ? " has-scope" : "")}>
         <span className="tb-status" style={{ background: (SEV[statusLevel] || SEV.ok).dot }} />
         {scope !== "facility" && (
           <React.Fragment>
@@ -549,15 +556,22 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
           <span className="tb-search-kbd">⌘K</span>
         </button>
         <span className="tb-div" />
-        <button className="tb-pill" title={`View ${ac.critical} active critical alarms`} onClick={() => window.__njGoAlarms("Active", "critical")} style={{ background: "var(--critical-solid)", color: "#fff" }}>
-          <span className="d" style={{ background: "#fff" }} /> {ac.critical}
-        </button>
-        <button className="tb-pill" title={`View ${ac.high} active high alarms`} onClick={() => window.__njGoAlarms("Active", "high")} style={{ background: "var(--warning-bg)", color: "var(--warning-text)" }}>
-          <span className="d" style={{ background: "var(--warning)" }} /> {ac.high}
-        </button>
-        <button className="tb-bell" title={`View all alarms · ${ac.unack} unacknowledged`} onClick={() => window.__njGoAlarms("All Alarms")}>
+        {/* ONE meaning per number. These two chips count ACTIVE alarms by priority; UNACKNOWLEDGED
+            is owned by the annunciator ribbon and the sidebar badge, so the bell carries a dot,
+            never a second count. No visible label: with the bell badge gone there is nothing left
+            for the pair to be confused with, colour carries the priority, and each tooltip names
+            the set in the same word as the tab it opens. */}
+        <span className="tb-annun">
+          <button className="tb-pill" title={`${ac.critical} active critical alarms · opens the Active list filtered to Critical`} aria-label={`${ac.critical} active critical alarms`} onClick={() => window.__njGoAlarms("Active", "critical")} style={{ background: "var(--critical-solid)", color: "#fff" }}>
+            <span className="d" style={{ background: "#fff" }} /> {ac.critical}
+          </button>
+          <button className="tb-pill" title={`${ac.high} active high alarms · opens the Active list filtered to High`} aria-label={`${ac.high} active high alarms`} onClick={() => window.__njGoAlarms("Active", "high")} style={{ background: "var(--warning-bg)", color: "var(--warning-text)" }}>
+            <span className="d" style={{ background: "var(--warning)" }} /> {ac.high}
+          </button>
+        </span>
+        <button className="tb-bell" title={ac.unack > 0 ? `${ac.unack} alarms await acknowledgement · opens the full register` : "Opens the full alarm register"} aria-label={ac.unack > 0 ? `Alarm register · ${ac.unack} unacknowledged` : "Alarm register"} onClick={() => window.__njGoAlarms("All Alarms")}>
           <Icon name="bell" size={20} />
-          {ac.unack > 0 && <span className="tb-bell-badge">{ac.unack}</span>}
+          {ac.unack > 0 && <span className="tb-bell-dot" />}
         </button>
         <span className="tb-div" />
         <button className="tb-icnbtn" title="Notes" onClick={() => window.openNotes && window.openNotes()}><Icon name="notebook-pen" size={20} /></button>
@@ -566,14 +580,36 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
   );
 }
 
+// ---- reversible experiment flags ----
+// Every flag here is a TRIAL of a change to a version that already tested well with users, so
+// each one must be revertible without a rebuild. Two ways back:
+//   1. per-browser, no code change:  localStorage.setItem("nj_flag_annun_v2", "0"); location.reload()
+//   2. for everyone: flip the default to false below. The pre-flag code path is kept intact
+//      behind each flag — do not delete it until a flag is settled.
+const NJ_FLAG_DEFAULTS = { annun_v2: true, trend_custom_range: true };
+function njFlag(k) {
+  try { const v = localStorage.getItem("nj_flag_" + k); return v === null ? !!NJ_FLAG_DEFAULTS[k] : v === "1"; }
+  catch (e) { return !!NJ_FLAG_DEFAULTS[k]; }
+}
+
 // ---- Persistent alarm annunciator ribbon (ISA-18.2) ----
 // Always present beneath the top bar on every screen. Surfaces the single highest-priority
 // UNACKNOWLEDGED active alarm with inline Acknowledge + go-to, and a count of the rest.
 // Collapses to a calm hairline when nothing is unacknowledged.
+// annun_v2 adds two things, both reversible (see njFlag):
+//   · the loud CARD treatment is reserved for Critical; High and below get a one-line strip,
+//     so the permanent cost on a plant that always has something standing is ~48px, not ~90
+//   · an alarm that arrived in the last 2 minutes is marked NEW and pulses three times — today a
+//     3-minute-old alarm and a brand-new one look identical, which is what habituation feeds on
+// A consequence / response-time line was tried here and REMOVED: the product has no approved
+// wording for it, and the ribbon is not the place to invent process explanations. Don't re-add
+// it without real text from the alarm philosophy.
 const ANN_SEV_ORDER = { critical: 0, high: 1, medium: 2, low: 3, diagnostic: 4 };
 function annAge(h) { if (h == null) return "—"; if (h < 1) return Math.max(1, Math.round(h * 60)) + "m"; return Math.round(h) + "h"; }
+const ANN_NEW_H = 2 / 60; // "new" window: 2 minutes
 function AlarmAnnunciator() {
   const hub = useAlarmHub();
+  const v2 = njFlag("annun_v2");
   const unacked = hub.rows
     .filter((a) => a.supp === "none" && a.state === "unack")
     .sort((x, y) => (ANN_SEV_ORDER[x.level] - ANN_SEV_ORDER[y.level]) || ((x.since || 0) - (y.since || 0)));
@@ -588,20 +624,23 @@ function AlarmAnnunciator() {
   const top = unacked[0];
   const rest = unacked.length - 1;
   const sev = SEV[top.level] || SEV.ok;
+  const isNew = v2 && top.since != null && top.since <= ANN_NEW_H;
+  const compact = v2 && top.level !== "critical";
   const goTo = () => { if (window.njGoAlarm) window.njGoAlarm(top); else window.__njGoAlarms && window.__njGoAlarms("Active", null); };
   return (
-    <div className={"annun annun-" + top.level} role="alert" aria-live="assertive" data-lvl={top.level}>
+    <div className={"annun annun-" + top.level + (compact ? " annun-compact" : "") + (isNew ? " annun-new" : "")} role="alert" aria-live="assertive" data-lvl={top.level}>
       <span className="annun-sev" style={{ background: sev.dot }}>{(SEV[top.level] || {}).label || top.level}</span>
       <button className="annun-main" onClick={goTo} title="Open this alarm in the list">
         <span className="annun-txt">{top.alarm}</span>
         <span className="annun-meta">
+          {isNew && <span className="annun-newchip">New</span>}
           <span className="tag">{top.tag}</span>
           {top.area && <span className="annun-area">{top.area}</span>}
           <span className="annun-age data">{annAge(top.since)}{isStale(top) ? " · stale" : ""}</span>
         </span>
       </button>
       <div className="annun-actions">
-        <button className="annun-ack" onClick={() => ackAlarms(top.id)} title="Acknowledge this alarm"><Icon name="check" size={16} /> Acknowledge</button>
+        <button className="annun-ack" onClick={(e) => { e.stopPropagation(); ackAlarms(top.id); }} title="Acknowledge this alarm"><Icon name="check" size={16} /> Acknowledge</button>
         <button className="annun-more" onClick={() => window.__njGoAlarms && window.__njGoAlarms("Active", null)} title="View all active alarms">
           {rest > 0 ? "+" + rest + " more unacknowledged" : "View active"} <Icon name="arrow-up-right" size={14} />
         </button>
@@ -696,7 +735,7 @@ function PageFoot({ pg, noun, extra }) {
     <div className="tbl-foot">
       <RowsSelect per={pg.per} onPick={(n) => { pg.setPer(n); pg.setPage(1); }} />
       <span className="small">
-        {pg.total === 0 ? "No " + noun : "Showing " + pg.from + "–" + pg.to + " of " + pg.total.toLocaleString() + " " + noun}
+        {pg.total === 0 ? "No " + noun : "Showing " + pg.from + "–" + pg.to + " of " + pg.total.toLocaleString("nb-NO") + " " + noun}
         {extra ? " · " + extra : ""}
       </span>
       <NjPager page={pg.page} totalPages={pg.totalPages} onGo={pg.setPage} />
@@ -716,4 +755,4 @@ function njActivate(fn) {
   };
 }
 
-Object.assign(window, { njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });
+Object.assign(window, { njFlag, NJ_FLAG_DEFAULTS, njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });

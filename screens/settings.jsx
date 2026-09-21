@@ -372,6 +372,10 @@ function OcMemberChip({ m, onRemove }) {
       <Icon name={m.kind === "phone" ? "smartphone" : "user"} size={14} color="var(--slate-400)" />
       <span className="oc-chip-name">{m.name}</span>
       <button className="oc-chip-x" title="Remove" onClick={onRemove}><Icon name="x" size={14} /></button>
+      {/* a name alone cannot say whether this person is reachable tonight — the legacy sites
+          print the shift beside every assignment for exactly this reason. It comes AFTER the
+          remove button in source so the full-width second line is the badge, not the button. */}
+      {window.ShiftBadge && <window.ShiftBadge id={m.id} />}
     </span>
   );
 }
@@ -653,10 +657,19 @@ function OnCallTab() {
   const groups = store.groups;
   const policy = store.policy;
   const allOff = groups.every((g) => !g.enabled);
+  // Three views over ONE model, not three models: Groups is the admin act (who is paged, in
+  // what order, on which channel), Duty roster is the shift act (who is reachable tonight),
+  // By person answers "what am I on call for". The legacy sites split the first two across a
+  // wizard; here they are peers, because neither is a step of the other.
+  const [view, setView] = React.useState("groups");
+  const VIEWS = [{ id: "groups", label: "Groups" }, { id: "roster", label: "Duty roster" }, { id: "person", label: "By person" }];
   return (
     <React.Fragment>
       <div className="oc-toolbar">
         <div className="oc-policy">
+          <div className="segmented oc-viewseg">
+            {VIEWS.map((v) => <button key={v.id} className={"seg" + (view === v.id ? " active" : "")} onClick={() => setView(v.id)}>{v.label}</button>)}
+          </div>
           <button className="oc-policy-item" onClick={() => njEditParam({ tag: "OC-RESEND", label: "Resend every", value: policy.resendMin, unit: "min", min: 1, max: 60, step: 1, group: "On-call", onApply: (v) => oncallStore.setPolicy({ resendMin: v }) })}>
             <Icon name="repeat" size={16} color="var(--slate-500)" />
             <span className="oc-policy-l">Resend every</span>
@@ -674,10 +687,30 @@ function OnCallTab() {
             <Icon name="chevron-right" size={14} color="var(--success-text)" />
           </button>
           <button className="btn btn-secondary" onClick={() => oncallStore.setAll(!allOff)}><Icon name={allOff ? "bell-ring" : "bell-off"} size={16} /> {allOff ? "Enable all" : "Disable all"}</button>
-          <button className="btn btn-primary" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={16} /> New group</button>
+          {view === "roster"
+            ? <button className="btn btn-primary" onClick={() => window.openShiftEditor(null)}><Icon name="calendar-plus" size={16} /> New shift</button>
+            : <button className="btn btn-primary" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={16} /> New group</button>}
         </div>
       </div>
 
+      {window.OcCoverageCard && <window.OcCoverageCard />}
+
+      {view === "roster" && (
+        <React.Fragment>
+          <div className="card">
+            <div className="oncall-legend">
+              <span className="oncall-legend-l">Who is on duty</span>
+              <span className="oncall-legend-cols">A shift makes a member reachable inside its hours · an alarm lands when the group's paging window and the member's shift both allow it</span>
+            </div>
+            <div className="card-body">{window.OcRosterBoard && <window.OcRosterBoard />}</div>
+          </div>
+          {window.OcShiftList && <window.OcShiftList />}
+        </React.Fragment>
+      )}
+
+      {view === "person" && window.OcPersonView && <window.OcPersonView />}
+
+      {view === "groups" && (
       <div className="card">
         <div className="oncall-legend">
           <span className="oncall-legend-l">Alarm Group</span>
@@ -691,6 +724,7 @@ function OnCallTab() {
                 action={<button className="btn btn-primary btn-sm" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={14} /> New group</button>} />}
         </div>
       </div>
+      )}
 
       {window.DeliveryVerificationCard && <window.DeliveryVerificationCard />}
     </React.Fragment>

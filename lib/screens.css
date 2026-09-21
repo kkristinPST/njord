@@ -1816,6 +1816,71 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .nj-toast-x:hover { color: #fff; background: rgba(255,255,255,.12); }
 
 /* ============================================================
+   ON-CALL · DUTY ROSTER, SHIFTS, BY-PERSON, COVERAGE (oncall-roster.jsx)
+   ============================================================ */
+.oc-viewseg { margin-right: 4px; }
+/* the roster board: Off duty is a COLUMN, so "nobody is paging me" is a place you can see
+   someone standing in, not an absence you have to deduce from the other columns */
+.ocr-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+.ocr-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 14px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 12px; }
+.ocr-col-off { background: var(--surface); border-style: dashed; }
+.ocr-col-h { display: flex; align-items: center; gap: 8px; }
+.ocr-col-n { font-size: 14px; font-weight: 700; color: var(--fg); }
+.ocr-col-c { margin-left: auto; font-size: 12px; color: var(--slate-400); }
+.ocr-col-d { margin: 0; font-size: 11px; line-height: 16px; color: var(--slate-500); }
+.ocr-col-body { display: flex; flex-direction: column; gap: 6px; min-height: 40px; }
+.ocr-person { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--surface); border: 1px solid var(--slate-200); border-radius: 8px; font-size: 13px; color: var(--fg); }
+.ocr-person.off { background: transparent; border-style: dashed; color: var(--slate-500); }
+.ocr-person-n { flex: 1; min-width: 0; }
+.ocr-empty { font-size: 12px; color: var(--slate-400); }
+/* The chip is a GRID, not a wrapping flex row. Flex could not place this: a `flex:0 0 100%`
+   basis resolves against the content box and any margin is added on top of it, so the badge
+   overflowed by exactly its margin; and a stretched basis turned a 6-character shift into a
+   197px grey band. On a grid the badge is a content-sized item parked on row 2, columns 2→end,
+   so it starts under the name, sizes to its text, and cannot exceed the track. */
+.oc-chip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 8px; row-gap: 4px; }
+.oc-chip > :first-child { grid-column: 1; grid-row: 1; }
+.oc-chip-name { grid-column: 2; grid-row: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oc-chip-x { grid-column: 3; grid-row: 1; }
+.oc-chip .ocr-badge { grid-column: 2 / -1; grid-row: 2; justify-self: start; margin-left: 0; }
+.ocr-badge { min-width: 0; max-width: 100%; margin-left: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 2px 6px; border-radius: 6px; background: var(--slate-100); color: var(--slate-600); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.ocr-badge.off { background: var(--warning-bg); color: var(--warning-text); }
+/* in the by-person TABLE there is width to spare, so the badge sits inline with no indent */
+.tbl .ocr-badge { margin-left: 0; }
+.ocr-badge.built { background: var(--primary-bg); color: var(--primary-text); }
+/* shift editor: one row per weekday, intervals as removable fields — a day can hold more than
+   one, which is the whole reason a schedule is not a single window */
+.ocr-days { display: flex; flex-direction: column; gap: 6px; }
+.ocr-day { display: flex; align-items: center; gap: 10px; }
+.ocr-day-l { width: 36px; flex: none; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-500); }
+.ocr-day-ivs { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.ocr-iv { display: inline-flex; align-items: center; gap: 2px; padding: 2px 2px 2px 8px; background: var(--surface); border: 1px solid var(--slate-200); border-radius: 8px; }
+.ocr-iv input { width: 92px; border: none; background: none; font-family: var(--font-mono); font-size: 12px; color: var(--fg); outline: none; }
+.ocr-iv-add { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px dashed var(--slate-300); border-radius: 8px; background: none; color: var(--slate-500); cursor: pointer; }
+.ocr-iv-add:hover { border-color: var(--primary); color: var(--primary-text); }
+.ocr-copy { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.ocr-total { margin-left: auto; font-size: 12px; color: var(--slate-500); }
+.ocr-td-d { color: var(--slate-500); }
+.ocr-td-a { text-align: right; white-space: nowrap; }
+.ocr-head-r { display: flex; align-items: center; gap: 8px; }
+.ocr-search { width: 200px; }
+.ocr-at { display: flex; flex-wrap: wrap; gap: 6px; }
+.ocr-at-i { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 4px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 999px; font-size: 12px; color: var(--slate-600); }
+/* coverage: the legacy banner said only "no receivers are third in line"; severity here is
+   ordered by what it costs — an alarm that reaches nobody outranks a thin third line */
+.ocr-cov-body { display: flex; flex-direction: column; }
+.ocr-cov-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--slate-100); }
+.ocr-cov-row:first-child { border-top: none; }
+.ocr-cov-row.crit { color: var(--critical-text); }
+.ocr-cov-row.warn { color: var(--warning-text); }
+.ocr-cov-row.info, .ocr-cov-row.ok { color: var(--slate-500); }
+.ocr-cov-row.ok { color: var(--success-text); }
+.ocr-cov-t { font-size: 14px; font-weight: 600; }
+.ocr-cov-d { margin-top: 2px; font-size: 12px; line-height: 18px; color: var(--slate-500); }
+.ocr-cov-sum { font-size: 12px; color: var(--slate-400); }
+
+/* ============================================================
    TREND GROUPS (library + editor dialogs)
    ============================================================ */
 .an-pens-head-r { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; min-width: 0; }

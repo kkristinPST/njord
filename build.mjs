@@ -54,6 +54,7 @@ const JS_FILES = [
   "screens/alarm-rationalization.jsx",
   "screens/reports.jsx",
   "screens/settings.jsx",
+  "screens/oncall-roster.jsx", // after settings, before oncall-delivery (matches Redesign.html)
   "screens/oncall-delivery.jsx",
   "screens/fish-welfare.jsx",
   "screens/fish-biology.jsx",

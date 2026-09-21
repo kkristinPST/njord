@@ -167,24 +167,36 @@ body.standalone .nav-page .sidebar { height: 100%; border-radius: var(--r-lg); o
    Squeeze is handled by flex-shrink weights instead — scope first, then crumb, then title. */
 .topbar-l { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; white-space: nowrap; }
 .tb-status { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.tb-crumb { flex: 0 2 auto; font-size: 14px; color: var(--slate-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tb-crumb { flex: 0 4 auto; font-size: 14px; color: var(--slate-500); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .tb-crumb.cur { color: var(--fg); font-weight: 600; }
 .tb-sep { color: var(--slate-300); display: inline-flex; flex: none; }
-.tb-title { margin: 0; flex: 0 1 auto; min-width: 7ch; font-family: var(--font-sans); font-size: 18px; font-weight: 700; letter-spacing: -0.25px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-title { margin: 0; flex: 0 6 auto; min-width: 0; font-family: var(--font-sans); font-size: 18px; font-weight: 700; letter-spacing: -0.25px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* below this width all three cannot coexist: drop the title (the sidebar shows it) rather than
+   ellipsising every part of the header to three characters each */
+@media (max-width: 1180px) { .topbar-l.has-scope .tb-title, .topbar-l.has-scope .tb-scope + .tb-sep { display: none } }
 .change-btn { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--fg);
   background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--r-md); padding: 6px 12px; cursor: pointer; }
 .change-btn:hover { background: var(--slate-100); }
 .ctx-wrap { position: relative; }
 /* interactive breadcrumb scope (building / department dropdowns) */
-/* Squeeze order in the top bar: the SCOPE gives way first, then the trailing crumb; the page
-   title is the identity of the screen and shrinks last. */
-.tb-scope { display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex: 0 2 auto; }
+/* Squeeze order in the top bar: the page TITLE gives way first, then the trailing crumb; the
+   facility SCOPE shrinks last and never below a readable width. The title is already indicated
+   by the active sidebar item, so an ellipsised "Fish Feedi…" costs nothing to drop — but
+   "Buildi… › D…" hides WHICH department the screen is about, which is shown nowhere else. */
+.tb-scope { display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex: 0 1 auto; }
 .crumb-pick-wrap { position: relative; display: inline-flex; min-width: 0; }
 .crumb-pick { display: inline-flex; align-items: center; gap: 4px; min-width: 32px; overflow: hidden; white-space: nowrap; font-family: var(--font-sans); font-size: 14px; font-weight: 600;
   color: var(--slate-600); background: transparent; border: 1px solid transparent; border-radius: var(--r-sm); padding: 4px 8px; cursor: pointer; }
 /* the label ellipsises, the chevron never does — the button is a flex container, so
    text-overflow has to live on an inner span (see BreadcrumbScope). The label carries ALL
    of the shrink; min-width keeps padding + caret, so the affordance can't be amputated. */
+/* No width floor on either the label or the group, deliberately. Both were tried and neither
+   works: a per-label `min-width:9ch` pads short names (DPT1 at 34px got an 83px box, stranding
+   its caret 53px away), `min(9ch, max-content)` is invalid CSS and silently dropped, and a floor
+   on .tb-scope resolves against the bar while the two 32px-min .crumb-pick children absorb the
+   shrink regardless. What actually protects the scope is the SQUEEZE ORDER above plus dropping
+   the title under 1180px — at every real viewport topbar-l is wide enough that neither crumb
+   clips. `.crumb-pick { min-width: 32px }` is what keeps padding + caret from being amputated. */
 .crumb-pick-lbl { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crumb-pick > svg { flex: none; }
 .crumb-pick:hover { background: var(--slate-100); color: var(--fg); }
@@ -201,9 +213,9 @@ body.standalone .nav-page .sidebar { height: 100%; border-radius: var(--r-lg); o
 .tb-div { width: 1px; align-self: stretch; margin: 14px 2px; background: var(--border); }
 .tb-bell { position: relative; display: flex; color: var(--slate-600); background: none; border: none; padding: 4px; border-radius: var(--r-sm); cursor: pointer; }
 .tb-bell:hover { background: var(--slate-100); color: var(--fg); }
-.tb-bell-badge { position: absolute; top: -3px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px;
-  background: var(--critical-solid); color: #fff; font-family: var(--font-mono); font-size: 10px; font-weight: 700; line-height: 18px;
-  text-align: center; box-shadow: 0 0 0 2px #fff; }
+.tb-bell-dot { position: absolute; top: 5px; right: 6px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--critical-solid); box-shadow: 0 0 0 2px var(--surface); }
+.tb-annun { display: inline-flex; align-items: center; gap: 6px; }
 .tb-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 12px; font-weight: 700;
   padding: 4px 10px; border-radius: var(--r-pill); border: none; cursor: pointer; }
 .tb-pill:hover { filter: brightness(0.96); }
@@ -252,6 +264,20 @@ body.standalone .nav-page .sidebar { height: 100%; border-radius: var(--r-lg); o
 .annun-more { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 6px; background: none; border: none;
   color: var(--primary-text); font-family: var(--font-sans); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .annun-more:hover { text-decoration: underline; }
+/* annun_v2 (reversible — see njFlag in chrome.jsx). Three additive treatments; removing the
+   flag removes the classes and these rules never match. */
+.annun-compact { min-height: 40px; padding-top: 4px; padding-bottom: 4px; }
+.annun-compact .annun-main { flex-direction: row; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.annun-compact .annun-meta { gap: 10px; flex-wrap: nowrap; overflow: hidden; }
+.annun-compact .annun-ack { min-height: 30px; }
+.annun-newchip { flex: none; font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: var(--fg); background: var(--surface); border: 1px solid var(--ac, var(--slate-300));
+  padding: 1px 6px; border-radius: var(--r-sm); }
+.annun-newchip + .tag::before { content: none; }
+/* pulses three times on arrival and then stops — a permanent throb is just more wallpaper */
+@keyframes annun-pulse { 0%, 100% { box-shadow: inset 0 0 0 0 transparent } 50% { box-shadow: inset 0 0 0 2px var(--ac) } }
+.annun-new { animation: annun-pulse 1.1s ease-in-out 3; }
+@media (prefers-reduced-motion: reduce) { .annun-new { animation: none } }
 
 /* ---- accessibility: minimum touch targets + visible focus ---- */
 .tb-icnbtn, .tb-bell { min-width: 40px; min-height: 40px; align-items: center; justify-content: center; }

@@ -4,7 +4,7 @@
 // chart on the event with a configurable ± window and the crossed threshold. Discrete alarms
 // (no analog value) open an Event Timeline instead of an empty chart.
 
-function AddParamMenu({ active, onAdd, onClose, onBrowse }) {
+function AddParamMenu({ active, onAdd, onClose, onBrowse, up }) {
   const have = new Set(active.map((p) => p.id));
   const groups = {};
   TREND_CATALOG.forEach((c) => { if (!have.has(c.tag)) (groups[c.group] = groups[c.group] || []).push(c); });
@@ -12,7 +12,7 @@ function AddParamMenu({ active, onAdd, onClose, onBrowse }) {
   return (
     <React.Fragment>
       <div className="an-pop-scrim" onClick={onClose}></div>
-      <div className="an-pop" role="menu">
+      <div className={"an-pop" + (up ? " an-pop-up" : "")} role="menu">
         <div className="an-pop-head">Add parameter to view</div>
         <div className="an-pop-body">
           {names.length === 0 && <NjInline>All catalogued parameters are already plotted.</NjInline>}
@@ -336,6 +336,28 @@ function EventTimeline({ alarm, onOpen, onRelated }) {
   );
 }
 
+// Query cost, stated BEFORE the operator commits to it. Historian resolution and query speed
+// are backend limits we cannot fix in the UI — what the UI owes the operator is an honest
+// estimate and a way out: download the range instead of drawing it.
+// NOTE: read the cost from the RANGE and the INTERVAL, never from view.n — the chart caps its
+// sample count, so view.n reports what was drawn, not what the historian was asked for.
+const AN_COST_WARN = 20000;
+function TrendCost({ spanMs, cap, pens, interval }) {
+  const ms = (INTERVALS.find((x) => x.k === interval) || {}).ms;
+  if (!ms || !(spanMs > 0)) return null; // Auto fits the window: the sample count is the plot's, and bounded
+  const vis = pens.filter((p) => !p.hidden).length;
+  const per = Math.max(1, Math.round(spanMs / ms));
+  const total = per * Math.max(1, vis);
+  if (total < AN_COST_WARN) return null;
+  return (
+    <div className="an-rb-cost">
+      <Icon name="alert-triangle" size={14} color="var(--warning-text)" />
+      <span>This range asks the historian for about <b className="data">{total.toLocaleString("nb-NO")}</b> points across {vis} {vis === 1 ? "pen" : "pens"}. It will be slow, and the chart draws at most {cap.toLocaleString("nb-NO")} per pen. Widen the interval, or take the raw data instead.</span>
+      <button className="linkbtn" onClick={() => openTrendExport()}><Icon name="download" size={14} /> Download without plotting</button>
+    </div>
+  );
+}
+
 // explicit date-range + interval toolbar (mirrors the legacy Start/End/Interval/Dynamic/Apply bar)
 function TrendRangeBar() {
   const store = useTrends();
@@ -392,6 +414,8 @@ function TrendRangeBar() {
         <span className="an-rb-res-v">{view.n.toLocaleString("nb-NO")} points</span>
         <span className="an-rb-res-l">{iv === "auto" ? "fitted to the window" : "per pen, one every " + (INTERVALS.find((x) => x.k === iv) || {}).label.toLowerCase()}</span>
       </div>
+      {/* costed on the PENDING fields, not the applied view: the point is to warn before Apply */}
+      <TrendCost spanMs={(dyn ? Date.now() : new Date(end).getTime()) - new Date(start).getTime()} cap={view.n} pens={store.pens} interval={iv} />
     </div>
   );
 }
@@ -409,6 +433,7 @@ function TrendsWorkspace({ tab, onTab }) {
   const store = useTrends();
   useAlarmHub(); // re-render as the register changes so markers stay in sync
   const [menu, setMenu] = React.useState(false);
+  const [moreMenu, setMoreMenu] = React.useState(false);
   const pens = store.pens;
   const range = store.range;
   const view = viewFromStore(store);
@@ -428,6 +453,13 @@ function TrendsWorkspace({ tab, onTab }) {
     return m;
   }, [series]);
   const ranges = ["1h", "6h", "24h", "7d"];
+  // trend_custom_range (reversible — see njFlag in chrome.jsx): the explicit Start/End/Interval bar
+  // was a permanently visible full-width row that set the SAME thing as the preset segment, with
+  // no indication of which one won. It becomes a "Custom" option ON that segment, revealed in
+  // place. Flag off restores the always-on bar; nothing else about the screen changes.
+  const oneRangeCtl = window.njFlag ? window.njFlag("trend_custom_range") : false;
+  const [showCustom, setShowCustom] = React.useState(false);
+  const customOn = store.customRange || showCustom;
   const visCount = pens.filter((p) => !p.hidden).length;
   // a range change re-samples the historian in the real product, so it gets a skeleton
   const loadingRange = useNjLoading([range, store.customRange, store.rangeOffset]);
@@ -440,9 +472,8 @@ function TrendsWorkspace({ tab, onTab }) {
     <AppShell active="analytics" title="Analytics" crumbs={["Trends"]} statusLevel="ok" scope="facility">
       <div className="pagehead">
         <div className="pagehead-row">
-          <div>
-            <p className="pagehead-sub">Trend any process parameter and see the alarms it raised on the same timeline. Investigate an alarm to center on the event.</p>
-          </div>
+          {/* No instructional copy here — this is a daily screen, and a permanent how-to costs two
+             lines of chart height forever. It lives in the empty state, where it is needed. */}
           <div className="pagehead-right"><AnalyticsTabs active={tab} onChange={onTab} /></div>
         </div>
       </div>
@@ -451,7 +482,8 @@ function TrendsWorkspace({ tab, onTab }) {
         <div className="an-nav-group">
           <button className="an-nav" onClick={() => store.prevWindow()} disabled={focused || store.customRange} title="Earlier window"><Icon name="chevron-left" size={16} /></button>
           <div className="segmented an-range">
-            {ranges.map((r) => <button key={r} className={"seg" + (!focused && !store.customRange && r === range ? " active" : "")} onClick={() => store.setRange(r)}>{r}</button>)}
+            {ranges.map((r) => <button key={r} className={"seg" + (!focused && !customOn && r === range ? " active" : "")} onClick={() => { setShowCustom(false); store.setRange(r); }}>{r}</button>)}
+            {oneRangeCtl && <button className={"seg" + (!focused && customOn ? " active" : "")} onClick={() => setShowCustom((v) => !v)} title="Set an explicit start, end and sample interval">Custom</button>}
           </div>
           <button className="an-nav" onClick={() => store.nextWindow()} disabled={focused || store.customRange || !store.rangeOffset} title="Later window"><Icon name="chevron-right" size={16} /></button>
         </div>
@@ -465,7 +497,7 @@ function TrendsWorkspace({ tab, onTab }) {
         </div>
       </div>
 
-      {!focused && <TrendRangeBar />}
+      {!focused && (oneRangeCtl ? customOn : true) && <TrendRangeBar />}
 
       {focused && (
         <div className="an-focusbar">
@@ -519,7 +551,7 @@ function TrendsWorkspace({ tab, onTab }) {
                       onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} />)
                 : (
                   <NjEmpty title="No signals plotted" icon="line-chart"
-                    body="Add a parameter below, or load a saved Trend Group to plot a set you analyse together."
+                    body="Plot any process parameter and the alarms it raised appear on the same timeline. Investigating an alarm centers the chart on the event. Add a parameter below, or load a saved Trend Group to plot a set you analyse together."
                     action={<button className="btn btn-primary" onClick={() => openTrendSignalPicker()}><Icon name="folder-tree" size={16} /> Browse signals</button>}
                     secondary={<button className="btn btn-secondary" onClick={() => openTrendGroups()}><Icon name="folder" size={16} /> Trend Groups</button>} />
                 )}
@@ -528,23 +560,51 @@ function TrendsWorkspace({ tab, onTab }) {
 
         <div className="card an-pens-card">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="git-commit-horizontal" size={16} color="var(--slate-600)" /><span className="card-title">Signals</span></div>
+            <div className="card-head-l"><Icon name="git-commit-horizontal" size={16} color="var(--slate-600)" /><span className="card-title">Signals</span>
+              {pens.length > 0 && <span className="an-pens-n data">{pens.length}</span>}</div>
+            {/* Five equal buttons in the head wrapped to two rows and read as one undifferentiated
+                bank. They are two different jobs, so they sit in two places now:
+                  · head  = acts on the SET as a whole (Save group, and the corrective pair)
+                  · foot  = adds a ROW to the list, at the end of the list where the next row lands
+                Undo + Clear share an overflow menu: Clear is only safe because Undo is beside it,
+                and inside one menu it still is — while neither is a daily action worth a slot. */}
             <div className="an-pens-head-r">
               <button className="btn btn-secondary btn-sm" disabled={!pens.length} title="Save the current parameters as a Trend Group"
                 onClick={() => openTrendGroupEditor(null, pens)}><Icon name="folder-plus" size={14} /> Save group</button>
-              <button className="btn btn-secondary btn-sm" onClick={() => openTrendSignalPicker()} title="Browse the full signal catalog as a tree"><Icon name="folder-tree" size={14} /> Browse</button>
               <div style={{ position: "relative" }}>
-                <button className="btn btn-secondary btn-sm" onClick={() => setMenu((m) => !m)}><Icon name="plus" size={14} /> Add</button>
-                {menu && <AddParamMenu active={pens} onAdd={(t) => store.add(resolveTrendPen(t))} onClose={() => setMenu(false)} onBrowse={openTrendSignalPicker} />}
+                <button className={"btn btn-secondary btn-sm btn-icon" + (moreMenu ? " btn-active" : "")} onClick={() => setMoreMenu((m) => !m)}
+                  disabled={!pens.length && !store.hist.length} title="More actions on this signal set" aria-label="More actions on this signal set">
+                  <Icon name="more-vertical" size={14} /></button>
+                {moreMenu && (
+                  <React.Fragment>
+                    <div className="an-setmenu-scrim" onClick={() => setMoreMenu(false)}></div>
+                    <div className="an-setmenu">
+                      <button className="an-setmenu-item" disabled={!store.hist.length} onClick={() => { store.undo(); setMoreMenu(false); }}>
+                        <Icon name="undo-2" size={14} /><span className="an-setmenu-name">Undo</span>
+                        <span className="an-setmenu-meta data">{store.hist.length || ""}</span></button>
+                      <button className="an-setmenu-item" disabled={!pens.length} onClick={() => { store.clear(); setMoreMenu(false); }}>
+                        <Icon name="eraser" size={14} /><span className="an-setmenu-name">Clear all signals</span></button>
+                    </div>
+                  </React.Fragment>
+                )}
               </div>
             </div>
           </div>
           <div className="an-pens-body">
-            {pens.length === 0 && <NjEmpty size="compact" icon="git-commit-horizontal" title="No parameters selected" body="Use Browse to pick from the signal tree, or load a Trend Group." />}
+            {pens.length === 0 && <NjEmpty size="compact" icon="git-commit-horizontal" title="No parameters selected" body="Add a signal below, or load a Trend Group." />}
             {pens.map((p) => (
               <PenRow key={p.id} pen={p} current={curOf(p.id)} stats={statsOf[p.id]} focused={store.focus === p.id}
                 onFocus={() => store.setFocus(p.id)} onToggle={() => store.toggle(p.id)} onRemove={() => store.remove(p.id)} />
             ))}
+          </div>
+          <div className="an-pens-add">
+            <div style={{ position: "relative" }}>
+              <button className={"btn btn-secondary btn-sm" + (menu ? " btn-active" : "")} onClick={() => setMenu((m) => !m)}
+                title="Add a signal from the parameters on this screen"><Icon name="plus" size={14} /> Add signal</button>
+              {menu && <AddParamMenu active={pens} onAdd={(t) => store.add(resolveTrendPen(t))} onClose={() => setMenu(false)} onBrowse={openTrendSignalPicker} up />}
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={() => openTrendSignalPicker()} title="Browse the full signal catalog as a tree">
+              <Icon name="folder-tree" size={14} /> Browse all…</button>
           </div>
 
           {markers.length > 0 && (

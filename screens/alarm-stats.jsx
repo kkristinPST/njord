@@ -19,11 +19,11 @@ const ORDER = ["critical", "high", "medium", "low", "diagnostic"];
 // week = activations in the last 7 days · month = activations in the last 28 days
 // total = lifetime activations (what the legacy "Alarmstatistikk" tab listed)
 const AS_REG = [
-  { alarm: "Drum filter 3 General fault from drive",        tag: "DPT3-FIL3-DR1", level: "critical", loc: "DPT3", sub: "Drum Filter",    week: 4,  month: 258, total: 258, ev: "Returned",           last: "12/02/2026 15:51:24" },
-  { alarm: "Drum filter 1 General fault from drive",        tag: "DPT3-FIL1-DR1", level: "critical", loc: "DPT3", sub: "Drum Filter",    week: 3,  month: 205, total: 206, ev: "Returned",           last: "13/02/2026 14:02:36" },
-  { alarm: "Drum filter 2 General fault from drive",        tag: "DPT3-FIL2-DR1", level: "critical", loc: "DPT3", sub: "Drum Filter",    week: 2,  month: 161, total: 161, ev: "Returned",           last: "13/02/2026 14:47:22" },
-  { alarm: "Backwash valve filter 3 position fault",        tag: "DPT3-FIL3-XV1", level: "critical", loc: "DPT3", sub: "Drum Filter",    week: 1,  month: 107, total: 107, ev: "Returned",           last: "18/02/2026 17:06:29" },
-  { alarm: "Backwash valve filter 1 position fault",        tag: "DPT4-FIL1-XV1", level: "critical", loc: "DPT4", sub: "Drum Filter",    week: 2,  month: 26,  total: 1281, ev: "Returned",          last: "14/01/2026 13:59:36" },
+  { alarm: "Drum filter 3 General fault from drive",        tag: "DPT3-FIL3-DR1", level: "critical", loc: "DPT3", sub: "Drum filter",    week: 4,  month: 258, total: 258, ev: "Returned",           last: "12/02/2026 15:51:24" },
+  { alarm: "Drum filter 1 General fault from drive",        tag: "DPT3-FIL1-DR1", level: "critical", loc: "DPT3", sub: "Drum filter",    week: 3,  month: 205, total: 206, ev: "Returned",           last: "13/02/2026 14:02:36" },
+  { alarm: "Drum filter 2 General fault from drive",        tag: "DPT3-FIL2-DR1", level: "critical", loc: "DPT3", sub: "Drum filter",    week: 2,  month: 161, total: 161, ev: "Returned",           last: "13/02/2026 14:47:22" },
+  { alarm: "Backwash valve filter 3 position fault",        tag: "DPT3-FIL3-XV1", level: "critical", loc: "DPT3", sub: "Drum filter",    week: 1,  month: 107, total: 107, ev: "Returned",           last: "18/02/2026 17:06:29" },
+  { alarm: "Backwash valve filter 1 position fault",        tag: "DPT4-FIL1-XV1", level: "critical", loc: "DPT4", sub: "Drum filter",    week: 2,  month: 26,  total: 1281, ev: "Returned",          last: "14/01/2026 13:59:36" },
   { alarm: "Level in pump sump Low alarm",                  tag: "DPT3-SMP0-LT1", level: "high",     loc: "DPT3", sub: "Pump Sump",      week: 5,  month: 23,  total: 118, ev: "Acknowledged",       last: "04/03/2026 08:14:02" },
   { alarm: "pH 2 in pump sump High-high alarm",             tag: "DPT3-SMP0-QT4", level: "critical", loc: "DPT3", sub: "Pump Sump",      week: 3,  month: 14,  total: 61,  ev: "Returned",           last: "03/03/2026 22:41:10" },
   { alarm: "Lift pump 1 High temperature",                  tag: "DPT3-SMP0-PU1", level: "high",     loc: "DPT3", sub: "Pump Sump",      week: 2,  month: 11,  total: 44,  ev: "Returned",           last: "02/03/2026 06:22:47" },
@@ -52,7 +52,7 @@ const AS_REG = [
   { alarm: "Alarm transmitter Heartbeat alarm",             tag: "SYS0-ATX0-HB1", level: "critical", loc: "System", sub: "Alarm Transmitter",   week: 3, month: 22, total: 48, ev: "Returned",         last: "04/03/2026 21:00:05" },
   { alarm: "PLC communication error",                       tag: "SYS0-PLC1-CM1", level: "critical", loc: "System", sub: "PLC",                week: 2, month: 12, total: 57, ev: "Returned",         last: "03/03/2026 01:33:18" },
   { alarm: "Historian write buffer full",                   tag: "SYS0-HIS0-BF1", level: "diagnostic", loc: "System", sub: "Historian",        week: 4, month: 15, total: 63, ev: "Acknowledged",     last: "04/03/2026 10:26:41" },
-  { alarm: "Backwash valve filter 2 position fault",        tag: "DPT4-FIL2-XV1", level: "high",     loc: "DPT4", sub: "Drum Filter",      week: 3, month: 12, total: 49, ev: "Returned",           last: "02/03/2026 11:07:52" },
+  { alarm: "Backwash valve filter 2 position fault",        tag: "DPT4-FIL2-XV1", level: "high",     loc: "DPT4", sub: "Drum filter",      week: 3, month: 12, total: 49, ev: "Returned",           last: "02/03/2026 11:07:52" },
   { alarm: "Level in pump sump High-high alarm",            tag: "DPT4-SMP0-LT2", level: "critical", loc: "DPT4", sub: "Pump Sump",        week: 2, month: 8,  total: 36, ev: "Returned",           last: "01/03/2026 15:41:29" },
 ];
 
@@ -92,9 +92,23 @@ function asBucketLabels(days, bucketDays, n) {
 const AS_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const asDate = (d) => `${asPad(d.getDate())}/${asPad(d.getMonth() + 1)}/${d.getFullYear()}`;
 
+// ── refinement filters (priority / area / alarm group) ──
+// The TIME RANGE is the historian query and needs Search. These three are a refinement of the
+// set that came back, so they apply live — the operator is slicing data already on screen.
+const AS_LOCS = [...new Set(AS_REG.map((r) => r.loc))].sort();
+function asSubsFor(loc) { return [...new Set(AS_REG.filter((r) => !loc || r.loc === loc).map((r) => r.sub))].sort(); }
+function asSelMatch(r, sel) {
+  if (!sel) return true;
+  if (sel.levels && sel.levels.length && !sel.levels.includes(r.level)) return false;
+  if (sel.loc && r.loc !== sel.loc) return false;
+  if (sel.sub && r.sub !== sel.sub) return false;
+  return true;
+}
+const asSelOn = (sel) => !!sel && (!!(sel.levels || []).length || !!sel.loc || !!sel.sub);
+
 // build every derived dataset for a period from the register
-function asBuild(field, days, scale) {
-  const rows = AS_REG.map((r) => ({ ...r, n: Math.max(0, Math.round((r[field] || 0) * (scale == null ? 1 : scale))) })).filter((r) => r.n > 0);
+function asBuild(field, days, scale, sel) {
+  const rows = AS_REG.filter((r) => asSelMatch(r, sel)).map((r) => ({ ...r, n: Math.max(0, Math.round((r[field] || 0) * (scale == null ? 1 : scale))) })).filter((r) => r.n > 0);
   const total = rows.reduce((s, r) => s + r.n, 0);
   const byLevel = {};
   rows.forEach((r) => { byLevel[r.level] = (byLevel[r.level] || 0) + r.n; });
@@ -617,28 +631,48 @@ const AS_PRESETS = [
   { k: "30d", label: "Last 30 days", days: 30 },
 ];
 const AS_RANGE0 = { preset: "7d", from: AS_BACK(7), to: AS_ISO(AS_END), t0: "00:00", t1: "23:59" };
+// Night is the window Lerøy asked for by name: what wakes the duty phone. It wraps midnight,
+// which is why asHours() below adds 24 to a negative span instead of falling back to a full day.
+const AS_TOD = [
+  { k: "all",   label: "All day",     t0: "00:00", t1: "23:59" },
+  { k: "day",   label: "Day 06–22",   t0: "06:00", t1: "22:00" },
+  { k: "night", label: "Night 22–06", t0: "22:00", t1: "06:00" },
+];
+const AS_SEL0 = { levels: [], loc: "", sub: "" };
 
 function AlarmStatisticsScreen() {
   const [f, setF] = React.useState(AS_RANGE0);
   const [applied, setApplied] = React.useState(AS_RANGE0);
+  const [sel, setSel] = React.useState(AS_SEL0);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value, preset: "custom" }));
   const pickPreset = (p) => {
-    const next = { preset: p.k, from: AS_BACK(p.days), to: AS_ISO(AS_END), t0: "00:00", t1: "23:59" };
+    const next = { preset: p.k, from: AS_BACK(p.days), to: AS_ISO(AS_END), t0: applied.t0, t1: applied.t1 };
     setF(next); setApplied(next);
   };
+  const pickTod = (t) => { const next = { ...f, t0: t.t0, t1: t.t1 }; setF(next); setApplied(next); };
+  const tod = (AS_TOD.find((t) => t.t0 === applied.t0 && t.t1 === applied.t1) || {}).k;
+  const toggleLevel = (l) => setSel((s) => ({ ...s, levels: s.levels.includes(l) ? s.levels.filter((x) => x !== l) : s.levels.concat([l]) }));
+  const subOpts = asSubsFor(sel.loc);
   const span = React.useMemo(() => {
     const d = Math.round((new Date(applied.to) - new Date(applied.from)) / 864e5) + 1;
     return Math.max(1, isFinite(d) ? d : 7);
   }, [applied]);
   const hours = React.useMemo(() => {
     const h = (s) => { const [H, M] = (s || "0:0").split(":").map(Number); return (H || 0) + (M || 0) / 60; };
-    const v = h(applied.t1) - h(applied.t0);
-    return Math.max(0.5, Math.min(24, v <= 0 ? 24 : v + (applied.t1 === "23:59" ? 1 / 60 : 0)));
+    let v = h(applied.t1) - h(applied.t0) + (applied.t1 === "23:59" ? 1 / 60 : 0);
+    if (v <= 0) v += 24; // a window that wraps midnight (Night 22:00→06:00) is 8 h, not 24
+    return Math.max(0.5, Math.min(24, v));
   }, [applied]);
   const field = span <= 8 ? "week" : "month";
   const scale = (span / (field === "week" ? 7 : 28)) * (hours / 24);
-  const data = React.useMemo(() => asBuild(field, span, scale), [field, span, scale]);
-  const prev = React.useMemo(() => asBuild(field, span, scale * 0.86).total, [field, span, scale]);
+  const data = React.useMemo(() => asBuild(field, span, scale, sel), [field, span, scale, sel]);
+  const prev = React.useMemo(() => asBuild(field, span, scale * 0.86, sel).total, [field, span, scale, sel]);
+  // chip counts read the set the OTHER two filters allow, so a count never contradicts the click
+  const lvlCounts = React.useMemo(() => {
+    const m = {};
+    asBuild(field, span, scale, { levels: [], loc: sel.loc, sub: sel.sub }).rows.forEach((r) => { m[r.level] = (m[r.level] || 0) + r.n; });
+    return m;
+  }, [field, span, scale, sel.loc, sel.sub]);
   const dirty = JSON.stringify(f) !== JSON.stringify(applied);
   // A range that ends before it starts is not a filter, it is a typo. The inputs constrain each
   // other (and cap at today — this is a historical register, there is nothing to count ahead of
@@ -680,6 +714,9 @@ function AlarmStatisticsScreen() {
           <span className="fbar-div" />
           <span className="fbar-group">
             <span className="lbl"><Icon name="clock" size={16} color="var(--slate-500)" /> Time of day</span>
+            <div className="segmented">
+              {AS_TOD.map((t) => <button key={t.k} className={"seg" + (tod === t.k && !dirty ? " active" : "")} onClick={() => pickTod(t)}>{t.label}</button>)}
+            </div>
             <span className="fbar-pair">
               <span className="dateinput"><input type="time" aria-label="Time of day from" value={f.t0} onChange={set("t0")} /></span>
               <Icon name="arrow-right" size={14} color="var(--slate-400)" />
@@ -692,9 +729,39 @@ function AlarmStatisticsScreen() {
             <ExportMenu describe={(fmt) => "Download started: alarm statistics will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
+        <div className="filterbar as-fbar2">
+          <span className="fbar-group">
+            <span className="lbl"><Icon name="alert-triangle" size={16} color="var(--slate-500)" /> Priority</span>
+            <div className="as-chips">
+              {STAT_LEGEND.map((l) => (
+                <button key={l.level} className={"as-chip" + (sel.levels.includes(l.level) ? " on" : "")} aria-pressed={sel.levels.includes(l.level)}
+                  onClick={() => toggleLevel(l.level)} title={"Show " + l.label.toLowerCase() + " only"}>
+                  <span className="legend-dot" style={{ background: statColor(l.level) }} /> {l.label}
+                  <span className="as-chip-n data">{(lvlCounts[l.level] || 0).toLocaleString("nb-NO")}</span>
+                </button>
+              ))}
+            </div>
+          </span>
+          <span className="fbar-div" />
+          <span className="fbar-group">
+            <span className="lbl"><Icon name="building-2" size={16} color="var(--slate-500)" /> Area</span>
+            <select className="nj-select" value={sel.loc} onChange={(e) => setSel((s) => ({ ...s, loc: e.target.value, sub: "" }))}>
+              <option value="">All areas</option>
+              {AS_LOCS.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </span>
+          <span className="fbar-group">
+            <span className="lbl">Alarm group</span>
+            <select className="nj-select" value={sel.sub} onChange={(e) => setSel((s) => ({ ...s, sub: e.target.value }))}>
+              <option value="">{sel.loc ? "All groups in " + sel.loc : "All alarm groups"}</option>
+              {subOpts.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </span>
+          {asSelOn(sel) && <button className="linkbtn" style={{ marginLeft: "auto" }} onClick={() => setSel(AS_SEL0)}>Clear filters</button>}
+        </div>
         <div className="as-range">
           <Icon name="info" size={14} color="var(--slate-400)" />
-          <span>{data.total.toLocaleString("nb-NO")} activations · {asDate(new Date(applied.from))} → {asDate(new Date(applied.to))} · {span} days · {applied.t0}–{applied.t1}{data.bucketDays > 1 ? " · grouped by " + data.bucket.toLowerCase() : ""}</span>
+          <span>{data.total.toLocaleString("nb-NO")} activation{data.total === 1 ? "" : "s"} · {asDate(new Date(applied.from))} → {asDate(new Date(applied.to))} · {span} days · {tod === "night" ? "nights " : tod === "day" ? "daytime " : ""}{applied.t0}–{applied.t1}{data.bucketDays > 1 ? " · grouped by " + data.bucket.toLowerCase() : ""}{asSelOn(sel) ? " · filtered" : ""}</span>
           {dirty && <span className="as-dirty">{rangeBad ? "End date is before the start date" : "Filter changed: press Search to apply"}</span>}
         </div>
       </div>
@@ -708,6 +775,12 @@ function AlarmStatisticsScreen() {
             <NjSkeleton variant="chart" height={220} note={"Querying the alarm historian · " + span + (span === 1 ? " day" : " days") + "…"} />
           </div>
         </React.Fragment>
+      ) : data.total === 0 ? (
+        <div className="card">
+          <NjEmpty icon="bell-off" title="No activations match these filters"
+            body="Nothing in the alarm register activated in this range under the priority, area and group you picked."
+            action={asSelOn(sel) ? <button className="btn btn-secondary btn-sm" onClick={() => setSel(AS_SEL0)}>Clear filters</button> : null} />
+        </div>
       ) : (
         <React.Fragment>
           <AsSummary data={data} prev={prev} />
