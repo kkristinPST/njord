@@ -140,9 +140,9 @@ function HxLoop({ oy, c }) {
       {pipes.map((p, i) => <path key={"hp" + oy + i} d={p.d} className={"rasm-pipe fl-" + p.k} />)}
 
       {/* inlets */}
-      <Flag x={40} y={Y(20)} label="Spedevann" dir="r" />
-      <Flag x={40} y={Y(150)} label="Toppveksler" dir="r" />
-      <Flag x={40} y={Y(195)} label="Spylevann" dir="r" />
+      <Flag x={40} y={Y(20)} label="Make-up water" dir="r" />
+      <Flag x={40} y={Y(150)} label="Top exchanger" dir="r" />
+      <Flag x={40} y={Y(195)} label="Flush water" dir="r" />
       <HxRota cx={315} cy={Y(212)} />
 
       {/* emergency water valve */}
@@ -151,7 +151,7 @@ function HxLoop({ oy, c }) {
       </Eq>
       <HxCheck cx={628} cy={Y(37)} />
       <ModeChip x={640} y={Y(29)} mode="M" />
-      <Tag2 x={597} y={Y(2)} tag={`DPT1-ENS${c.n}-V1`} desc={["Nødvann ventil"]} />
+      <Tag2 x={597} y={Y(2)} tag={`DPT1-ENS${c.n}-V1`} desc={["Emergency water valve"]} />
 
       {/* pump sump + agitator */}
       <Eq title={`Pump sump · DPT1-SMP${c.n}`} onClick={open(`DPT1-SMP${c.n}`)}><SumpBasin x={360} y={Y(165)} w={190} h={95} /></Eq>
@@ -160,15 +160,15 @@ function HxLoop({ oy, c }) {
         <SymMotor cx={415} cy={Y(167)} s={0.42} running={run} />
       </Eq>
       <RD x={456} y={Y(292)} w={70} value={c.smpLt} unit="cm" tag={`DPT1-SMP${c.n}-LT1`} name="Level pump sump" group="Hatchery" />
-      <Tag2 x={491} y={Y(324)} tag={`DPT1-SMP${c.n}-LT1`} desc={["Nivå sensor", "pumpesump"]} />
-      <RD x={456} y={Y(346)} w={70} value={c.smpTt} unit="°C" tag={`DPT1-SMP${c.n}-TT1`} name="Temperature pump sump" group="Hatchery" />
+      <Tag2 x={491} y={Y(338)} tag={`DPT1-SMP${c.n}-LT1`} desc={["Level sensor", "pump sump"]} />
+      <RD x={456} y={Y(372)} w={70} value={c.smpTt} unit="°C" tag={`DPT1-SMP${c.n}-TT1`} name="Pump sump temperature" group="Hatchery" />
 
       {/* circulation pump */}
       <Eq title={`Circulation pump · DPT1-SMP${c.n}-PU1`} onClick={open(`DPT1-SMP${c.n}-PU1`)}><SymPump cx={690} cy={Y(210)} running={run} /></Eq>
       <ModeChip x={650} y={Y(202)} mode={mode} />
       <SymTrend cx={722} cy={Y(210)} tag={`DPT1-SMP${c.n}-PU1`} name="Circulation pump" group="Hatchery" running={run} />
       <RD x={657} y={Y(158)} value={c.circHz} unit="Hz" tag={`DPT1-SMP${c.n}-PU1`} name="Circulation pump speed" group="Hatchery" />
-      <Tag2 x={690} y={Y(122)} tag={`DPT1-SMP${c.n}-PU1`} desc={["Sirkulasjon pumpe"]} />
+      <Tag2 x={690} y={Y(122)} tag={`DPT1-SMP${c.n}-PU1`} desc={["Circulation pump"]} />
 
       {/* flow meter */}
       <RD x={857} y={Y(83)} w={72} value={c.flow} unit="l/m" tag={`DPT1-SMP${c.n}-FT1`} name="Circulation flow" group="Hatchery" />
@@ -181,22 +181,22 @@ function HxLoop({ oy, c }) {
       {/* vacuum degasser */}
       <Eq title={`Vacuum degasser · DPT1-STR${c.n}`} onClick={open(`DPT1-STR${c.n}`)}><StripperColumn x={1167} y={Y(72)} w={94} h={112} /></Eq>
       <RD x={1181} y={Y(196)} w={66} value={c.str} unit="cm" tag={`DPT1-STR${c.n}-LT1`} name="Level vacuum degasser" group="Hatchery" />
-      <Tag2 x={1214} y={Y(228)} tag={`DPT1-STR${c.n}-LT1`} desc={["Nivå sensor", "vacuum lufter"]} />
+      <Tag2 x={1214} y={Y(242)} tag={`DPT1-STR${c.n}-LT1`} desc={["Level sensor", "vacuum lufter"]} />
 
       {/* heat-exchanger circulation pumps */}
       <Eq title={`Top exchanger pump · DPT1-ENS${c.n}-PU1`} onClick={open(`DPT1-ENS${c.n}-PU1`)}><SymPump cx={690} cy={Y(268)} running={run} s={1} /></Eq>
       <ModeChip x={650} y={Y(260)} mode={mode} />
       <SymTrend cx={722} cy={Y(268)} tag={`DPT1-ENS${c.n}-PU1`} name="Top exchanger pump" group="Hatchery" running={run} />
-      <RD x={657} y={Y(226)} value={c.topHz} unit="Hz" tag={`DPT1-ENS${c.n}-PU1`} name="Top exchanger pump speed" group="Hatchery" />
-      <Tag2 x={690} y={Y(292)} tag={`DPT1-ENS${c.n}-PU1`} desc={["Pumpe toppveksler"]} />
-      <Flag x={800} y={Y(251)} label="Toppveksler" dir="r" />
+      <RD x={560} y={Y(256)} value={c.topHz} unit="Hz" tag={`DPT1-ENS${c.n}-PU1`} name="Top exchanger pump speed" group="Hatchery" />
+      <Tag2 x={690} y={Y(297)} tag={`DPT1-ENS${c.n}-PU1`} desc={["Top exchanger pump"]} />
+      <Flag x={800} y={Y(251)} label="Top exchanger" dir="r" />
 
       <Eq title={`Drain exchanger pump · DPT1-ENS${c.n}-PU2`} onClick={open(`DPT1-ENS${c.n}-PU2`)}><SymPump cx={690} cy={Y(352)} running={run} s={1} /></Eq>
       <ModeChip x={650} y={Y(344)} mode={mode} />
       <SymTrend cx={722} cy={Y(352)} tag={`DPT1-ENS${c.n}-PU2`} name="Drain exchanger pump" group="Hatchery" running={run} />
       <RD x={657} y={Y(378)} value={c.avlHz} unit="Hz" tag={`DPT1-ENS${c.n}-PU2`} name="Drain exchanger pump speed" group="Hatchery" />
-      <Tag2 x={690} y={Y(418)} tag={`DPT1-ENS${c.n}-PU2`} desc={["Pumpe avløpsveksler"]} />
-      <Flag x={800} y={Y(335)} label="Avløpsveksler" dir="r" />
+      <Tag2 x={690} y={Y(418)} tag={`DPT1-ENS${c.n}-PU2`} desc={["Drain exchanger pump"]} />
+      <Flag x={800} y={Y(335)} label="Drain exchanger" dir="r" />
     </g>
   );
 }

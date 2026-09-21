@@ -146,7 +146,7 @@ function FishSummaryView() {
         </div>
       </div>
       <div className="tank-toolbar">
-        <ExportMenu describe={(fmt) => "Export started: fish summary will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+        <ExportMenu describe={(fmt) => "Download started: fish summary will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
         <button className="btn btn-secondary"><Icon name="file-text" size={16} /> Fish report</button>
       </div>
 

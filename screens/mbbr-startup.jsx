@@ -669,7 +669,7 @@ function MbbrStartupScreen({ tab, onTab }) {
           </div>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
             <button className="btn btn-secondary" onClick={() => openDialog(<MbProcedureDialog circ={circ} />)}><Icon name="list-checks" size={16} /> Startup procedure</button>
-            <ExportMenu label="Download" describe={(fmt) => "Download started: MBBR startup log · " + deptLabel + " will save as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <ExportMenu label="Download" describe={(fmt) => "Download started: biofilter maturation log · " + deptLabel + " will save as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
       </div>
@@ -727,7 +727,7 @@ function MbbrStartupScreen({ tab, onTab }) {
                 {measCols.map((m) => (
                   <th key={m.id} className="cm-th-v" title={m.label + (m.unit ? " · " + m.unit : "")}>
                     <span className="cm-th-vin"><span className="nocaps">{m.label}{m.unit ? " · " + m.unit : ""}</span>
-                      <TrendBtn className="cm-trendbtn" id={`MB-${deptId}-${m.id}`.toUpperCase()} name={`${m.label} · MBBR maturation`} unit={m.unit} value={last && last.meas[m.id] != null ? last.meas[m.id] : 1} group={"Biofilter maturation · " + deptLabel} title={`Send ${m.label} to trends`} />
+                      <TrendBtn className="cm-trendbtn" id={`MB-${deptId}-${m.id}`.toUpperCase()} name={`${m.label} · Biofilter maturation`} unit={m.unit} value={last && last.meas[m.id] != null ? last.meas[m.id] : 1} group={"Biofilter maturation · " + deptLabel} title={`Send ${m.label} to trends`} />
                     </span>
                   </th>
                 ))}
@@ -735,7 +735,7 @@ function MbbrStartupScreen({ tab, onTab }) {
                 {autoCols.map((a) => (
                   <th key={a.id} className="cm-th-v" title={a.label + (a.unit ? " · " + a.unit : "") + " · " + a.tag}>
                     <span className="cm-th-vin"><span className="nocaps">{a.label}{a.unit ? " · " + a.unit : ""}</span>
-                      <TrendBtn className="cm-trendbtn" id={a.tag} name={a.label} unit={a.unit} value={a.base} group={"MBBR · " + deptLabel} title={"Send " + a.label + " to trends"} />
+                      <TrendBtn className="cm-trendbtn" id={a.tag} name={a.label} unit={a.unit} value={a.base} group={"Biofilter maturation · " + deptLabel} title={"Send " + a.label + " to trends"} />
                     </span>
                     <span className="mb-tag data">{a.tag}</span>
                   </th>

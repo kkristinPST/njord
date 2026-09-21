@@ -92,67 +92,67 @@ function EnergyPlantMimic() {
       {EPM_JOINTS.map((j, i) => <circle key={"ej" + i} cx={j.x} cy={j.y} r={4.2} className={"epm-joint epm-" + j.k} />)}
 
       {/* ───── raw-water intake ───── */}
-      <Flag x={95} y={133} label="Råvann" dir="r" />
+      <Flag x={95} y={133} label="Raw water" dir="r" />
       <Eq title="Raw water pump · WIN0-PBS0-PU1" onClick={pumpEq("WIN0-PBS0-PU1", "Raw water pump", "31")}><SymPump cx={345} cy={150} running={true} /></Eq>
       <ModeChip x={298} y={142} mode="A" />
       <SymTrend cx={378} cy={150} tag="WIN0-PBS0-PU1" name="Raw water pump" group="Energy Plant" running={true} />
       <RD x={307} y={100} value="31" unit="Hz" tag="WIN0-PBS0-PU1" name="Raw water pump speed" group="Energy Plant" />
-      <Tag2 x={345} y={64} tag="WIN0-PBS0-PU1" desc={["Råvannspumpe"]} />
+      <Tag2 x={345} y={64} tag="WIN0-PBS0-PU1" desc={["Raw water pump"]} />
 
       <RD x={463} y={38} w={92} value="9.2" unit="°C" tag="WIN0-PBS0-TT1" name="Raw water temperature" group="Energy Plant" />
-      <Tag2 x={509} y={6} tag="WIN0-PBS0-TT1" desc={["Råvanns temperatur"]} />
+      <Tag2 x={509} y={6} tag="WIN0-PBS0-TT1" desc={["Raw water temperature"]} />
       <RD x={463} y={112} w={92} value="2.42" unit="bar" tag="WIN0-PBS0-PT1" name="Raw water pressure" group="Energy Plant" />
-      <Tag2 x={509} y={80} tag="WIN0-PBS0-PT1" desc={["Råvanns trykk"]} />
+      <Tag2 x={509} y={80} tag="WIN0-PBS0-PT1" desc={["Raw water pressure"]} />
 
       <ExpVessel x={696} y={26} />
-      <Flag x={1745} y={40} label="Startføring" dir="r" />
-      <Flag x={1745} y={92} label="Spylevann" dir="r" />
+      <Flag x={1745} y={40} label="Start-Feeding" dir="r" />
+      <Flag x={1745} y={92} label="Flush water" dir="r" />
 
       {/* ───── plate heat exchangers ───── */}
       <PlateHX x={300} y={180} w={105} h={150} />
-      <Flag x={110} y={189} label="Spedevann" dir="r" />
-      <Flag x={445} y={189} label="Avløp" dir="r" />
-      <Flag x={105} y={305} label="Avløpsvann" dir="r" />
+      <Flag x={110} y={189} label="Make-up water" dir="r" />
+      <Flag x={445} y={189} label="Drain" dir="r" />
+      <Flag x={105} y={305} label="Drain water" dir="r" />
 
       <PlateHX x={300} y={365} w={105} h={205} />
-      <Flag x={110} y={378} label="Toppveksler tur" dir="r" />
-      <RD x={140} y={430} w={76} value="14.4" unit="°C" tag="DPT1-SMP1-TT1" name="Temperature pump sump" group="Energy Plant" />
-      <Tag2 x={178} y={459} tag="DPT1-SMP1-TT1" desc={["Temperatur sensor", "pumpesump"]} />
-      <Flag x={110} y={548} label="Toppveksler retur" dir="r" />
+      <Flag x={110} y={378} label="Top exchanger supply" dir="r" />
+      <RD x={140} y={430} w={76} value="14.4" unit="°C" tag="DPT1-SMP1-TT1" name="Pump sump temperature" group="Energy Plant" />
+      <Tag2 x={178} y={476} tag="DPT1-SMP1-TT1" desc={["Temperature sensor", "pump sump"]} />
+      <Flag x={110} y={548} label="Top exchanger return" dir="r" />
 
       <PlateHX x={300} y={620} w={105} h={340} cells={2} />
-      <Flag x={110} y={629} label="Spedevann" dir="r" />
-      <Flag x={445} y={629} label="Avløp" dir="r" />
-      <Flag x={105} y={740} label="Avløpsvann" dir="r" />
-      <Flag x={110} y={800} label="Toppveksler tur" dir="r" />
-      <RD x={140} y={852} w={76} value="9.8" unit="°C" tag="DPT1-SMP2-TT1" name="Temperature pump sump" group="Energy Plant" />
-      <Tag2 x={178} y={881} tag="DPT1-SMP2-TT1" desc={["Temperatur sensor", "pumpesump"]} />
-      <Flag x={110} y={928} label="Toppveksler retur" dir="r" />
+      <Flag x={110} y={629} label="Make-up water" dir="r" />
+      <Flag x={445} y={629} label="Drain" dir="r" />
+      <Flag x={105} y={740} label="Drain water" dir="r" />
+      <Flag x={110} y={800} label="Top exchanger supply" dir="r" />
+      <RD x={140} y={852} w={76} value="9.8" unit="°C" tag="DPT1-SMP2-TT1" name="Pump sump temperature" group="Energy Plant" />
+      <Tag2 x={178} y={898} tag="DPT1-SMP2-TT1" desc={["Temperature sensor", "pump sump"]} />
+      <Flag x={110} y={928} label="Top exchanger return" dir="r" />
 
       {/* ───── top-exchanger shunt valves ───── */}
       <Eq title="Shunt valve top exchanger · DPT1-ENS1-RV1" onClick={valveEq("DPT1-ENS1-RV1", "Shunt valve top exchanger", "100.4")}><SymValve cx={645} cy={400} running={true} /></Eq>
       <ModeChip x={664} y={392} mode="A" />
       <RD x={612} y={353} w={66} value="100.4" unit="%" tag="DPT1-ENS1-RV1" name="Shunt valve top exchanger" group="Energy Plant" />
-      <Tag2 x={560} y={432} tag="DPT1-ENS1-RV1" desc={["Shunt ventil toppveksler"]} anchor="start" />
+      <Tag2 x={560} y={432} tag="DPT1-ENS1-RV1" desc={["Shunt valve top exchanger"]} anchor="start" />
 
       <Eq title="Shunt valve top exchanger · DPT1-ENS2-RV1" onClick={valveEq("DPT1-ENS2-RV1", "Shunt valve top exchanger", "0.2")}><SymValve cx={645} cy={817} running={true} /></Eq>
       <ModeChip x={664} y={809} mode="A" />
       <RD x={612} y={770} w={66} value="0.2" unit="%" tag="DPT1-ENS2-RV1" name="Shunt valve top exchanger" group="Energy Plant" />
-      <Tag2 x={560} y={847} tag="DPT1-ENS2-RV1" desc={["Shunt ventil toppveksler"]} anchor="start" />
+      <Tag2 x={560} y={847} tag="DPT1-ENS2-RV1" desc={["Shunt valve top exchanger"]} anchor="start" />
 
       {/* ───── glycol circulation ───── */}
       <Eq title="Circulation pump glycol · DPT1-ENS0-PU1" onClick={pumpEq("DPT1-ENS0-PU1", "Circulation pump glycol heat pump", "50")}><SymPump cx={945} cy={400} running={true} /></Eq>
       <ModeChip x={898} y={392} mode="A" />
       <SymTrend cx={978} cy={400} tag="DPT1-ENS0-PU1" name="Circulation pump glycol heat pump" group="Energy Plant" running={true} />
       <RD x={912} y={353} value="50" unit="Hz" tag="DPT1-ENS0-PU1" name="Circulation pump speed" group="Energy Plant" />
-      <Tag2 x={945} y={300} tag="DPT1-ENS0-PU1" desc={["Sirkulasjonspumpe", "glykol varmepumpe"]} />
+      <Tag2 x={945} y={300} tag="DPT1-ENS0-PU1" desc={["Circulation pump", "glycol heat pump"]} />
 
       <RD x={1108} y={352} w={100} value="1.29" unit="bar" tag="DPT1-ENS0-PT2" name="Pressure glycol top exchanger" group="Energy Plant" />
-      <Tag2 x={1158} y={302} tag="DPT1-ENS0-PT2" desc={["Trykk sensor glykol", "toppveksler"]} />
+      <Tag2 x={1158} y={302} tag="DPT1-ENS0-PT2" desc={["Glycol pressure sensor", "top exchanger"]} />
       <RD x={1330} y={352} w={90} value="5.2" unit="°C" tag="DPT1-ENS0-TT4" name="Temp glycol top exchanger return" group="Energy Plant" />
-      <Tag2 x={1375} y={302} tag="DPT1-ENS0-TT4" desc={["Temperatur sensor", "glykol toppveksler retur"]} />
+      <Tag2 x={1375} y={302} tag="DPT1-ENS0-TT4" desc={["Temperature sensor", "glycol top exchanger return"]} />
       <RD x={1290} y={500} w={90} value="5.2" unit="°C" tag="DPT1-ENS0-TT3" name="Temp glycol top exchanger supply" group="Energy Plant" />
-      <Tag2 x={1335} y={447} tag="DPT1-ENS0-TT3" desc={["Temperatur sensor", "glykol toppveksler tur"]} />
+      <Tag2 x={1335} y={447} tag="DPT1-ENS0-TT3" desc={["Temperature sensor", "glycol top exchanger supply"]} />
 
       {/* ───── Refra heat pump ───── */}
       <Eq title="Refra heat pump · DPT1-ENS0" onClick={open("DPT1-ENS0")}>
@@ -165,25 +165,25 @@ function EnergyPlantMimic() {
 
       {/* ───── brine loop ───── */}
       <RD x={1690} y={345} w={96} value="2.14" unit="bar" tag="DPT1-ENS0-PT1" name="Pressure glycol brine loop" group="Energy Plant" />
-      <Tag2 x={1738} y={300} tag="DPT1-ENS0-PT1" desc={["Trykk sensor glykol", "brinesløyfe"]} anchor="start" />
+      <Tag2 x={1738} y={300} tag="DPT1-ENS0-PT1" desc={["Glycol pressure sensor", "brine loop"]} anchor="start" />
 
       <RD x={1615} y={393} value="30" unit="Hz" tag="DPT1-ENS0-PU2" name="Brine circulation pump speed" group="Energy Plant" />
       <Eq title="Circulation pump glycol brine loop · DPT1-ENS0-PU2" onClick={pumpEq("DPT1-ENS0-PU2", "Circulation pump glycol brine loop", "30")}><SymPump cx={1645} cy={445} running={true} /></Eq>
       <ModeChip x={1598} y={437} mode="A" />
       <SymTrend cx={1678} cy={445} tag="DPT1-ENS0-PU2" name="Circulation pump glycol brine loop" group="Energy Plant" running={true} />
-      <Tag2 x={1704} y={435} tag="DPT1-ENS0-PU2" desc={["Sirkulasjonspumpe", "glykol brinesløyfe"]} anchor="start" />
+      <Tag2 x={1704} y={435} tag="DPT1-ENS0-PU2" desc={["Circulation pump", "glycol brine loop"]} anchor="start" />
 
       <RD x={1690} y={520} w={90} value="13.9" unit="°C" tag="DPT1-ENS0-TT2" name="Temp glycol brine loop return" group="Energy Plant" />
-      <Tag2 x={1738} y={475} tag="DPT1-ENS0-TT2" desc={["Temperatur sensor", "glykol brinesløyfe retur"]} anchor="start" />
+      <Tag2 x={1738} y={475} tag="DPT1-ENS0-TT2" desc={["Temperature sensor", "glycol brine loop return"]} anchor="start" />
       <RD x={1470} y={500} w={90} value="14.0" unit="°C" tag="DPT1-ENS0-TT1" name="Temp glycol brine loop supply" group="Energy Plant" />
-      <Tag2 x={1515} y={455} tag="DPT1-ENS0-TT1" desc={["Temperatur sensor", "glykol brinesløyfe tur"]} />
+      <Tag2 x={1515} y={455} tag="DPT1-ENS0-TT1" desc={["Temperature sensor", "glycol brine loop supply"]} />
 
       <Eq title="Shunt valve brine loop · DPT1-ENS0-RV1" onClick={valveEq("DPT1-ENS0-RV1", "Shunt valve brine loop", "5.2")}><SymValve cx={1685} cy={620} running={true} /></Eq>
       <ModeChip x={1704} y={612} mode="A" />
       <RD x={1620} y={580} w={60} value="5.2" unit="%" tag="DPT1-ENS0-RV1" name="Shunt valve brine loop" group="Energy Plant" />
-      <Tag2 x={1748} y={617} tag="DPT1-ENS0-RV1" desc={["Shunt ventil brine sløyfe"]} anchor="start" />
+      <Tag2 x={1748} y={617} tag="DPT1-ENS0-RV1" desc={["Brine loop shunt valve"]} anchor="start" />
 
-      <Eq title="Brine loop · Brinesløyfe" onClick={open("DPT1-ENS0")}>
+      <Eq title="Brine loop" onClick={open("DPT1-ENS0")}>
         <rect className="rasm-box" x={1548} y={800} width={168} height={72} rx="6" />
       </Eq>
       <text className="rasm-flag" x={1632} y={841} textAnchor="middle" style={{ fontWeight: 700, fontSize: "18px" }}>Brinesløyfe</text>
@@ -191,7 +191,7 @@ function EnergyPlantMimic() {
   );
 }
 
-const EP_TABS2 = ["Heat pump", "Energy plant", "Raw water"];
+const EP_TABS2 = ["Heat pump", "Energy Plant", "Raw water"];
 const EP_PARAMS2 = {
   // Varmepumpe — heat-pump control (DPT1-ENS0)
   "Heat pump": [
@@ -209,12 +209,12 @@ const EP_PARAMS2 = {
     { l: "ENS0-RV1 · integral time", v: "90.0 s", edit: true },
   ],
   // Energianlegg — the two top-exchanger lines (ENS1, ENS2)
-  "Energy plant": [
+  "Energy Plant": [
     { h: "Line 1 · DPT1-ENS1" },
     { l: "Top-exchanger pump speed", v: "30.0 Hz", tag: "DPT1-ENS1-PU2", edit: true },
     { l: "Level sensor pump sump", v: "0.0 cm", tag: "DPT1-SMP1-LT1", trend: true },
     { l: "Desired level in pump sump", v: "48.0 cm", edit: true },
-    { l: "Temperature sensor pump sump", v: "14.5 °C", tag: "DPT1-SMP1-TT1", trend: true },
+    { l: "Pump sump temperature sensor", v: "14.5 °C", tag: "DPT1-SMP1-TT1", trend: true },
     { l: "Desired temperature in hatchery", v: "10.0 °C", edit: true },
     { l: "ENS1-PU2 · controller gain", v: "9.5", edit: true },
     { l: "ENS1-PU2 · integral time", v: "15.0 s", edit: true },
@@ -224,7 +224,7 @@ const EP_PARAMS2 = {
     { l: "Top-exchanger pump speed", v: "30.0 Hz", tag: "DPT1-ENS2-PU2", edit: true },
     { l: "Level sensor pump sump", v: "47.9 cm", tag: "DPT1-SMP2-LT1", trend: true },
     { l: "Desired level in pump sump", v: "48.0 cm", edit: true },
-    { l: "Temperature sensor pump sump", v: "10.1 °C", tag: "DPT1-SMP2-TT1", trend: true },
+    { l: "Pump sump temperature sensor", v: "10.1 °C", tag: "DPT1-SMP2-TT1", trend: true },
     { l: "Desired temperature in hatchery", v: "10.0 °C", edit: true },
     { l: "ENS2-PU2 · controller gain", v: "9.5", edit: true },
     { l: "ENS2-PU2 · integral time", v: "15.0 s", edit: true },

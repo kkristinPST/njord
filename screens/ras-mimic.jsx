@@ -203,35 +203,46 @@ function SumpBasin({ x, y, w, h }) {
 // Each run is tagged with the fluid it carries (see NJ_FLUIDS): proc = process water,
 // drain = backwash/effluent, gas = air & CO₂ off-gas, o2 = oxygen, chem = lye dosing.
 const RASM_PIPES = [
-  // inlet → backwash pumps + drum filters (riser offset left of the label column)
-  { k: "proc",  d: "M118,415 H214" },      // inlet trunk (level-before-filter sits inline here)
-  { k: "drain", d: "M118,300 V520" },      // riser feeding both backwash pumps
-  { k: "drain", d: "M118,300 H150" },      // riser → backwash pump 1
-  { k: "drain", d: "M118,520 H150" },      // riser → backwash pump 2
+  // inlet → drum filters. Legacy sheet: the fish-tank return runs through the
+  // level-before-filter instrument into a feed riser that enters each drum filter's left
+  // flank; the backwash pumps are NOT on it — they only supply each filter's spray line
+  // (their suction is off-sheet), and their runs cross the riser as they do on the legacy
+  { k: "proc",  d: "M147,415 H216" },
+  { k: "proc",  d: "M216,284 V530" },
+  { k: "proc",  d: "M216,284 H236" },
+  { k: "proc",  d: "M216,530 H236" },
   { k: "drain", d: "M150,300 H236" },      // backwash pump 1 → drum filter 1
   { k: "drain", d: "M150,520 H236" },      // backwash pump 2 → drum filter 2
-  // drum filters → bioreactor
-  { k: "proc", d: "M360,300 H392 V560" },
-  { k: "proc", d: "M360,470 H392" },
-  // blower cabinets → bioreactor (process air)
-  { k: "gas", d: "M470,408 V470" }, { k: "gas", d: "M602,408 V470" },
+  // drum filters → bioreactor: as on the legacy sheet, each box discharges from its own
+  // lower flank into a shared collector in the empty corridor right of the boxes, and ONE
+  // run enters the reactor's left wall at the lower filter's level
+  { k: "proc", d: "M298,538 H392" },
+  { k: "proc", d: "M298,318 H370 V538" },
+  // blower cabinets → bioreactor (process air) — out of the cabinet's left flank, down past
+  // the equipment label, then into the reactor top on the original riser line
+  { k: "gas", d: "M437,294 H410 V408 H470" }, { k: "gas", d: "M470,408 V470" },
+  { k: "gas", d: "M569,294 H542 V408 H602" }, { k: "gas", d: "M602,408 V470" },
   // bioreactor → CO₂ stripper
   { k: "proc", d: "M620,650 H700" },
   // CO₂ fans → stripper (off-gas extraction)
   { k: "gas", d: "M752,330 V556" }, { k: "gas", d: "M848,330 V556" },
   // stripper → pump sump
   { k: "proc", d: "M884,650 H904" },
-  // pump sump riser → oxygenation
-  { k: "proc", d: "M1052,604 V196 H1010" },
-  // oxygenation pumps → cone
-  { k: "proc", d: "M1052,150 H1150" }, { k: "proc", d: "M1052,250 H1108" },
-  // oxygen supply → cone dose valves
-  { k: "o2", d: "M1206,210 H1262" }, { k: "o2", d: "M1206,210 V150 H1262" },
-  // cone → fish tank outlet
-  { k: "proc", d: "M1232,260 V470 H1404" },
-  { k: "proc", d: "M1232,150 V96 H1404" },
+  // pump sump → oxygenation pump suction: riser up the left flank of the pump pair, into
+  // each pump's inlet, the pump sitting in-line on the run (legacy sheet: riser x=985.5)
+  { k: "proc", d: "M920,604 V150 H990" }, { k: "proc", d: "M920,250 H990" },
+  // oxygenation pumps → common discharge header → cone inlet (top neck)
+  { k: "proc", d: "M1030,150 H1180 V184" }, { k: "proc", d: "M1030,250 H1108 V150" },
+  // oxygen supply: header off the supply flag feeds BOTH dose valves in parallel (legacy
+  // sheet: tops off one header at y=199.5, outlets merged at y=315.8 into the cone shoulder)
+  { k: "o2", d: "M1450,112 H1266 V134" }, { k: "o2", d: "M1392,112 V134" },
+  { k: "o2", d: "M1392,166 V210 H1266" }, { k: "o2", d: "M1266,166 V210 H1187" },
+  // cone outlet (oxygenated water) → fish tanks
+  { k: "proc", d: "M1180,236 V250 H1404" }, { k: "proc", d: "M1232,250 V470 H1404" },
   // lye pumps → bioreactor loop
-  { k: "chem", d: "M150,705 H280 V650 H392" }, { k: "chem", d: "M260,815 H280" },
+  // lye pumps → bioreactor loop: header starts at the supply flag's tip, pump 2 rises
+  // into the header's corner rather than dead-ending beside it
+  { k: "chem", d: "M136,705 H280 V650 H392" }, { k: "chem", d: "M242,815 H280 V705" },
 ];
 
 function RasMimic() {
@@ -276,7 +287,7 @@ function RasMimic() {
       <Tag2 x={267} y={564} tag="DPT1-FIL2-FE1" desc={["Drum filter 2"]} />
 
       <RD x={150} y={398} w={66} value="16" unit="cm" tag="DPT1-FIL0-LT1" name="Level before filter" group="Filter" />
-      <Tag2 x={183} y={388} tag="DPT1-FIL0-LT1" desc={["Level before filter"]} />
+      <Tag2 x={160} y={444} tag="DPT1-FIL0-LT1" desc={["Level before filter"]} />
 
       {/* ───── LYE DOSING ───── */}
       <Flag x={40} y={688} label="Lye" dir="r" />
@@ -317,7 +328,7 @@ function RasMimic() {
 
       <Eq title="Bioreactor (MBBR)" onClick={open("DPT1-AEB0-BL1")}><Bioreactor x={392} y={470} w={228} h={180} /></Eq>
       <RD x={473} y={508} w={66} value="248" unit="cm" tag="DPT1-AEB0-LT1" name="Level in bioreactor" group="MBBR" />
-      <Tag2 x={506} y={498} tag="DPT1-AEB0-LT1" desc={["Level in bioreactor"]} />
+      <Tag2 x={506} y={554} tag="DPT1-AEB0-LT1" desc={["Level in bioreactor"]} />
 
       {/* ───── CO₂ STRIPPER ───── */}
       <Tag2 x={752} y={246} tag="DPT1-STR0-AV1" desc={["CO₂-fan 1"]} />
@@ -333,7 +344,7 @@ function RasMimic() {
       <SymTrend cx={878} cy={330} tag="DPT1-STR0-AV2" name="CO₂-fan 2" group="CO₂ Stripper" running={false} />
 
       <Eq title="CO₂ stripper column" onClick={open("DPT1-STR0-FAN")}><StripperColumn x={700} y={556} w={184} h={150} /></Eq>
-      <RD x={759} y={742} w={86} value="−14.4" unit="mbar" tag="DPT1-STR0-PT1" name="Vacuum in CO₂ stripping" group="CO₂ Stripper" />
+      <RD x={759} y={742} w={86} value="−14.4" unit="mbar" tag="DPT1-STR1-PT1" name="Vacuum in CO₂ stripping" group="CO₂ Stripper" />
       <Tag2 x={802} y={788} tag="DPT1-STR1-PT1" desc={["Vacuum in CO₂ stripping"]} />
 
       {/* ───── PUMP SUMP ───── */}
@@ -352,16 +363,16 @@ function RasMimic() {
       <Tag2 x={1100} y={708} tag="DPT1-SMP0-PU2" desc={["Lift pump 2"]} />
 
       <RD x={952} y={470} w={70} value="1.2" unit="mVs" tag="DPT1-SMP0-PT1" name="Fish tank pressure" group="Pump Sump" />
-      <Tag2 x={987} y={460} tag="DPT1-SMP0-PT1" desc={["Fish tank pressure"]} />
+      <Tag2 x={987} y={516} tag="DPT1-SMP0-PT1" desc={["Fish tank pressure"]} />
       <RD x={1098} y={470} w={66} value="8.7" unit="°C" tag="DPT1-SMP0-TT1" name="Pump sump temperature" group="Pump Sump" />
-      <Tag2 x={1131} y={460} tag="DPT1-SMP0-TT1" desc={["Pump sump temperature"]} />
+      <Tag2 x={1131} y={516} tag="DPT1-SMP0-TT1" desc={["Pump sump temperature"]} />
 
       {/* sensor cluster (right of sump) */}
       {[
-        { v: "4", u: "mg/l", tag: "DPT1-SMP0-QT1", d: "DPT1-SMP0-QT1 · CO₂ in pump sump" },
-        { v: "95.3", u: "%", tag: "DPT1-SMP0-OT1", d: "DPT1-SMP0-QT2 · O₂ in pump sump", accent: "var(--success-text)" },
-        { v: "6.9", u: "pH", tag: "DPT1-SMP0-PH1", d: "DPT1-SMP0-QT3 · pH 1 in pump sump" },
-        { v: "6.7", u: "pH", tag: "DPT1-SMP0-PH2", d: "DPT1-SMP0-QT4 · pH 2 in pump sump" },
+        { v: "4", u: "mg/L", tag: "DPT1-SMP0-QT1", d: "DPT1-SMP0-QT1 · CO₂ in pump sump" },
+        { v: "95.3", u: "%", tag: "DPT1-SMP0-QT2", d: "DPT1-SMP0-QT2 · O₂ in pump sump", accent: "var(--success-text)" },
+        { v: "6.9", u: "pH", tag: "DPT1-SMP0-QT3", d: "DPT1-SMP0-QT3 · pH 1 in pump sump" },
+        { v: "6.7", u: "pH", tag: "DPT1-SMP0-QT4", d: "DPT1-SMP0-QT4 · pH 2 in pump sump" },
         { v: "193", u: "cm", tag: "DPT1-SMP0-LT1", d: "DPT1-SMP0-LT1 · Level in pump sump" },
       ].map((s, i) => {
         const y = 606 + i * 33;
@@ -376,7 +387,7 @@ function RasMimic() {
 
       {/* ───── OXYGENATION ───── */}
       <Tag2 x={1010} y={78} tag="DPT1-DOX0-PU1" desc={["Oxygenation pump 1"]} anchor="middle" />
-      <RD x={977} y={106} value="0" unit="Hz" tag="DPT1-DOX0-PU1" name="Oxygenation pump 1 speed" group="Oxygenation" />
+      <RD x={977} y={99} value="0" unit="Hz" tag="DPT1-DOX0-PU1" name="Oxygenation pump 1 speed" group="Oxygenation" />
       <Eq title="Oxygenation pump 1" onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={150} running={false} /></Eq>
       <ModeChip x={970} y={142} mode="M" />
       <SymTrend cx={1040} cy={150} tag="DPT1-DOX0-PU1" name="Oxygenation pump 1" group="Oxygenation" running={false} />
@@ -388,19 +399,19 @@ function RasMimic() {
       <Tag2 x={1010} y={324} tag="DPT1-DOX0-PU2" desc={["Oxygenation pump 2"]} />
 
       <Eq title="O₂ cone" onClick={open("DPT1-DOX0")}><SymCone cx={1180} cy={210} s={1.15} /></Eq>
-      <RD x={1147} y={300} w={66} value="0.3" unit="bar" tag="DPT1-DOX0-PT1" name="Oxygen water pressure" group="Oxygenation" />
+      <RD x={1147} y={300} w={66} value="0.3" unit="bar" tag="DPT1-DOX1-PT1" name="Oxygen water pressure" group="Oxygenation" />
       <Tag2 x={1158} y={340} tag="DPT1-DOX1-PT1" desc={["Oxygen water pressure"]} />
 
       <Eq title="Base dose valve" onClick={open(njBuildEquip("DPT1-DOX1-SV1", "Base dose valve", "valve", { primary: { l: "Opening", v: "0", u: "%" }, readouts: [{ l: "Valve opening", v: "0", u: "%", tag: "DPT1-DOX1-SV1" }] }))}><SymValve cx={1266} cy={150} running={false} /></Eq>
       <ModeChip x={1282} y={142} mode="M" />
-      <Tag2 x={1266} y={190} tag="DPT1-DOX1-SV1" desc={["Base dose valve"]} />
+      <Tag2 x={1266} y={84} tag="DPT1-DOX1-SV1" desc={["Base dose valve"]} />
 
       <Eq title="Extra dose valve" onClick={open(njBuildEquip("DPT1-DOX1-SV2", "Extra dose valve", "valve", { primary: { l: "Opening", v: "0", u: "%" }, readouts: [{ l: "Valve opening", v: "0", u: "%", tag: "DPT1-DOX1-SV2" }] }))}><SymValve cx={1392} cy={150} running={false} /></Eq>
       <ModeChip x={1408} y={142} mode="M" />
-      <Tag2 x={1392} y={190} tag="DPT1-DOX1-SV2" desc={["Extra dose valve"]} />
+      <Tag2 x={1392} y={84} tag="DPT1-DOX1-SV2" desc={["Extra dose valve"]} />
 
       {/* ───── right-edge flags ───── */}
-      <Flag x={1404} y={80} label="Oxygen" dir="r" />
+      <Flag x={1450} y={80} label="Oxygen" dir="r" />
       <Flag x={1404} y={233} label="Fish tanks" dir="r" />
       <Flag x={1404} y={453} label="Fish tanks" dir="r" />
     </svg>

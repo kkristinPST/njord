@@ -475,7 +475,7 @@ function AlarmOverview({ data }) {
           <input placeholder={view === "Alarms per Location" ? "Filter location…" : "Filter alarm, tag, location…"} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div style={{ marginLeft: "auto" }}>
-          <ExportMenu describe={(fmt) => "Export started: " + view.toLowerCase() + " will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+          <ExportMenu describe={(fmt) => "Download started: " + view.toLowerCase() + " will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
         </div>
       </div>
       {view === "Alarms per Location" && <LocationTable data={data} q={q} onClear={() => setQ("")} />}
@@ -689,7 +689,7 @@ function AlarmStatisticsScreen() {
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
             <button className="btn btn-secondary" disabled={!dirty} onClick={() => setF(applied)}>Reset</button>
             <button className="btn btn-primary" disabled={!dirty || rangeBad} onClick={() => setApplied({ ...f })}><Icon name="search" size={16} /> Search</button>
-            <ExportMenu describe={(fmt) => "Export started: alarm statistics will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <ExportMenu describe={(fmt) => "Download started: alarm statistics will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
         <div className="as-range">

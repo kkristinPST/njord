@@ -1,6 +1,6 @@
 // hyflow.jsx — HyFlow™ subsurface feeding (Building 2 · Support systems · FED10).
 // Waterborne feed transport: pellets travel to the tanks IN WATER, not air. Built from the
-// legacy "FED10 · HyFlow Undervannsfôring" capture in the NJORD DS language.
+// legacy "FED10 · HyFlow underwater feeding" capture in the NJORD DS language.
 // Tank numbering follows THIS facility (Tank 1–3, tags FED01/02/03) rather than the capture's
 // Kar 13/14/15; the station keeps its FED10 tag.
 // Reuses globals: SymPump, SymValve, RD, Tag2, ModeChip, Eq, SymTrend (ras-mimic.jsx),

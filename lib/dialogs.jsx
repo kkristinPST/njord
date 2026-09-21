@@ -198,9 +198,9 @@ function ConfirmDialog({ title, message, detail, confirmLabel = "Confirm", tone 
 function HelpDialog() {
   const links = [
     { icon: "book-open", label: "SCADA Manual", sub: "Operating the process mimics & controls", onClick: () => openManual("scada") },
-    { icon: "utensils", label: "Feeding Manual", sub: "Feed maneuvers, dosing & schedules", onClick: () => openManual("feeding") },
+    { icon: "utensils", label: "Fish Feeding Manual", sub: "Feed maneuvers, dosing & schedules", onClick: () => openManual("feeding") },
     { icon: "life-buoy", label: "Create Ticket", sub: "Raise a support request to PST", onClick: () => openCreateTicket() },
-    { icon: "compass", label: "Discover Njord", sub: "What your package includes & further modules", onClick: () => window.openDiscover && window.openDiscover() },
+    { icon: "compass", label: "Discover NJORD", sub: "What your package includes & further modules", onClick: () => window.openDiscover && window.openDiscover() },
     { icon: "info", label: "About NJORD", sub: "Version, licence & release notes", onClick: () => openAbout() },
   ];
   return (

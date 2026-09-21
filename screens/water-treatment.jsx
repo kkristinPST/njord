@@ -77,8 +77,8 @@ const WTM_PIPES = [
   { k: "proc", d: "M728,271 V100 H1140 V345" },
   { k: "proc", d: "M1140,210 H1188" }, { k: "proc", d: "M1140,345 H1188" },
   { k: "proc", d: "M1262,210 H1300" }, { k: "proc", d: "M1262,345 H1300" },
-  // chiller stub
-  { k: "glycol", d: "M1126,388 V345" },
+  // chiller stub + chiller → shunt valve
+  { k: "glycol", d: "M1126,388 V345" }, { k: "glycol", d: "M1120,472 V509" },
   // bottom heat-control loop
   { k: "glycol", d: "M115,585 H224" }, { k: "glycol", d: "M276,585 H392" },
   { k: "glycol", d: "M115,700 H224" }, { k: "glycol", d: "M276,700 H620" },
@@ -146,8 +146,8 @@ function WaterTreatmentMimic() {
       </Eq>
       <Tag2 x={728} y={348} tag="WIN0-HEX0" desc={["Heat exchanger"]} />
 
-      <Tag2 x={620} y={208} tag="DPT0-WIN0-PT2" desc={["Pressure after", "filter skid"]} />
-      <RD x={590} y={238} value="1.8" unit="bar" tag="DPT0-WIN0-PT2" name="Pressure after filter skid" group="Filter Skid" />
+      <Tag2 x={620} y={222} tag="DPT0-WIN0-PT2" desc={["Pressure after", "filter skid"]} />
+      <RD x={590} y={252} value="1.8" unit="bar" tag="DPT0-WIN0-PT2" name="Pressure after filter skid" group="Filter Skid" />
 
       <Tag2 x={790} y={186} tag="DPT1-WIN0-TT2" desc={["Make-up water temp", "after exchanger"]} />
       <RD x={760} y={222} value="7.2" unit="°C" tag="DPT1-WIN0-TT2" name="Make-up water temp after exchanger" group="Heat Control" />
@@ -173,7 +173,7 @@ function WaterTreatmentMimic() {
 
       {/* ───── make-up water DPT2 ───── */}
       <Tag2 x={1076} y={255} tag="DPT2-ENS0-FT3" desc={["Make-up water", "flow: growth"]} />
-      <RD x={1044} y={301} w={66} value="9.4" unit="m³/h" tag="DPT2-ENS0-FT3" name="Make-up water flow: growth" group="Heat Control" />
+      <RD x={1104} y={301} w={66} value="9.4" unit="m³/h" tag="DPT2-ENS0-FT3" name="Make-up water flow: growth" group="Heat Control" />
       <Tag2 x={1245} y={255} tag="DPT2-ENS0-RV1" desc={["Make-up water valve", "growth"]} />
       <RD x={1213} y={301} w={58} value="32" unit="%" tag="DPT2-ENS0-RV1" name="Make-up water valve: growth" group="Heat Control" />
       <Eq title="Make-up valve DPT2" onClick={open(njBuildEquip("DPT2-ENS0-RV1", "Make-up water valve: growth", "valve", { primary: { l: "Opening", v: "32", u: "%" }, readouts: [{ l: "Valve opening", v: "32", u: "%", tag: "DPT2-ENS0-RV1" }] }))}>

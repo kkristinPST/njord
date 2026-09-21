@@ -1,4 +1,4 @@
-// discover.jsx — "Discover Njord": what this facility's licence includes, and which further
+// discover.jsx — "Discover NJORD": what this facility's licence includes, and which further
 // modules exist. Deliberately NOT a lock screen: additional modules are never rendered as
 // disabled navigation, greyed controls or fake feature screens — they are described in words,
 // in the same document language as the manuals (ManBlocks / man-lead / man-sec from manuals.jsx).
@@ -8,7 +8,7 @@
 const NJ_PACKAGE = {
   name: "SCADA",
   tier: "Basic",
-  includes: ["Dashboard", "Site Plan", "Alarms", "Maneuver History", "Reports", "Trends", "Settings"],
+  includes: ["Dashboard", "Site Plan", "Alarms", "Maneuver History", "Reports", "Trends (in Analytics)", "Settings"],
 };
 
 const NJ_MODULES = [
@@ -48,14 +48,14 @@ const NJ_MODULES = [
   {
     id: "analytics", icon: "line-chart", name: "Analytics",
     tagline: "Manual readings, commissioning sheets and biofilter maturation.",
-    caps: ["Data Entry", "Commissioning / Trial Period", "Biofilter Maturation (MBBR)"],
-    lead: "The structured record for everything the instruments do not measure themselves: manual rounds, the commissioning trial period, and the nitrogen chemistry of biofilter start-up.",
+    caps: ["Data Entry", "Commissioning", "Biofilter Maturation (MBBR)"],
+    lead: "The structured record for everything the instruments do not measure themselves: manual rounds, the commissioning period, and the nitrogen chemistry of biofilter start-up.",
     blocks: [
       { t: "note", x: "Trends is part of the SCADA Basic package, so you already have it. Analytics adds the registration and start-up tooling described below." },
       { t: "sub", x: "Included functionality" },
       { t: "defs", x: [
         ["Data Entry", "A register of manual measurement points organised by location: expected range per measurement, out-of-range marking, reading history, and full entry from the mobile app."],
-        ["Commissioning / Trial Period", "The commissioning log sheet: one row per round, one column per parameter, with the instrument-bucket comparison and the trend of each parameter through the trial."],
+        ["Commissioning", "The commissioning log sheet: one row per round, one column per parameter, with the instrument-bucket comparison and the trend of each parameter through the trial."],
         ["Biofilter Maturation (MBBR)", "Stoichiometric dosing model for biofilter start-up: nitrogen vitals per round, expected versus recorded chemical doses, and a pH strategy per department."],
       ] },
       { t: "sub", x: "Where it appears" },
@@ -90,7 +90,7 @@ function DiscoverModuleView({ mod, onBack }) {
       <div className="dlg-foot dlg-foot-split">
         {mod.manual
           ? <button className="btn btn-secondary" onClick={() => { closeDialog(); if (window.openManual) window.openManual(mod.manual); }}><Icon name="book-open" size={16} /> Read the manual</button>
-          : <span className="help-powered">Njord {NJ_PACKAGE.name} · {NJ_PACKAGE.tier}</span>}
+          : <span className="help-powered">NJORD {NJ_PACKAGE.name} · {NJ_PACKAGE.tier}</span>}
         <div style={{ display: "flex", gap: 10 }}>
           <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
           <button className="btn btn-primary" onClick={() => { closeDialog(); if (window.njToast) window.njToast("Request sent. Your Pure Salmon contact will be in touch about " + mod.name + "."); }}><Icon name="mail" size={16} /> Request information</button>
@@ -105,12 +105,12 @@ function DiscoverFeedback() {
   const send = () => {
     if (!v.trim()) return;
     setV("");
-    if (window.njToast) window.njToast("Thanks. Sent to the Njord product team.");
+    if (window.njToast) window.njToast("Thanks. Sent to the NJORD product team.");
   };
   return (
     <div className="dsc-fb">
       <div className="dsc-fb-t">Couldn't find what you need?</div>
-      <p className="dsc-fb-s">Tell us what functionality or capabilities would make Njord more useful for you.</p>
+      <p className="dsc-fb-s">Tell us what functionality or capabilities would make NJORD more useful for you.</p>
       <div className="dsc-fb-row">
         <input className="de-input dsc-fb-in" value={v} placeholder="e.g. oxygen cone efficiency per department" onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} />
         <button className="btn btn-secondary" disabled={!v.trim()} onClick={send}><Icon name="send" size={14} /> Send feedback</button>
@@ -124,7 +124,7 @@ function DiscoverDialog({ start }) {
   const mod = view ? NJ_MODULES.filter((x) => x.id === view)[0] : null;
   return (
     <Dialog width={720}>
-      <DlgHeader icon={mod ? mod.icon : "compass"} name={mod ? mod.name : "Discover Njord"} tag={mod ? "MODULE" : null} onClose={closeDialog} />
+      <DlgHeader icon={mod ? mod.icon : "compass"} name={mod ? mod.name : "Discover NJORD"} tag={mod ? "MODULE" : null} onClose={closeDialog} />
       {mod ? <DiscoverModuleView mod={mod} onBack={() => setView(null)} /> : (
       <React.Fragment>
       <div className="dlg-body dsc-body">
@@ -157,7 +157,7 @@ function DiscoverDialog({ start }) {
         <DiscoverFeedback />
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <span className="help-powered">Njord {NJ_PACKAGE.name} · {NJ_PACKAGE.tier}</span>
+        <span className="help-powered">NJORD {NJ_PACKAGE.name} · {NJ_PACKAGE.tier}</span>
         <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
       </div>
       </React.Fragment>

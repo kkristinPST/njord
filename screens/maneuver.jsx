@@ -1,15 +1,20 @@
 // maneuver.jsx — Maneuver History: operator-action & setpoint audit trail
 
 // Source filter — the only classification the system can derive reliably (who made the change).
+// It lives in the table's filterbar with per-option counts, like the Deactivation filter on the
+// alarm tables: it filters one list, it does not switch between views.
 // NOTE: maneuver "type" (setpoint / state / override) is deliberately NOT shown: the platform
 // cannot classify parameters reliably, so any type label would be misleading.
 const MVR_SOURCES = ["All", "Operator", "Automatic"];
 
-function MvrSourceTabs({ active, onPick }) {
+function MvrSourceSeg({ active, onPick, counts }) {
   return (
-    <div className="segmented">
-      {MVR_SOURCES.map((t) => <button key={t} className={"seg" + (t === active ? " active" : "")} onClick={() => onPick(t)}>{t}</button>)}
-    </div>
+    <span className="fbar-group">
+      <span className="lbl"><Icon name="sliders-horizontal" size={16} color="var(--slate-500)" /> Source</span>
+      <div className="segmented">
+        {MVR_SOURCES.map((t) => <button key={t} className={"seg" + (t === active ? " active" : "")} onClick={() => onPick(t)}>{t} <span className="seg-n">{counts[t]}</span></button>)}
+      </div>
+    </span>
   );
 }
 
@@ -55,12 +60,14 @@ function ManeuverHistoryScreen() {
   const [src, setSrc] = React.useState("All");
   const [q, setQ] = React.useState("");
   const ql = q.trim().toLowerCase();
-  const rows = MVR_LOG.filter((r) => {
-    const auto = r.op === "System";
-    if (src === "Operator" && auto) return false;
-    if (src === "Automatic" && !auto) return false;
-    return !ql || [r.t, r.area, r.tag, r.sig, r.from, r.to, r.op, r.cm || ""].join(" ").toLowerCase().includes(ql);
-  });
+  const matches = (r) => !ql || [r.t, r.area, r.tag, r.sig, r.from, r.to, r.op, r.cm || ""].join(" ").toLowerCase().includes(ql);
+  const base = MVR_LOG.filter(matches);
+  const counts = {
+    All: base.length,
+    Operator: base.filter((r) => r.op !== "System").length,
+    Automatic: base.filter((r) => r.op === "System").length,
+  };
+  const rows = base.filter((r) => src === "All" || (src === "Operator") === (r.op !== "System"));
   const manual = MVR_LOG.filter((r) => r.op !== "System").length;
   const pg = window.usePaged(rows, 25);
   return (
@@ -70,7 +77,6 @@ function ManeuverHistoryScreen() {
           <div>
             <p className="pagehead-sub">Operator action &amp; setpoint audit trail</p>
           </div>
-          <div className="pagehead-right"><MvrSourceTabs active={src} onPick={setSrc} /></div>
         </div>
       </div>
 
@@ -88,6 +94,8 @@ function ManeuverHistoryScreen() {
             <input placeholder="Filter tag, area, signal, comment, operator…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
           <span className="fbar-div" />
+          <MvrSourceSeg active={src} onPick={setSrc} counts={counts} />
+          <span className="fbar-div" />
           <span className="fbar-group">
             <span className="lbl"><Icon name="calendar" size={16} color="var(--slate-500)" /> Time Period</span>
             <span className="fbar-pair">
@@ -97,7 +105,7 @@ function ManeuverHistoryScreen() {
             </span>
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-            <ExportMenu describe={(fmt) => "Export started: maneuver log will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <ExportMenu describe={(fmt) => "Download started: maneuver log will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
 

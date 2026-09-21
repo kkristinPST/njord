@@ -133,7 +133,7 @@ function MortalityReport({ onBack }) {
         </div>
         <div className="bio-actions">
           <span className="select">Group by tank <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
-          <ExportMenu describe={(fmt) => "Export started: mortality report will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+          <ExportMenu describe={(fmt) => "Download started: mortality report will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
         </div>
       </div>
       <div className="kpi-row" style={{ marginBottom: 16 }}>

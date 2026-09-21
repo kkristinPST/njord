@@ -516,7 +516,7 @@ function ExportMenu({ label = "Download", icon = "download", primary, describe, 
   const cls = btnClass || ("btn " + (primary ? "btn-primary" : "btn-secondary"));
   const pick = (fmt) => {
     setOpen(false);
-    const msg = describe ? describe(fmt) : `Export started: the file will download as ${fmt === "csv" ? "CSV (.csv)" : "Excel (.xlsx)"}.`;
+    const msg = describe ? describe(fmt) : `Download started: the file will download as ${fmt === "csv" ? "CSV (.csv)" : "Excel (.xlsx)"}.`;
     njToast(msg);
   };
   return (

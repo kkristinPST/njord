@@ -728,14 +728,14 @@ function AlarmRationalizationScreen() {
             )}
             <button className="btn btn-secondary" onClick={() => openDialog(<RatnReportDialog stats={stats} review={stats.reviewDue} changes={njRatnHistory.total()} />)} title="Master Alarm Report · the signed snapshot of the register (ch. 7)"><Icon name="file-text" size={16} /> Report</button>
             <button className="btn btn-secondary" onClick={() => njToast("Import: select an .xlsx/.csv file to merge into the register.", "Choose file", () => njToast("No file selected (demo)."))}><Icon name="upload" size={16} /> Import</button>
-            <ExportMenu primary describe={(fmt) => `Export started: ${filtered.length.toLocaleString("nb-NO")} alarms (current filter) will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
+            <ExportMenu primary describe={(fmt) => `Download started: ${filtered.length.toLocaleString("nb-NO")} alarms (current filter) will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
           </div>
         </div>
 
         {/* bulk bar */}
         <BulkBar count={selInFiltered} onClear={sel.clear}>
           <RatnBulkEdit count={selInFiltered} onApply={bulkSet} />
-          <ExportMenu label="Download selected" btnClass="bb-btn" describe={(fmt) => `Export started: ${selInFiltered} selected alarm${selInFiltered > 1 ? "s" : ""} will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
+          <ExportMenu label="Download selected" btnClass="bb-btn" describe={(fmt) => `Download started: ${selInFiltered} selected alarm${selInFiltered > 1 ? "s" : ""} will download as ${fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx)."}`} />
         </BulkBar>
 
         {/* select-all-matching banner */}

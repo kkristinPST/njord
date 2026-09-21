@@ -56,14 +56,15 @@ function OvGauge({ x, y, title, items, max, dec = 1 }) {
 
 // fluid-tagged pipe network (NJ_FLUIDS)
 const OV_PIPES = [
-  { k: "o2",    d: "M136,95 H700 V250" },        // O₂ tank inlet → cone top
+  { k: "o2",    d: "M136,95 H660 V290 H703" },   // O₂ tank inlet → cone shoulder (clear of the readout)
+  { k: "gas",   d: "M395,182 H448 V240" },       // degasser off-gas → extraction fan
   { k: "raw",   d: "M136,320 H300" },            // raw water · EP → degasser
   { k: "proc",  d: "M360,450 V492" },            // degasser → oxygenation pump
   { k: "proc",  d: "M420,450 V470 H540 V492" },  // degasser → main pump
-  { k: "proc",  d: "M360,532 V560 H690 V376" },  // oxygenation pump → cone bottom
-  { k: "proc",  d: "M540,532 V548 H720 V376" },  // main pump → cone
-  { k: "proc",  d: "M760,312 H820" },            // cone → header sensors
-  { k: "proc",  d: "M960,300 H1090" },           // header → fish tank
+  { k: "proc",  d: "M360,532 V560 H690 V342" },  // oxygenation pump → cone bottom
+  { k: "proc",  d: "M540,532 V548 H720 V342" },  // main pump → cone bottom
+  { k: "proc",  d: "M711,312 H820" },            // cone → header sensors
+  { k: "proc",  d: "M886,300 H1090" },           // header sensors → fish tank
   { k: "proc",  d: "M1230,392 V530 H520 V566" }, // fish tank → sump (pre-filter)
   { k: "proc",  d: "M580,626 H630" },            // sump pre → drum filter
   { k: "proc",  d: "M740,626 H790" },            // drum filter → sump (post-filter)
@@ -118,7 +119,7 @@ function OvMimic() {
         <SymCone cx={705} cy={312} s={1.5} />
       </Eq>
       <RD x={672} y={250} w={66} value="2.67" unit="bar" tag="DPT2-DOX0-PT1" name="O₂ cone pressure" group="Overview" />
-      <Tag2 x={705} y={392} tag="DPT2-DOX0" desc={["O₂ cone"]} />
+      <Tag2 x={670} y={330} anchor="end" tag="DPT2-DOX0" desc={["O₂ cone"]} />
 
       {/* header sensors */}
       <RD x={820} y={252} w={66} value="11.6" unit="°C" tag="DPT2-SMP0-TT1" name="Header temperature" group="Overview" />
@@ -142,7 +143,7 @@ function OvMimic() {
       <RD x={477} y={586} w={66} value="52.8" unit="cm" tag="DPT2-SMP1-LT1" name="Sump pre-filter level" group="Overview" />
       <Tag2 x={510} y={702} tag="DPT2-SMP1" desc={["Sump · pre-filter"]} />
 
-      <Eq title="Drum Filter" onClick={ovEq("DPT2-FIL0", "Drum Filter", "drumfilter", { primary: { l: "Differential", v: "10", u: "cm" },
+      <Eq title="Drum filter" onClick={ovEq("DPT2-FIL0", "Drum filter", "drumfilter", { primary: { l: "Differential", v: "10", u: "cm" },
         readouts: [{ l: "Level before", v: "52.8", u: "cm" }, { l: "Level after", v: "42.4", u: "cm" }] })}>
         <OvVessel x={630} y={566} w={110} h={120} fill={0.5} />
       </Eq>

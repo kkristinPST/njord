@@ -167,7 +167,7 @@ function AlarmHistoricalScreen() {
             </span>
           </span>
           <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-            <ExportMenu describe={(fmt) => "Export started: alarm history will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <ExportMenu describe={(fmt) => "Download started: alarm history will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
         <div className="tbl-scroll">

@@ -19,7 +19,7 @@ function buildCommandIndex() {
     kind: "Screen", label: n.label,
     hint: "Go to screen", run: () => { if (n.id === "navigation" && window.__njGoPlan) window.__njGoPlan(); else if (window.__njNavigate) window.__njNavigate(n.id); },
   }));
-  ["Active", "All Alarms", "Historical", "Deactivated", "Statistics"].forEach((t) => items.push({
+  ["Active", "All Alarms", "Historical", "Statistics", "Deactivated", "Rationalization"].forEach((t) => items.push({
     kind: "Alarms", label: "Alarms · " + t, hint: "Open alarm list",
     run: () => { if (window.__njGoAlarms) window.__njGoAlarms(t); },
   }));
@@ -37,10 +37,10 @@ function buildCommandIndex() {
     run: () => { if (window.njSendToTrend) window.njSendToTrend(tag); if (window.__njNavigate) window.__njNavigate("analytics"); },
   }); });
   [
-    { label: "Help & manuals", sub: "help manual documentation user guide", hint: "Open the user manual", run: () => window.openHelp && window.openHelp() },
+    { label: "Help", sub: "help manual documentation user guide", hint: "Open the user manual", run: () => window.openHelp && window.openHelp() },
     { label: "Preferences", sub: "theme density text size units default screen", hint: "Your per-device view settings", run: () => window.openPreferences && window.openPreferences() },
     { label: "Notes", sub: "shift handover note", hint: "Open notes", run: () => window.openNotes && window.openNotes() },
-    { label: "Discover Njord", sub: "modules add-ons package licence upgrade", hint: "Your package & further modules", run: () => window.openDiscover && window.openDiscover() },
+    { label: "Discover NJORD", sub: "modules add-ons package licence upgrade", hint: "Your package & further modules", run: () => window.openDiscover && window.openDiscover() },
   ].forEach((a) => items.push(Object.assign({ kind: "Action" }, a)));
   return items;
 }

@@ -1,5 +1,5 @@
 // commissioning.jsx — Analytics · Commissioning tab.
-// Rebuild of the legacy "Trial Period" screen: during commissioning the operator logs a manual
+// Rebuild of the legacy "Commissioning" screen: during commissioning the operator logs a manual
 // water-quality round each day, the readings are checked against the design basis and shared with
 // Pure Salmon Technology. Two ways in, because the two jobs are different:
 //   • the LOG TABLE is a spreadsheet — click any cell, type, Tab/Enter to move on (the operators
@@ -582,7 +582,7 @@ function CmPeriodDialog({ length }) {
     <Dialog width={480}>
       <DlgHeader icon="calendar-range" name="Commissioning period" onClose={closeDialog} />
       <div className="dlg-body">
-        <p className="cm-tagpick-hint">Day {CM_ELAPSED} of the trial period has been logged. Extending the period keeps coverage honest; it does not remove any round.</p>
+        <p className="cm-tagpick-hint">Day {CM_ELAPSED} of the commissioning period has been logged. Extending the period keeps coverage honest; it does not remove any round.</p>
         <label className="de-field"><span className="de-field-l">Planned length, days</span>
           <input className="de-input data" inputMode="numeric" value={v} onChange={(e) => setV(e.target.value)} />
         </label>
@@ -620,7 +620,7 @@ function CmAddRowDialog({ deptId, deptLabel, length, onAdded }) {
         <p className="cm-calc-status">
           {dup ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> {cmFmt(date)} is already on the sheet.</span>
             : !date || isNaN(day) ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Pick a date.</span>
-            : day < 1 ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Before the trial period started.</span>
+            : day < 1 ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Before commissioning started.</span>
             : day > length ? <span className="cm-calc-err"><Icon name="alert-triangle" size={14} /> Past the planned period. Extend it first.</span>
             : <span className="cm-calc-ok"><Icon name="check" size={14} /> Day {day} of {length}{day > CM_ELAPSED ? " · not yet reached" : ""}</span>}
         </p>
@@ -686,7 +686,7 @@ function CmChart({ p, rows, hidden, onToggle, onOpen }) {
     <div className="card cm-chartcard">
       <div className="cm-chart-head">
         <div className="cm-chart-id">
-          <span className="eyebrow">Trial period trend</span>
+          <span className="eyebrow">Commissioning trend</span>
           <div className="cm-chart-t">{p.label}{p.unit ? <span className="cm-unit"> {p.unit}</span> : null}<span className="cm-chart-basis">design basis {cmBandLabel(p)}</span></div>
         </div>
         <div className="cm-legend">

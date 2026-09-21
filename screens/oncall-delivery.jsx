@@ -257,7 +257,7 @@ function DeliveryLogDialog({ initial }) {
             <Icon name="alert-triangle" size={14} /> Failures only <span className="data">{fails}</span>
           </button>
           <div style={{ marginLeft: "auto" }}>
-            <ExportMenu describe={(fmt) => "Export started: delivery log will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+            <ExportMenu describe={(fmt) => "Download started: delivery log will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           </div>
         </div>
         <div className="dv-log-scroll">

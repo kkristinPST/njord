@@ -1,5 +1,5 @@
 // manuals.jsx — Help-menu content: SCADA Manual, Fish Feeding Manual, and About NJORD
-// (release notes). Adapted from the Njord user guides and re-mapped onto this redesign
+// (release notes). Adapted from the NJORD user guides and re-mapped onto this redesign
 // (persistent left sidebar, floating Trends window, Deactivated alarm tab, etc.).
 // Loaded after dialogs.jsx (uses Dialog / DlgHeader / openDialog / closeDialog / Icon).
 
@@ -58,7 +58,7 @@ function ManualDialog({ manual }) {
               <ManBlocks blocks={s.blocks} />
             </section>
           ))}
-          <div className="man-end">Njord {manual.title} · Rev {manual.rev} · © Pure Salmon Technology</div>
+          <div className="man-end">NJORD {manual.title} · Rev {manual.rev} · © Pure Salmon Technology</div>
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
@@ -76,7 +76,7 @@ function ManualDialog({ manual }) {
 const SCADA_MANUAL = {
   key: "scada", icon: "book-open", title: "SCADA Manual", rev: "2.1", resId: "njScadaPdf",
   pdf: "assets/manuals/Njord_SCADA_userguide_EN.pdf",
-  subtitle: "Operating the Njord SCADA console, navigation, process objects, trends, reports, maneuver history and alarms.",
+  subtitle: "Operating the NJORD SCADA console, navigation, process objects, trends, reports, maneuver history and alarms.",
   sections: [
     { id: "signin", title: "Signing in", blocks: [
       { t: "p", x: "Open the platform in a supported web browser (or the Workstation app) from any device on a network with access to the SCADA server. Everyone can view most of the plant, but changing values and using advanced functions requires a signed-in account." },
@@ -92,7 +92,7 @@ const SCADA_MANUAL = {
       { t: "p", x: "Process screens carry context docks that change per page, parameters, alarm limits and preconfigured trends for the system currently open. Expand them from the icon rail on the right edge." },
     ]},
     { id: "prefs", title: "Preferences", blocks: [
-      { t: "p", x: "Preferences are per operator and per device: light or dark theme, table density, text size (Normal / Large / Extra large), default screen and units. They are reachable from the user menu at the bottom of the sidebar and in full-size form under Settings · General · Appearance, both write the same preference." },
+      { t: "p", x: "Preferences are per operator and per device: theme (Light, Dark or Legacy), table density, text size (Normal / Large / Extra large), default screen and units. They are reachable from the user menu at the bottom of the sidebar and in the Preferences dialog itself, both write the same preference." },
       { t: "note", x: "Settings holds the facility's record, users, roles, on-call groups, project configuration and alarm performance targets, one shared truth for everyone. Preferences only change what you see." },
     ]},
     { id: "nav", title: "Site Plan", blocks: [
@@ -115,7 +115,7 @@ const SCADA_MANUAL = {
       { t: "p", x: "Trending gives access to all logged data. Preconfigured trends live in the right-side dock of a process page and in equipment popups. The custom Trends workspace lets you plot any signals together." },
       { t: "p", x: "Send any readout to Trends with its line-chart button, it opens as a floating, movable Trends window so you can keep adding pens while a popup stays open. Choose a range (1h / 6h / 24h / 7d), toggle alarm markers, hide/show pens, and open the full Analytics workspace for a larger view." },
       { t: "p", x: "The Analytics screen adds a pen catalog, per-pen focus on the Y-axis, statistics, live updates and total-flow calculations, plus CSV / Excel export of the plotted data." },
-      { t: "sub", x: "Trend groups" },
+      { t: "sub", x: "Trend Groups" },
       { t: "p", x: "A trend group is a saved collection of parameters you analyse together. Save the current pens as a group from the Pens panel, then reopen it later from the Groups library, where groups can be searched, loaded, duplicated, edited or deleted. A group is private to you or shared with the whole plant, and the creator is shown on every shared group." },
       { t: "sub", x: "Alarm linkage" },
       { t: "sub", x: "Reading and scaling a pen" },
@@ -130,18 +130,18 @@ const SCADA_MANUAL = {
       { t: "p", x: "Every report declares its level, and the level drives the toolbar: a department report locks the tank selector to All tanks, a facility report locks both. Pick a start and end date, review the daily rows with an expandable Sum / Average / Min / Max section, Download the data as CSV or Excel, or open it in the report viewer, a movable, printable document window that stays open while you navigate." },
       { t: "note", x: "Pinned tabs and recent reports are stored per operator, per device, the pinned set is a personal working view and never changes what other users see." },
     ]},
-    { id: "dataentry", title: "Manual data entry", blocks: [
-      { t: "p", x: "Not every value comes from an instrument. Manual Data Entry holds the measurements an operator reads by hand, water samples, gauge readings, observations such as filter condition, organised by location in the left rail." },
+    { id: "dataentry", title: "Data Entry", blocks: [
+      { t: "p", x: "Not every value comes from an instrument. Data Entry holds the measurements an operator reads by hand, water samples, gauge readings, observations such as filter condition, organised by location in the left rail." },
       { t: "p", x: "Add value on a measurement opens one dialog: the new reading, an optional comment, the expected range and the last three readings for comparison. A value outside its expected range is marked on the row and in the list header count. Numeric measurements can be sent to Trends straight from the confirmation." },
       { t: "p", x: "The overflow menu on a measurement edits its details, shows the full value history, duplicates, moves it to another folder or deletes it. The menu on a location creates a measurement or sublocation there, renames, duplicates or deletes the location and everything inside it." },
       { t: "note", x: "The phone records against the same measurement list, a reading taken at the tank is the reading the control room sees. The phone shows a keypad for it; the desktop does not." },
     ]},
     { id: "commissioning", title: "Commissioning and biofilter maturation", blocks: [
-      { t: "p", x: "Commissioning logs the daily water-quality round of a trial period as a spreadsheet: one row per day, one column per parameter and sample point, typed directly into the grid. Plant tags can be shown beside the manual readings for comparison, and calculated columns derive values from them (sensor deviation, CO₂ rise over a tank) with a formula you can read and check. The planned length can be extended, and a row can be added for a missed day or to prepare tomorrow's round." },
+      { t: "p", x: "Commissioning logs the daily water-quality round of a commissioning period as a spreadsheet: one row per day, one column per parameter and sample point, typed directly into the grid. Plant tags can be shown beside the manual readings for comparison, and calculated columns derive values from them (sensor deviation, CO₂ rise over a tank) with a formula you can read and check. The planned length can be extended, and a row can be added for a missed day or to prepare tomorrow's round." },
       { t: "p", x: "The chart above the sheet plots one parameter at every sample point against its design basis; points outside the band are ringed and open that round." },
       { t: "p", x: "Biofilter maturation covers the period before a department is stocked: log the measured nitrogen species and what was actually dosed. The estimate is stoichiometric, computed from the measured change, the reactor volume and the reagent purity, so it can be checked against the sack, and the round list flags doses the model expected but nobody recorded." },
     ]},
-    { id: "maneuver", title: "Maneuver history", blocks: [
+    { id: "maneuver", title: "Maneuver History", blocks: [
       { t: "p", x: "Every maneuver is logged at signal level so changes can be reviewed later." },
       { t: "ul", x: [
         "Quick access: the history icon in the top bar opens the last week of maneuvers from any page.",
@@ -162,7 +162,7 @@ const SCADA_MANUAL = {
       { t: "p", x: "Tabs switch between Active, All Alarms, Historical, Statistics, Deactivated and Rationalization. Sort by any column, select one or more rows (or the whole page) to Acknowledge, Block or set Out of service, and open an object popup for a pre-filtered, area-level view. Deactivated splits into Blocked (by operator, optionally with an auto-reactivate timer, or logic-controlled) and Out of service." },
       { t: "sub", x: "Statistics & on-call" },
       { t: "sub", x: "Deactivating an alarm" },
-      { t: "p", x: "Blocking (shelving) is governed by the master record: a Critical alarm can never be blocked, and neither can an alarm whose record forbids shelving. Where the rule refuses, the product says so and offers Take out of service instead, which is the maintenance route and is logged as such. The Deactivated tab has its own search and a Blocked / Out of service filter; bulk Return to active only ever picks up rows that can actually be restored, a logic-controlled block is read-only." },
+      { t: "p", x: "Blocking (shelving in ISA-18.2) is governed by the master record: a Critical alarm can never be blocked, and neither can an alarm whose record forbids blocking. Where the rule refuses, the product says so and offers Take out of service instead, which is the maintenance route and is logged as such. The Deactivated tab has its own search and a Blocked / Out of service filter; bulk Return to active only ever picks up rows that can actually be restored, a logic-controlled block is read-only." },
       { t: "sub", x: "Master record, change history and review" },
       { t: "p", x: "Editing a controlled field on the Rationalization register (priority, limits, delays, classification) asks for a reason, and every such change is written to the alarm's change history with the operator and timestamp; any entry can be reverted from there. The Master Alarm Report generates the controlled snapshot with a signature block. Critical and High alarms carry an annual review date, and Review overdue is both a KPI and a filter, any edit re-stamps the review date." },
       { t: "p", x: "Where there is no round-the-clock on-site presence, remote alarms leave the facility on two independent paths, as NS 9416 requires. Independence counts paths, not channels: SMS and voice both ride GSM and therefore count once. The on-call editor refuses to save a Priority 1 tier served by fewer than two paths." },
@@ -172,16 +172,16 @@ const SCADA_MANUAL = {
       { t: "p", x: "Settings holds user and role management. Roles carry a set of granted or denied permissions so uniform access can be set for each user level; a user with multiple roles combines their permissions." },
       { t: "ul", x: [
         "Users: create, edit and delete accounts, set basic details and notification info, and assign roles.",
-        "Roles: a permission matrix per module (Njord, Fish Feeding, Fish Biology, Analytics) that can be freely created, modified and deleted.",
+        "Roles: a permission matrix per module (NJORD, Fish Feeding, Fish Biology, Analytics) that can be freely created, modified and deleted.",
         "On-call: alarm groups with per-group notification priorities and minimum staffing rules.",
-        "Preferences: theme (light, dark or the classic skin), table density, default screen and units. Stored per device from the user menu.",
+        "Preferences: theme (Light, Dark or Legacy), table density, default screen and units. Stored per device from the user menu.",
       ]},
     ]},
     { id: "mobile", title: "Mobile view", blocks: [
       { t: "p", x: "On phones the console adopts a compact, mobile-first layout: the process flow view is replaced by equipment cards that keep controls and key information reachable on a small screen, and actions open as bottom sheets under the thumb. It reads and writes the same data as the control room, never a separate mobile copy." },
       { t: "sub", x: "What the phone is for" },
       { t: "ul", x: [
-        "Field registration: manual data entry (including creating measurements and locations), mortality with the full cause list, welfare scoring, fish movement per tank, and biofilter maturation rounds.",
+        "Field registration: data entry (including creating measurements and locations), mortality with the full cause list, welfare scoring, fish movement per tank, and biofilter maturation rounds.",
         "Alarms: the active list, acknowledge, block or take out of service under the same rules as the desktop, and the full alarm and event log by day.",
         "Analytics: trends with per-pen Min / Max / Avg and per-pen scale, the same signal tree for browsing, and raw trend data export.",
         "Orientation: the control-room process diagram for a system, pinch to zoom. It is read-only on the phone, every control it carries is on the system screen.",
@@ -199,7 +199,7 @@ const FEEDING_MANUAL = {
   subtitle: "Controlling feed dosing to fish tanks, feed tables, feeders, distribution curves, profiles and calibration.",
   sections: [
     { id: "general", title: "General description", blocks: [
-      { t: "p", x: "Njord Fish Feeding controls feed dosing to fish tanks. It combines a feed table with live tank data and per-feeder calibration to calculate and control the amount of feed dosed to each tank per day." },
+      { t: "p", x: "NJORD Fish Feeding controls feed dosing to fish tanks. It combines a feed table with live tank data and per-feeder calibration to calculate and control the amount of feed dosed to each tank per day." },
       { t: "p", x: "Feed can be dosed evenly over 24 hours or shaped with a custom distribution and feed profiles. Distribution, profiles and feed types are set individually per tank. Calibration data is stored per feed type, so switching feed types is easy once feeders are calibrated." },
       { t: "note", x: "Best results depend on operators keeping the feed factor and activity factor in each tank up to date to avoid inefficient feeding." },
     ]},
@@ -298,7 +298,7 @@ const NJ_RELEASES = [
       "Dead-fish module released",
     ] },
   { module: "Analytics", version: "2.0", changes: [
-      "Overhauled MBBR maturation sheet with an improved interface",
+      "Overhauled biofilter maturation sheet with an improved interface",
     ] },
   { module: "Integrations", version: "2.0", changes: [
       "Added built-in VNC solution for displaying external systems (PCs, HMIs, etc.)",

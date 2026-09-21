@@ -111,7 +111,7 @@ function WfRegistrationsCard({ onOpen, onNew, limit }) {
           <input placeholder="Filter batch, location, user…" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-          <ExportMenu describe={(fmt) => "Export started: welfare registrations will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+          <ExportMenu describe={(fmt) => "Download started: welfare registrations will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
           {onNew && <button className="btn btn-primary" onClick={onNew}><Icon name="plus" size={16} /> New registration</button>}
         </div>
       </div>
@@ -514,7 +514,7 @@ function WfReport({ onBack }) {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-head">
           <div className="card-head-l"><Icon name="file-bar-chart" size={16} color="var(--slate-600)" /><span className="card-title">Welfare Report</span></div>
-          <ExportMenu describe={(fmt) => "Export started: welfare report (" + regs.length + " registrations) will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
+          <ExportMenu describe={(fmt) => "Download started: welfare report (" + regs.length + " registrations) will download as " + (fmt === "csv" ? "CSV (.csv)." : "Excel (.xlsx).")} />
         </div>
         <div className="filterbar">
           <span className="fbar-group">
@@ -565,7 +565,7 @@ function WfReport({ onBack }) {
             <span className="card-title">{view === "By location" ? indicator + " · by location" : view === "Bubble chart" ? indicator + " · by location and month" : view === "Timeline" ? "Registration timeline" : "Score distribution by indicator"}</span>
           </div>
           {view === "Bubble chart"
-            ? <button className="linkbtn" onClick={() => njToast("Export started: " + indicator + " bubble chart (" + regs.length + " registrations) will download as PNG.")}><Icon name="download" size={12} /> Download chart</button>
+            ? <button className="linkbtn" onClick={() => njToast("Download started: " + indicator + " bubble chart (" + regs.length + " registrations) will download as PNG.")}><Icon name="download" size={12} /> Download chart</button>
             : <span className="caption">{regs.length ? "registered scores only" : "no data in scope"}</span>}
         </div>
         <div className="card-body">

@@ -151,7 +151,7 @@ const ROLES = [
   { name: "StatusViewer", users: 1, desc: "Read-only dashboards and trends" },
 ];
 const PERM_MODULES = {
-  "Njord": ["Change Parameters", "Control Equipment", "Create & Edit Notes", "Change Alarm Limits", "Acknowledge Alarms", "Shelve Alarms", "Deactivate Alarms", "Manage Alarm Properties", "Manage Alarm Groups", "Manage Test Alarms", "Manage Alarm Sender"],
+  "NJORD": ["Change Parameters", "Control Equipment", "Create & Edit Notes", "Change Alarm Limits", "Acknowledge Alarms", "Block Alarms", "Deactivate Alarms", "Manage Alarm Properties", "Manage Alarm Groups", "Manage Test Alarms", "Manage Alarm Sender"],
   "Fish Feeding": ["Adjust Feed Rate", "Edit Feed Curves", "Pause / Resume Feeding", "Manage Feeders", "Edit Feed Settings"],
   "Fish Biology": ["Register Welfare Scoring", "Register Mortality", "Manage Batches", "Generate Welfare Reports"],
   "Analytics": ["View Trends", "Create & Save Trend Views", "Export Trend Data", "Configure Dashboards"],
@@ -201,7 +201,7 @@ function NewRoleDialog({ roleNames, onCreate }) {
 function RolesTab() {
   const [roles, setRoles] = React.useState(ROLES);
   const [role, setRole] = React.useState("Supervisor");
-  const [mod, setMod] = React.useState("Njord");
+  const [mod, setMod] = React.useState("NJORD");
   const [perms, setPerms] = React.useState({});
   const key = (m, p) => `${role}|${m}|${p}`;
   const get = (m, p) => perms[key(m, p)] || "allow";
@@ -210,7 +210,7 @@ function RolesTab() {
   const createRole = (nm, base, desc) => {
     setRoles((rs) => [...rs, { name: nm, users: 0, desc: desc || (base ? "Based on " + base : "Custom role") }]);
     if (base) setPerms((s) => { const next = { ...s }; Object.keys(s).forEach((k) => { if (k.startsWith(base + "|")) next[nm + k.slice(base.length)] = s[k]; }); return next; });
-    setRole(nm); setMod("Njord");
+    setRole(nm); setMod("NJORD");
   };
   const activeRole = roles.find((r) => r.name === role);
   return (

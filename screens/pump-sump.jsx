@@ -23,8 +23,8 @@ function PsOxyPump({ cx, n, kw, hz, running }) {
     { primary: { l: "Power", v: kw, u: "kW" }, running, readouts: [{ l: "Power", v: kw, u: "kW", tag: "DPT3-DOX0-PU" + n }, { l: "Speed", v: hz, u: "Hz" }] }));
   return (
     <g>
-      <RD x={cx - 30} y={290} w={60} value={kw} unit="kW" tag={"DPT3-DOX0-PU" + n + "-PWR"} name={"Oxygenation pump " + n + " power"} group="Oxygenation" accent={running ? "var(--success-text)" : undefined} />
-      <RD x={cx - 30} y={314} w={60} value={hz} unit="Hz" tag={"DPT3-DOX0-PU" + n} name={"Oxygenation pump " + n + " speed"} group="Oxygenation" />
+      <RD x={cx - 30} y={282} w={60} value={kw} unit="kW" tag={"DPT3-DOX0-PU" + n + "-PWR"} name={"Oxygenation pump " + n + " power"} group="Oxygenation" accent={running ? "var(--success-text)" : undefined} />
+      <RD x={cx - 30} y={309} w={60} value={hz} unit="Hz" tag={"DPT3-DOX0-PU" + n} name={"Oxygenation pump " + n + " speed"} group="Oxygenation" />
       <Eq title={"Oxygenation pump " + n} onClick={open}><SymPump cx={cx} cy={358} running={running} /></Eq>
       <ModeChip x={cx - 40} y={350} mode="A" />
       <SymTrend cx={cx + 30} cy={358} tag={"DPT3-DOX0-PU" + n} name={"Oxygenation pump " + n} group="Oxygenation" running={running} />
@@ -49,12 +49,12 @@ function PsCone({ cx, cy, n }) {
 function PsLiftPump({ cy, n, hz, running }) {
   return (
     <g>
-      <Tag2 x={1004} y={cy - 18} anchor="end" tag={"DPT3-SMP0-PU" + n} desc={["Lift pump " + n]} />
-      <RD x={1046} y={cy - 36} w={58} value={hz} unit="Hz" tag={"DPT3-SMP0-PU" + n} name={"Lift pump " + n + " speed"} group="Lift Pumps" accent={running ? "var(--success-text)" : undefined} />
+      <Tag2 x={904} y={cy - 6} anchor="end" tag={"DPT3-SMP0-PU" + n} desc={["Lift pump " + n]} />
+      <RD x={920} y={cy - 12} w={58} value={hz} unit="Hz" tag={"DPT3-SMP0-PU" + n} name={"Lift pump " + n + " speed"} group="Pump Sump" accent={running ? "var(--success-text)" : undefined} />
       <SymValve cx={1058} cy={cy} s={0.74} running={running} />
       <Eq title={"Lift pump " + n} onClick={() => openEquipment("DPT3-SMP0-PU" + n)}><SymPump cx={1095} cy={cy} running={running} /></Eq>
       <ModeChip x={1010} y={cy - 8} mode="A" />
-      <SymTrend cx={1132} cy={cy} tag={"DPT3-SMP0-PU" + n} name={"Lift pump " + n} group="Lift Pumps" running={running} />
+      <SymTrend cx={1132} cy={cy} tag={"DPT3-SMP0-PU" + n} name={"Lift pump " + n} group="Pump Sump" running={running} />
     </g>
   );
 }
@@ -63,31 +63,56 @@ function PsLiftPump({ cy, n, hz, running }) {
 // fluid-tagged pipe network (NJ_FLUIDS): returns/process water, oxygen gas to the cones.
 const PSM_PIPES = [
   // left inputs → sump (returns from the loops)
-  { k: "proc", d: "M126,475 H330" }, { k: "proc", d: "M126,542 H330" },
+  { k: "proc", d: "M126,505 H330" }, { k: "proc", d: "M126,542 H330" },
   { k: "proc", d: "M104,622 H330" }, { k: "proc", d: "M104,695 H330" },
   // sump → oxygenation pumps (riser + manifold)
   { k: "proc", d: "M500,485 V388 H425" }, { k: "proc", d: "M425,388 H663" },
   { k: "proc", d: "M425,336 V388" }, { k: "proc", d: "M548,336 V388" }, { k: "proc", d: "M663,336 V388" },
   // oxy pumps → cone feed
-  { k: "proc", d: "M425,290 V250 H1240" }, { k: "proc", d: "M548,290 V250" }, { k: "proc", d: "M663,290 V250" },
-  // oxygen supply bus → cones
-  { k: "o2", d: "M805,205 V250" },
-  { k: "o2", d: "M1240,250 V255" },
-  { k: "proc", d: "M1210,255 H1320" },
+  { k: "proc", d: "M425,290 V250 H1145" }, { k: "proc", d: "M548,290 V250" }, { k: "proc", d: "M663,290 V250" },
+  // oxygen bus (from the Oxygen flag) → the dose-valve pair on every cone
+  { k: "o2", d: "M805,205 V165 H1198" },
+  { k: "o2", d: "M1172,165 V189" }, { k: "o2", d: "M1198,165 V189" },
+  { k: "o2", d: "M1097,165 V226" }, { k: "o2", d: "M1123,165 V226" },
+  { k: "o2", d: "M1022,165 V263" }, { k: "o2", d: "M1048,165 V263" },
+  { k: "o2", d: "M947,165 V300" },  { k: "o2", d: "M973,165 V300" },
+  { k: "o2", d: "M872,165 V337" },  { k: "o2", d: "M898,165 V337" },
+  // dose valves → dogleg into the cone's neck (the neck is only ±3.5 wide; the valve pair
+  // sits at cx±13, so the drops have to come in horizontally, not straight down)
+  { k: "o2", d: "M1172,213 V221 H1185" }, { k: "o2", d: "M1198,213 V221 H1185" },
+  { k: "o2", d: "M1097,250 V258 H1110" }, { k: "o2", d: "M1123,250 V258 H1110" },
+  { k: "o2", d: "M1022,287 V295 H1035" }, { k: "o2", d: "M1048,287 V295 H1035" },
+  { k: "o2", d: "M947,324 V332 H960" },  { k: "o2", d: "M973,324 V332 H960" },
+  { k: "o2", d: "M872,361 V369 H885" },  { k: "o2", d: "M898,361 V369 H885" },
+  // water header → each cone's neck (the five cones run in parallel, not in series)
+  { k: "proc", d: "M1145,250 V228 H1185" },
+  { k: "proc", d: "M1070,250 V265 H1110" },
+  { k: "proc", d: "M995,250 V302 H1035" },
+  { k: "proc", d: "M920,250 V339 H960" },
+  { k: "proc", d: "M845,250 V376 H885" },
+  // combined neck drop into each cone
+  { k: "proc", d: "M1185,221 V235" }, { k: "proc", d: "M1110,258 V272" },
+  { k: "proc", d: "M1035,295 V309" }, { k: "proc", d: "M960,332 V346" },
+  { k: "proc", d: "M885,369 V383" },
+  // cone outlets → collector bus → fish tanks
+  { k: "proc", d: "M1185,276 H1260" },
+  { k: "proc", d: "M1110,312 H1260" }, { k: "proc", d: "M1035,349 H1260" },
+  { k: "proc", d: "M960,386 H1260" },  { k: "proc", d: "M885,423 H1260" },
+  { k: "proc", d: "M1260,423 V255" },
+  { k: "proc", d: "M1260,255 H1320" },
   // header downpipe into sump
   { k: "proc", d: "M613,525 V618" },
-  // sump → lift-pump draw manifold
-  { k: "proc", d: "M660,540 H1020" }, { k: "proc", d: "M1020,470 V765" },
-  { k: "proc", d: "M1020,470 H1044" }, { k: "proc", d: "M1020,540 H1044" }, { k: "proc", d: "M1020,610 H1044" },
-  { k: "proc", d: "M1020,680 H1044" }, { k: "proc", d: "M1020,750 H1044" },
-  // lift pumps → fish-tanks bus
-  { k: "proc", d: "M1122,470 H1162" }, { k: "proc", d: "M1122,540 H1162" }, { k: "proc", d: "M1122,610 H1162" },
-  { k: "proc", d: "M1122,680 H1162" }, { k: "proc", d: "M1122,750 H1162" },
+  // sump → lift-pump draw manifold → each pump → fish-tanks bus. One run per row, straight
+  // through the inlet valve and the pump disc (both symbols are drawn over the pipe), so no
+  // stub can fall short of a symbol edge
+  { k: "proc", d: "M660,540 H1020" }, { k: "proc", d: "M1020,470 V750" },
+  { k: "proc", d: "M1020,470 H1162" }, { k: "proc", d: "M1020,540 H1162" }, { k: "proc", d: "M1020,610 H1162" },
+  { k: "proc", d: "M1020,680 H1162" }, { k: "proc", d: "M1020,750 H1162" },
   { k: "proc", d: "M1162,470 V750" }, { k: "proc", d: "M1162,610 H1320" },
-  // sump → analysis pump
-  { k: "proc", d: "M660,505 H768" },
-  // sump → sorting water pump → sorting
-  { k: "proc", d: "M540,790 V835 H1044" }, { k: "proc", d: "M1122,835 H1320" },
+  // sump → analysis pump (up and over the pump's mode chip into its top)
+  { k: "proc", d: "M660,505 H715 V410 H790 V419" },
+  // sump → sorting water pump → sorting (one run through the valve and pump)
+  { k: "proc", d: "M540,790 V835 H1320" },
 ];
 
 function PumpSumpMimic2() {
@@ -106,21 +131,21 @@ function PumpSumpMimic2() {
       <SlFlag x={1320} y={232} w={110} label="Fish Tanks" />
 
       {/* ───── oxygenation pumps ───── */}
-      <Tag2 x={548} y={244} tag="DPT3-DOX0-PT1" desc={["Oxygen cone pressure"]} />
-      <RD x={518} y={262} w={60} value="2.0" unit="bar" tag="DPT3-DOX0-PT1" name="Oxygen cone pressure" group="Oxygenation" />
+      <Tag2 x={548} y={232} tag="DPT3-DOX0-PT1" desc={["Oxygen cone pressure"]} />
+      <RD x={518} y={252} w={60} value="2.0" unit="bar" tag="DPT3-DOX0-PT1" name="Oxygen cone pressure" group="Oxygenation" />
       <PsOxyPump cx={425} n={1} kw="0.0" hz="0" running={false} />
       <PsOxyPump cx={548} n={2} kw="17.4" hz="39" running={true} />
       <PsOxyPump cx={663} n={3} kw="0.0" hz="0" running={false} />
 
       {/* ───── left inputs ───── */}
-      <SlFlag x={8} y={458} w={118} label="Drain exchanger" />
+      <SlFlag x={8} y={488} w={118} label="Drain exchanger" />
       <SlFlag x={8} y={525} w={118} label="Top exchanger" />
       <SlFlag x={8} y={605} w={96} label="MBBR" />
       <SlFlag x={8} y={678} w={96} label="Lye" />
 
       {/* ───── analysis cabinet (sensor cluster) ───── */}
       <PsStatusMark x={455} y={437} level="critical" />
-      <RD x={481} y={435} w={70} value="2" unit="mg/l" tag="DPT3-SMP0-QT1" name="CO₂ in pump sump" group="Analysis" />
+      <RD x={481} y={435} w={70} value="2" unit="mg/L" tag="DPT3-SMP0-QT1" name="CO₂ in pump sump" group="Analysis" />
       <PsStatusMark x={455} y={461} level="warning" />
       <RD x={481} y={459} w={70} value="99.0" unit="%" tag="DPT3-SMP0-QT2" name="O₂ saturation in pump sump" group="Analysis" accent="var(--success-text)" />
       <PsStatusMark x={455} y={485} level="warning" />
@@ -147,13 +172,13 @@ function PumpSumpMimic2() {
       <RD x={672} y={608} w={72} value="259" unit="cm" tag="DPT3-SMP0-LT1" name="Level in pump sump" group="Pump Sump" />
 
       {/* sump internal pumps */}
-      <RD x={348} y={720} w={58} value="42" unit="Hz" tag="DPT3-ENS0-PU1" name="Top exchanger pump speed" group="Pump Sump" accent="var(--success-text)" />
+      <RD x={348} y={702} w={58} value="42" unit="Hz" tag="DPT3-ENS0-PU1" name="Top exchanger pump speed" group="Pump Sump" accent="var(--success-text)" />
       <Eq title="Top exchanger pump" onClick={open("DPT3-ENS0-PU1")}><SymPump cx={378} cy={755} running={true} /></Eq>
       <ModeChip x={338} y={747} mode="A" />
       <SymTrend cx={408} cy={755} tag="DPT3-ENS0-PU1" name="Top exchanger pump" group="Pump Sump" running={true} />
       <Tag2 x={372} y={797} tag="DPT3-ENS0-PU1" desc={["Top exchanger pump"]} />
 
-      <RD x={434} y={720} w={58} value="0" unit="Hz" tag="DPT3-ENS0-PU3" name="Drain pump speed" group="Pump Sump" />
+      <RD x={434} y={702} w={58} value="0" unit="Hz" tag="DPT3-ENS0-PU3" name="Drain pump speed" group="Pump Sump" />
       <Eq title="Drain pump" onClick={open("DPT3-ENS0-PU3")}><SymPump cx={464} cy={755} running={false} /></Eq>
       <ModeChip x={424} y={747} mode="M" />
       <SymTrend cx={494} cy={755} tag="DPT3-ENS0-PU3" name="Drain pump" group="Pump Sump" running={false} />
@@ -174,7 +199,7 @@ function PumpSumpMimic2() {
       <RD x={1238} y={562} w={64} value="12.6" unit="°C" tag="DPT3-SMP0-TT1" name="Temperature in pump sump" group="Pump Sump" />
 
       {/* ───── sorting water pump ───── */}
-      <RD x={1046} y={800} w={58} value="35" unit="Hz" tag="DPT3-FHA0-PU1" name="Sorting water pump speed" group="Sorting" accent="var(--success-text)" />
+      <RD x={920} y={823} w={58} value="35" unit="Hz" tag="DPT3-FHA0-PU1" name="Sorting water pump speed" group="Sorting" accent="var(--success-text)" />
       <SymValve cx={1058} cy={835} s={0.74} running={true} />
       <Eq title="Sorting water pump" onClick={open(njBuildEquip("DPT3-FHA0-PU1", "Sorting water pump", "pump", { primary: { l: "Speed", v: "35", u: "Hz" }, running: true, readouts: [{ l: "Speed", v: "35", u: "Hz", tag: "DPT3-FHA0-PU1" }, { l: "Sorting water pressure", v: "1.3", u: "bar", tag: "DPT3-FHA0-PT1" }] }))}>
         <SymPump cx={1095} cy={835} running={true} />
@@ -193,7 +218,7 @@ function PumpSumpMimic2() {
 const PS2_TABS = ["Lift pumps", "Oxygenation", "Sorting & analysis"];
 const PS2_PARAMS = {
   "Lift pumps": [
-    { h: "Pump sump · DPT3-SMP0" },
+    { h: "Pump Sump · DPT3-SMP0" },
     { l: "Level in pump sump", v: "259 cm", trend: true, trendTag: "DPT3-SMP0-LT1" },
     { l: "Level setpoint", v: "230 cm", edit: true, min: 0, max: 400, step: 1 },
     { l: "Tank pressure", v: "6.0 mVs", trend: true, trendTag: "DPT3-SMP0-PT1" },
@@ -223,7 +248,7 @@ const PS2_PARAMS = {
     { l: "Sorting water pressure setpoint", v: "1.5 bar", edit: true, min: 0, max: 4, step: 0.1 },
     { l: "Sorting water pump speed", v: "35 Hz", trend: true, trendTag: "DPT3-FHA0-PU1" },
     { h: "Analysis cabinet · DPT3-SMP0 · QT/PT" },
-    { l: "CO₂", v: "2 mg/l", trend: true, trendTag: "DPT3-SMP0-QT1" },
+    { l: "CO₂", v: "2 mg/L", trend: true, trendTag: "DPT3-SMP0-QT1" },
     { l: "O₂ saturation", v: "99.0 %", trend: true, trendTag: "DPT3-SMP0-QT2" },
     { l: "pH 1", v: "7.4 pH", trend: true, trendTag: "DPT3-SMP0-QT3" },
     { l: "pH 2", v: "7.4 pH", trend: true, trendTag: "DPT3-SMP0-QT4" },
