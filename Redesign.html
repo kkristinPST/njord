@@ -13,6 +13,10 @@
   /* apply persisted theme before first paint to avoid a flash */
   (function () { try { document.documentElement.setAttribute("data-theme", localStorage.getItem("nj_theme_v1") || "light"); } catch (e) { document.documentElement.setAttribute("data-theme", "light"); } })();
 </script>
+<!-- One-shot rewrite of copy already persisted in localStorage (the " — " to ", " sweep).
+     Deliberately NOT deferred and NOT in the bundle: it has to finish before any store's
+     load() runs, and bundle/app.js is deferred, so a plain head script gets there first. -->
+<script src="lib/copy-migrate.js"></script>
 <style>
   html, body { margin: 0; height: 100%; }
   body { font-family: var(--font-sans); color: var(--fg); background: var(--bg); }
