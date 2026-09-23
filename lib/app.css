@@ -46,7 +46,9 @@ body.standalone .nav-page .sidebar { height: 100%; border-radius: var(--r-lg); o
 .sidebar.collapsed { width: 72px; }
 .sb-logo { height: 72px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,.06); }
 .sidebar.collapsed .sb-logo { justify-content: center; padding: 0; }
-.sb-wordmark { height: 26px; }
+.sb-wordmark { height: 26px; display: block; }
+.sb-home { display: flex; align-items: center; margin-left: -6px; padding: 6px; border: none; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.sb-home:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .sb-mark { height: 30px; }
 .sb-collapse { width: 28px; height: 28px; border-radius: var(--r-md); border: none; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .sb-collapse:hover { background: var(--slate-800); }

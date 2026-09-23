@@ -453,7 +453,12 @@ function Sidebar({ active }) {
   return (
     <aside className={"sidebar" + (collapsed ? " collapsed" : "")}>
       <div className="sb-logo">
-        {!collapsed && <img className="sb-wordmark" src={(window.__resources && window.__resources.njWordmark) || "assets/njord-wordmark.png"} alt="NJORD" />}
+        {/* Full width: the wordmark goes home (operators expect it). Collapsed: the mark expands the rail, unchanged. */}
+        {!collapsed && (
+          <button className="sb-home" onClick={() => window.__njNavigate && window.__njNavigate("start")} aria-label="NJORD, go to Dashboard">
+            <img className="sb-wordmark" src={(window.__resources && window.__resources.njWordmark) || "assets/njord-wordmark.png"} alt="" />
+          </button>
+        )}
         {!collapsed && (
           <button className="sb-collapse" onClick={() => collapseStore.toggle()} title="Collapse sidebar" aria-label="Collapse sidebar">
             <Icon name="chevrons-left" size={20} color="var(--slate-400)" />
