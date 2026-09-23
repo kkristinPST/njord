@@ -15,7 +15,7 @@ function SymPump({ cx, cy, s = 1.25, running }) {
   return (
     <g transform={`translate(${cx},${cy}) scale(${s}) translate(-17.32,-16.43)`}>
       <path d="M33.75 16.4297C33.75 7.3558 26.3942 0 17.3203 0C8.24645 0 0.890625 7.3558 0.890625 16.4297C0.890625 25.5035 8.24645 32.8594 17.3203 32.8594C26.3942 32.8594 33.75 25.5035 33.75 16.4297Z" fill="var(--sc-fill-lite)" />
-      <path d="M17.2688 0.102936C8.22342 0.102936 0.890625 7.43573 0.890625 16.4812C0.890625 25.5267 8.22353 32.8594 17.2688 32.8594C26.3142 32.8594 33.6471 25.5266 33.6471 16.4812C33.6471 7.43562 26.3142 0.102936 17.2688 0.102936ZM17.013 2.66203L3.48148 17.2165C3.46834 16.9704 3.44972 16.73 3.44972 16.4807C3.44972 8.93509 9.50045 2.80004 17.013 2.66203ZM17.5247 2.66203C25.0374 2.80013 31.088 8.93565 31.088 16.4816C31.088 16.7309 31.0694 16.9713 31.0562 17.2174L17.5247 2.66203ZM4.44119 21.6318L30.0967 21.6318C28.0529 26.7094 23.0782 30.3007 17.2695 30.3007C11.4608 30.3007 6.48472 26.7094 4.44119 21.6318Z" fill={body} />
+      <path d="M17.2688 0.102936C8.22342 0.102936 0.890625 7.43573 0.890625 16.4812C0.890625 25.5267 8.22353 32.8594 17.2688 32.8594C26.3142 32.8594 33.6471 25.5266 33.6471 16.4812C33.6471 7.43562 26.3142 0.102936 17.2688 0.102936ZM17.013 2.66203L3.48148 17.2165C3.46834 16.9704 3.44972 16.73 3.44972 16.4807C3.44972 8.93509 9.50045 2.80004 17.013 2.66203ZM17.5247 2.66203C25.0374 2.80013 31.088 8.93565 31.088 16.4816C31.088 16.7309 31.0694 16.9713 31.0562 17.2174L17.5247 2.66203ZM4.44119 21.6318L30.0967 21.6318C28.0529 26.7094 23.0782 30.3007 17.2695 30.3007C11.4608 30.3007 6.48472 26.7094 4.44119 21.6318Z" className="sc-body" fill={body} />
     </g>
   );
 }
@@ -25,7 +25,7 @@ function SymFan({ cx, cy, s = 1.25, running }) {
   return (
     <g transform={`translate(${cx},${cy}) scale(${s}) translate(-17.32,-16.43)`}>
       <path d="M33.75 16.4297C33.75 7.3558 26.3942 0 17.3203 0C8.24645 0 0.890625 7.3558 0.890625 16.4297C0.890625 25.5035 8.24645 32.8594 17.3203 32.8594C26.3942 32.8594 33.75 25.5035 33.75 16.4297Z" fill="var(--sc-fill-lite)" />
-      <path d="M0.890625 16.4324C0.890625 7.38686 8.21067 0.0664062 17.2567 0.0664062C26.3026 0.0664062 33.6227 7.38635 33.6227 16.4324C33.6227 25.4785 26.3026 32.7985 17.2567 32.7985C8.21067 32.7985 0.890625 25.4785 0.890625 16.4324ZM3.26523 16.4324C3.26523 22.1259 6.6631 27.0193 11.5443 29.2045L7.91822 6.06838C5.07763 8.62916 3.26523 12.3066 3.26523 16.4324ZM22.9685 29.2045C27.8497 27.0203 31.2476 22.1265 31.2476 16.4324C31.2476 12.3068 29.4353 8.62833 26.5947 6.06735L22.9685 29.2045Z" fill={body} />
+      <path d="M0.890625 16.4324C0.890625 7.38686 8.21067 0.0664062 17.2567 0.0664062C26.3026 0.0664062 33.6227 7.38635 33.6227 16.4324C33.6227 25.4785 26.3026 32.7985 17.2567 32.7985C8.21067 32.7985 0.890625 25.4785 0.890625 16.4324ZM3.26523 16.4324C3.26523 22.1259 6.6631 27.0193 11.5443 29.2045L7.91822 6.06838C5.07763 8.62916 3.26523 12.3066 3.26523 16.4324ZM22.9685 29.2045C27.8497 27.0203 31.2476 22.1265 31.2476 16.4324C31.2476 12.3068 29.4353 8.62833 26.5947 6.06735L22.9685 29.2045Z" className="sc-body" fill={body} />
     </g>
   );
 }
@@ -35,7 +35,7 @@ function SymMotor({ cx, cy, s = 1, running }) {
   return (
     <g transform={`translate(${cx},${cy}) scale(${s}) translate(-21.08,-18.55)`}>
       <path d="M39.637 18.5555C39.637 8.30849 31.3302 0.00164795 21.0832 0.00164795C10.8361 0.00164795 2.5293 8.30849 2.5293 18.5555C2.5293 28.8025 10.8361 37.1094 21.0832 37.1094C31.3302 37.1094 39.637 28.8025 39.637 18.5555Z" fill="var(--sc-edge)" />
-      <path d="M36.7374 18.5561C36.7374 9.91019 29.7285 2.90129 21.0826 2.90129C12.4366 2.90129 5.42773 9.91019 5.42773 18.5561C5.42773 27.202 12.4366 34.2109 21.0826 34.2109C29.7285 34.2109 36.7374 27.202 36.7374 18.5561Z" fill={inner} />
+      <path d="M36.7374 18.5561C36.7374 9.91019 29.7285 2.90129 21.0826 2.90129C12.4366 2.90129 5.42773 9.91019 5.42773 18.5561C5.42773 27.202 12.4366 34.2109 21.0826 34.2109C29.7285 34.2109 36.7374 27.202 36.7374 18.5561Z" className="sc-body" fill={inner} />
       <path d="M15.2852 5.79898L15.2852 31.3105H26.8813V5.79898H15.2852Z" fill="var(--sc-edge)" />
     </g>
   );
@@ -45,8 +45,8 @@ function SymValve({ cx, cy, s = 1.1, running }) {
   const body = running ? "var(--sc-run)" : "var(--sc-stop)";
   return (
     <g transform={`translate(${cx},${cy}) scale(${s}) translate(-10.32,-16.15)`}>
-      <path fillRule="evenodd" clipRule="evenodd" d="M19.6426 1.79492L10.3217 15.7762L1.00081 1.79492L19.6426 1.79492Z" fill={body} stroke="var(--sc-edge)" strokeWidth="0.926" />
-      <path fillRule="evenodd" clipRule="evenodd" d="M19.6426 30.5008H1.00081L10.3217 16.5195L19.6426 30.5008Z" fill={body} stroke="var(--sc-edge)" strokeWidth="0.926" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M19.6426 1.79492L10.3217 15.7762L1.00081 1.79492L19.6426 1.79492Z" className="sc-body" fill={body} stroke="var(--sc-edge)" strokeWidth="0.926" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M19.6426 30.5008H1.00081L10.3217 16.5195L19.6426 30.5008Z" className="sc-body" fill={body} stroke="var(--sc-edge)" strokeWidth="0.926" />
     </g>
   );
 }
@@ -60,30 +60,33 @@ function SymCone({ cx, cy, s = 1.05 }) {
     </g>
   );
 }
-// auto / manual mode chip
+// auto / manual mode chip. Manual is drawn like Auto — outline + letter, no fill — with only
+// the colour differing. A filled chip carried more weight than the alarm badges beside it,
+// and the fill/glyph contrast pair it needed is what kept failing across the three themes.
+// Outline and letter share ONE token, so there is no second colour to keep legible.
 function ModeChip({ x, y, mode }) {
   const man = mode === "M";
   return (
     <g>
-      <rect x={x} y={y} width="17" height="17" rx="3" fill={man ? "var(--warning)" : "#fff"} stroke={man ? "var(--warning)" : "var(--slate-300)"} strokeWidth="1.2" />
-      <text className="rasm-mode" x={x + 8.5} y={y + 12.5} textAnchor="middle" fill={man ? "#3d2c00" : "var(--slate-600)"}>{mode}</text>
+      <title>{man ? "Manual mode" : "Automatic mode"}</title>
+      <rect x={x} y={y} width="17" height="17" rx="3" fill="var(--sc-node)" stroke={man ? "var(--sc-manual)" : "var(--slate-300)"} strokeWidth="1.2" />
+      <text className="rasm-mode" x={x + 8.5} y={y + 12.5} textAnchor="middle" fill={man ? "var(--sc-manual)" : "var(--slate-600)"}>{mode}</text>
     </g>
   );
 }
-// "signal online" marker (left of sensor readouts and lye pumps) — neutral per HP-HMI (normal isn't colored)
-function GreenMark({ x, y }) {
-  return (
-    <g>
-      <rect x={x} y={y} width="17" height="17" rx="3" fill="var(--slate-500)" />
-      <path d={`M${x + 5},${y + 5} L${x + 12},${y + 12} M${x + 12},${y + 5} L${x + 5},${y + 12}`} stroke="#fff" strokeWidth="1.7" strokeLinecap="round" />
-    </g>
-  );
-}
+// `GreenMark` is GONE. It came from the legacy sheet as a green square with a white X read as
+// "signal online", but nothing in this product ever set or cleared it — a constant dressed as
+// state, most likely a maintenance marker originally. If that meaning is wanted it should
+// return as real state with a source behind it. It rendered as a no-op placeholder for one
+// pass; the component is removed and so are its 3 call sites.
+function GreenMark() { return null; }
 
 /* ───────────── labelled bits ───────────── */
 function Tag2({ x, y, tag, desc, anchor = "middle" }) {
+  useMimicAlarms();
+  const alarm = tag ? njTagAlarm(tag) : null;
   return (
-    <g aria-hidden="true">
+    <g aria-hidden="true" className={alarm ? "abn " + njAlarmTone(alarm) : undefined}>
       {tag && <text className="rasm-tag" x={x} y={y} textAnchor={anchor}>{tag}</text>}
       {desc && desc.map((d, i) => <text key={i} className="rasm-desc" x={x} y={y + 13 + i * 12} textAnchor={anchor}>{d}</text>)}
     </g>
@@ -102,10 +105,14 @@ function useTrendActive(tag) {
 function RD({ x, y, w = 60, h = 25, value, unit, tag, name, group, accent, mono = true }) {
   const trendable = !!tag;
   const active = useTrendActive(tag);
+  useMimicAlarms();
+  // the readout carries the tag already, so every mimic in the facility gets alarm-aware
+  // values from this one place — no per-screen wiring
+  const alarm = tag ? njTagAlarm(tag) : null;
   const send = (e) => { e.stopPropagation(); e.preventDefault(); njSendToTrend(tag, { name, unit, value: String(value), group }); };
   return (
-    <g className={"rasm-rd" + (trendable ? " t" : "")}>
-      <title>{name || tag || ""}</title>
+    <g className={"rasm-rd" + (trendable ? " t" : "") + (alarm ? " abn " + njAlarmTone(alarm) : "")}>
+      <title>{[name || tag || "", alarm ? njAlarmTitle(alarm) : null].filter(Boolean).join(" — ")}</title>
       <rect className="rasm-rd-box" x={x} y={y} width={w} height={h} rx="4" />
       <text className={"rasm-rd-v" + (mono ? "" : " s")} x={x + w / 2} y={y + h / 2 + 5} textAnchor="middle" fill={accent}>{value}<tspan className="rasm-rd-u"> {unit}</tspan></text>
       {trendable && (
@@ -119,12 +126,23 @@ function RD({ x, y, w = 60, h = 25, value, unit, tag, name, group, accent, mono 
     </g>
   );
 }
-// equipment hit wrapper (click → popup)
-function Eq({ onClick, title, children }) {
+// equipment hit wrapper (click → popup). `tag` is optional and additive: give it one and the
+// symbol body recolours when that tag has a standing alarm. `mark` is the symbol's own anchor
+// point [x,y] for the priority badge — passed in, never measured: getBBox inside an effect
+// never resolved in time here, so the badge rendered on nothing, and re-measuring on every
+// render would have looped. A symbol already knows its cx/cy; the DOM did not.
+// `mark` sits in the MODE-CHIP COLUMN, directly under the chip — each alarm-capable symbol's
+// ModeChip moved up ~12u to make room. Not a flank and not inside the glyph: the RD box is
+// above, Tag2 below, the trend affordance right, and the body is only outlined now.
+function Eq({ onClick, title, children, tag, mark }) {
+  useMimicAlarms();
+  const alarm = tag ? njTagAlarm(tag) : null;
   return (
-    <g className={onClick ? "rasm-eq" : undefined} onClick={onClick} role={onClick ? "button" : undefined} {...(onClick ? njActivate(onClick) : null)}>
-      {title && <title>{title}</title>}
+    <g className={(onClick ? "rasm-eq" : "") + (alarm ? " rasm-eq-abn " + njAlarmTone(alarm) + (alarm.state === "unack" ? " unack" : "") : "")}
+      onClick={onClick} role={onClick ? "button" : undefined} {...(onClick ? njActivate(onClick) : null)}>
+      {(title || alarm) && <title>{[title, alarm ? njAlarmTitle(alarm) : null].filter(Boolean).join(" — ")}</title>}
       {children}
+      {alarm && mark && <AbnormalRing at={mark} tone={njAlarmTone(alarm)} unack={alarm.state === "unack"} level={alarm.level} />}
     </g>
   );
 }
@@ -256,23 +274,23 @@ function RasMimic() {
       <Flag x={40} y={398} label="Fish tanks" dir="r" />
 
       {/* ───── FILTER / BACKWASH ───── */}
-      <Eq title="Backwash pump filter 1" onClick={open("DPT1-SMP0-PU1")}><SymPump cx={150} cy={300} running={false} /></Eq>
-      <ModeChip x={110} y={292} mode="A" />
+      <Eq title="Backwash pump filter 1" tag="DPT1-FIL0-PU1" mark={[118, 309]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={150} cy={300} running={false} /></Eq>
+      <ModeChip x={110} y={280} mode="A" />
       <SymTrend cx={180} cy={300} tag="DPT1-FIL0-PU1" name="Backwash pump filter 1" group="Filter" running={false} />
       <RD x={120} y={250} value="0" unit="Hz" tag="DPT1-FIL0-PU1" name="Backwash pump 1 speed" group="Filter" />
       <Tag2 x={150} y={220} tag="DPT1-FIL0-PU1" desc={["Backwash pump filter 1"]} />
 
-      <Eq title="Backwash pump filter 2" onClick={open("DPT1-SMP0-PU1")}><SymPump cx={150} cy={520} running={false} /></Eq>
-      <ModeChip x={110} y={512} mode="A" />
+      <Eq title="Backwash pump filter 2" tag="DPT1-FIL0-PU2" mark={[118, 529]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={150} cy={520} running={false} /></Eq>
+      <ModeChip x={110} y={500} mode="A" />
       <SymTrend cx={180} cy={520} tag="DPT1-FIL0-PU2" name="Backwash pump filter 2" group="Filter" running={false} />
       <RD x={120} y={555} value="0" unit="Hz" tag="DPT1-FIL0-PU2" name="Backwash pump 2 speed" group="Filter" />
       <Tag2 x={150} y={601} tag="DPT1-FIL0-PU2" desc={["Backwash pump filter 2"]} />
 
-      <Eq title="Drum filter 1" onClick={open("DPT1-FIL0")}>
+      <Eq title="Drum filter 1" tag="DPT1-FIL1-FE1" onClick={open("DPT1-FIL0")}>
         <rect className="rasm-box" x={236} y={270} width={62} height={58} rx="6" />
         <SymMotor cx={267} cy={299} s={0.7} running={false} />
       </Eq>
-      <ModeChip x={215} y={290} mode="A" />
+      <ModeChip x={280} y={272} mode="A" />
       <SymTrend cx={312} cy={299} tag="DPT1-FIL1-FE1" name="Drum filter 1" group="Filter" running={false} />
       <RD x={237} y={236} value="0" unit="Hz" tag="DPT1-FIL1-FE1" name="Drum filter 1 speed" group="Filter" />
       <Tag2 x={267} y={344} tag="DPT1-FIL1-FE1" desc={["Drum filter 1"]} />
@@ -281,7 +299,7 @@ function RasMimic() {
         <rect className="rasm-box" x={236} y={490} width={62} height={58} rx="6" />
         <SymMotor cx={267} cy={519} s={0.7} running={false} />
       </Eq>
-      <ModeChip x={215} y={510} mode="A" />
+      <ModeChip x={280} y={492} mode="A" />
       <SymTrend cx={312} cy={519} tag="DPT1-FIL2-FE1" name="Drum filter 2" group="Filter" running={false} />
       <RD x={237} y={456} value="0" unit="Hz" tag="DPT1-FIL2-FE1" name="Drum filter 2 speed" group="Filter" />
       <Tag2 x={267} y={564} tag="DPT1-FIL2-FE1" desc={["Drum filter 2"]} />
@@ -291,14 +309,14 @@ function RasMimic() {
 
       {/* ───── LYE DOSING ───── */}
       <Flag x={40} y={688} label="Lye" dir="r" />
-      <Eq title="Lye pump 1" onClick={open("DPT1-DNA0-PU1")}><SymPump cx={222} cy={705} running={false} /></Eq>
-      <GreenMark x={176} y={697} /><ModeChip x={148} y={697} mode="M" />
+      <Eq title="Lye pump 1" tag="DPT1-DNA0-PU1" mark={[156, 714]} onClick={open("DPT1-DNA0-PU1")}><SymPump cx={222} cy={705} running={false} /></Eq>
+      <ModeChip x={148} y={685} mode="M" />
       <SymTrend cx={252} cy={705} tag="DPT1-DNA0-PU1" name="Lye pump 1" group="Lye Dosing" running={false} />
       <RD x={163} y={655} w={64} value="0.0" unit="l/h" tag="DPT1-DNA0-PU1" name="Lye pump 1 rate" group="Lye Dosing" />
       <Tag2 x={222} y={742} tag="DPT1-DNA0-PU1" desc={["Lye pump 1"]} />
 
-      <Eq title="Lye pump 2" onClick={open("DPT1-DNA0-PU2")}><SymPump cx={222} cy={815} running={false} /></Eq>
-      <GreenMark x={176} y={807} /><ModeChip x={148} y={807} mode="M" />
+      <Eq title="Lye pump 2" tag="DPT1-DNA0-PU2" mark={[156, 824]} onClick={open("DPT1-DNA0-PU2")}><SymPump cx={222} cy={815} running={false} /></Eq>
+      <ModeChip x={148} y={795} mode="M" />
       <SymTrend cx={252} cy={815} tag="DPT1-DNA0-PU2" name="Lye pump 2" group="Lye Dosing" running={false} />
       <RD x={163} y={848} w={64} value="0.0" unit="l/h" tag="DPT1-DNA0-PU2" name="Lye pump 2 rate" group="Lye Dosing" />
       <Tag2 x={222} y={773} tag="DPT1-DNA0-PU2" desc={["Lye pump 2"]} />
@@ -333,31 +351,31 @@ function RasMimic() {
       {/* ───── CO₂ STRIPPER ───── */}
       <Tag2 x={752} y={246} tag="DPT1-STR0-AV1" desc={["CO₂-fan 1"]} />
       <RD x={719} y={284} value="0" unit="Hz" tag="DPT1-STR0-AV1" name="CO₂-fan 1 speed" group="CO₂ Stripper" />
-      <Eq title="CO₂-fan 1" onClick={open("DPT1-STR0-FAN")}><SymFan cx={752} cy={330} running={false} /></Eq>
+      <Eq title="CO₂-fan 1" tag="DPT1-STR0-AV1" mark={[720, 356]} onClick={open("DPT1-STR0-FAN")}><SymFan cx={752} cy={330} running={false} /></Eq>
       <ModeChip x={712} y={322} mode="M" />
       <SymTrend cx={782} cy={330} tag="DPT1-STR0-AV1" name="CO₂-fan 1" group="CO₂ Stripper" running={false} />
 
       <Tag2 x={848} y={246} tag="DPT1-STR0-AV2" desc={["CO₂-fan 2"]} />
       <RD x={815} y={284} value="0" unit="Hz" tag="DPT1-STR0-AV2" name="CO₂-fan 2 speed" group="CO₂ Stripper" />
-      <Eq title="CO₂-fan 2" onClick={open("DPT1-STR0-FAN")}><SymFan cx={848} cy={330} running={false} /></Eq>
+      <Eq title="CO₂-fan 2" tag="DPT1-STR0-AV2" mark={[816, 356]} onClick={open("DPT1-STR0-FAN")}><SymFan cx={848} cy={330} running={false} /></Eq>
       <ModeChip x={808} y={322} mode="M" />
       <SymTrend cx={878} cy={330} tag="DPT1-STR0-AV2" name="CO₂-fan 2" group="CO₂ Stripper" running={false} />
 
-      <Eq title="CO₂ stripper column" onClick={open("DPT1-STR0-FAN")}><StripperColumn x={700} y={556} w={184} h={150} /></Eq>
+      <Eq title="CO₂ stripper column" tag="DPT1-STR1-PT1" onClick={open("DPT1-STR0-FAN")}><StripperColumn x={700} y={556} w={184} h={150} /></Eq>
       <RD x={759} y={742} w={86} value="−14.4" unit="mbar" tag="DPT1-STR1-PT1" name="Vacuum in CO₂ stripping" group="CO₂ Stripper" />
       <Tag2 x={802} y={788} tag="DPT1-STR1-PT1" desc={["Vacuum in CO₂ stripping"]} />
 
       {/* ───── PUMP SUMP ───── */}
       <Eq title="Pump sump" onClick={open("DPT1-SMP0")}><SumpBasin x={904} y={604} w={296} h={120} /></Eq>
 
-      <Eq title="Lift pump 1" onClick={open("DPT1-SMP0-PU1")}><SymPump cx={985} cy={668} running={true} /></Eq>
-      <ModeChip x={945} y={660} mode="A" />
+      <Eq title="Lift pump 1" tag="DPT1-SMP0-PU1" mark={[953, 677]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={985} cy={668} running={true} /></Eq>
+      <ModeChip x={945} y={648} mode="A" />
       <SymTrend cx={1015} cy={668} tag="DPT1-SMP0-PU1" name="Lift pump 1" group="Pump Sump" running={true} />
       <RD x={952} y={620} value="37" unit="Hz" tag="DPT1-SMP0-PU1" name="Lift pump 1 speed" group="Pump Sump" />
       <Tag2 x={985} y={708} tag="DPT1-SMP0-PU1" desc={["Lift pump 1"]} />
 
-      <Eq title="Lift pump 2" onClick={open("DPT1-SMP0-PU1")}><SymPump cx={1100} cy={668} running={false} /></Eq>
-      <ModeChip x={1060} y={660} mode="A" />
+      <Eq title="Lift pump 2" tag="DPT1-SMP0-PU2" mark={[1068, 677]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={1100} cy={668} running={false} /></Eq>
+      <ModeChip x={1060} y={648} mode="A" />
       <SymTrend cx={1130} cy={668} tag="DPT1-SMP0-PU2" name="Lift pump 2" group="Pump Sump" running={false} />
       <RD x={1067} y={620} value="0" unit="Hz" tag="DPT1-SMP0-PU2" name="Lift pump 2 speed" group="Pump Sump" />
       <Tag2 x={1100} y={708} tag="DPT1-SMP0-PU2" desc={["Lift pump 2"]} />
@@ -378,7 +396,6 @@ function RasMimic() {
         const y = 606 + i * 33;
         return (
           <g key={i}>
-            <GreenMark x={1238} y={y} />
             <RD x={1262} y={y - 4} w={70} value={s.v} unit={s.u} tag={s.tag} name={s.d.split(" · ")[1]} group="Pump Sump" accent={s.accent} />
             <text className="rasm-sensl" x={1366} y={y + 13}>{s.d}</text>
           </g>
@@ -386,14 +403,14 @@ function RasMimic() {
       })}
 
       {/* ───── OXYGENATION ───── */}
-      <Tag2 x={1010} y={78} tag="DPT1-DOX0-PU1" desc={["Oxygenation pump 1"]} anchor="middle" />
+      <Tag2 x={1010} y={74} tag="DPT1-DOX0-PU1" desc={["Oxygenation pump 1"]} anchor="middle" />
       <RD x={977} y={99} value="0" unit="Hz" tag="DPT1-DOX0-PU1" name="Oxygenation pump 1 speed" group="Oxygenation" />
-      <Eq title="Oxygenation pump 1" onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={150} running={false} /></Eq>
-      <ModeChip x={970} y={142} mode="M" />
+      <Eq title="Oxygenation pump 1" tag="DPT1-DOX0-PU1" mark={[978, 159]} onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={150} running={false} /></Eq>
+      <ModeChip x={970} y={130} mode="M" />
       <SymTrend cx={1040} cy={150} tag="DPT1-DOX0-PU1" name="Oxygenation pump 1" group="Oxygenation" running={false} />
 
-      <Eq title="Oxygenation pump 2" onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={250} running={false} /></Eq>
-      <ModeChip x={970} y={242} mode="M" />
+      <Eq title="Oxygenation pump 2" tag="DPT1-DOX0-PU2" mark={[978, 259]} onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={250} running={false} /></Eq>
+      <ModeChip x={970} y={230} mode="M" />
       <SymTrend cx={1040} cy={250} tag="DPT1-DOX0-PU2" name="Oxygenation pump 2" group="Oxygenation" running={false} />
       <RD x={977} y={284} value="0" unit="Hz" tag="DPT1-DOX0-PU2" name="Oxygenation pump 2 speed" group="Oxygenation" />
       <Tag2 x={1010} y={324} tag="DPT1-DOX0-PU2" desc={["Oxygenation pump 2"]} />

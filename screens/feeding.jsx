@@ -271,18 +271,21 @@ function TankCard({ t, alarmLevel, alarmText, vis }) {
   );
 }
 
+// `yest` = feed delivered yesterday, `cycle` = feed delivered this production cycle. Both are
+// per-tank facts with no derivation available, so they live in the register; the dialog had
+// them as one literal reported identically on all eight tanks.
 const TANKS = [
-  { n: 1, fed: 4.5, target: 8.8, ff: 0.90, af: 65, aw: 2.1, bf: 13.6, pop: 149041, bio: 308, feedType: "Aller Infinity", calib: 148.0, paused: false, temp: 13.1, tsgr: 4.7, csgr: 3.9, dailyInc: 2.4 },
-  { n: 2, fed: 10.3, target: 20.4, ff: 0.90, af: 70, aw: 3.6, bf: 29.1, pop: 206271, bio: 734, feedType: "Aller Infinity", calib: 152.0, paused: false, temp: 13.4, tsgr: 4.93, csgr: 4.19, dailyInc: 2.7,
+  { n: 1, fed: 4.5, target: 8.8, ff: 0.90, af: 65, aw: 2.1, bf: 13.6, pop: 149041, bio: 308, feedType: "Aller Infinity", calib: 148.0, paused: false, temp: 13.1, tsgr: 4.7, csgr: 3.9, dailyInc: 2.4, yest: 8.6, cycle: 392 },
+  { n: 2, fed: 10.3, target: 20.4, ff: 0.90, af: 70, aw: 3.6, bf: 29.1, pop: 206271, bio: 734, feedType: "Aller Infinity", calib: 152.0, paused: false, temp: 13.4, tsgr: 4.93, csgr: 4.19, dailyInc: 2.7, yest: 19.8, cycle: 906,
     screws: [{ feedType: "Aller Infinity", calib: 152.0, share: 60 }, { feedType: "Aller Infinity", calib: 149.5, share: 40 }] },
-  { n: 3, fed: 9.8, target: 19.4, ff: 0.90, af: 75, aw: 3.6, bf: 25.8, pop: 180429, bio: 653, feedType: "Aller Thalassa", calib: 148.0, paused: false, temp: 13.2, tsgr: 4.6, csgr: 3.8, dailyInc: 2.3,
+  { n: 3, fed: 9.8, target: 19.4, ff: 0.90, af: 75, aw: 3.6, bf: 25.8, pop: 180429, bio: 653, feedType: "Aller Thalassa", calib: 148.0, paused: false, temp: 13.2, tsgr: 4.6, csgr: 3.8, dailyInc: 2.3, yest: 18.6, cycle: 841,
     screws: [{ feedType: "Aller Thalassa", calib: 148.0, share: 50 }, { feedType: "Aller Futura", calib: 146.0, share: 50, running: false }] },
-  { n: 4, fed: 0, target: 9.3, ff: 0.90, af: 80, aw: 2.1, bf: 14.3, pop: 156628, bio: 324, feedType: "Aller Infinity", calib: 145.5, paused: true, temp: 12.9, tsgr: 0, csgr: 0, dailyInc: 0 },
-  { n: 5, fed: 7.1, target: 15.2, ff: 0.90, af: 68, aw: 2.9, bf: 21.0, pop: 171204, bio: 497, feedType: "Nutra Supreme", calib: 150.0, paused: false, temp: 13.4, tsgr: 4.5, csgr: 3.6, dailyInc: 2.1,
+  { n: 4, fed: 0, target: 9.3, ff: 0.90, af: 80, aw: 2.1, bf: 14.3, pop: 156628, bio: 324, feedType: "Aller Infinity", calib: 145.5, paused: true, temp: 12.9, tsgr: 0, csgr: 0, dailyInc: 0, yest: 4.2, cycle: 318 },
+  { n: 5, fed: 7.1, target: 15.2, ff: 0.90, af: 68, aw: 2.9, bf: 21.0, pop: 171204, bio: 497, feedType: "Nutra Supreme", calib: 150.0, paused: false, temp: 13.4, tsgr: 4.5, csgr: 3.6, dailyInc: 2.1, yest: 14.8, cycle: 668,
     screws: [{ feedType: "Nutra Supreme", calib: 150.0, share: 40 }, { feedType: "Nutra Supreme", calib: 151.5, share: 30 }, { feedType: "Aller Infinity", calib: 147.0, share: 30 }] },
-  { n: 6, fed: 8.4, target: 17.6, ff: 0.90, af: 72, aw: 3.2, bf: 23.4, pop: 168930, bio: 541, feedType: "Aller Infinity", calib: 148.0, paused: false, temp: 13.3, tsgr: 4.6, csgr: 3.9, dailyInc: 2.5 },
-  { n: 7, fed: 5.9, target: 12.1, ff: 0.90, af: 66, aw: 2.4, bf: 17.8, pop: 159870, bio: 384, feedType: "Aller Futura", calib: 149.5, paused: false, temp: 13.0, tsgr: 4.4, csgr: 3.7, dailyInc: 2.0 },
-  { n: 8, fed: 11.2, target: 22.0, ff: 0.90, af: 74, aw: 3.8, bf: 31.2, pop: 198640, bio: 755, feedType: "Aller Infinity", calib: 151.0, paused: false, temp: 13.5, tsgr: 4.9, csgr: 4.2, dailyInc: 2.8,
+  { n: 6, fed: 8.4, target: 17.6, ff: 0.90, af: 72, aw: 3.2, bf: 23.4, pop: 168930, bio: 541, feedType: "Aller Infinity", calib: 148.0, paused: false, temp: 13.3, tsgr: 4.6, csgr: 3.9, dailyInc: 2.5, yest: 17.1, cycle: 762 },
+  { n: 7, fed: 5.9, target: 12.1, ff: 0.90, af: 66, aw: 2.4, bf: 17.8, pop: 159870, bio: 384, feedType: "Aller Futura", calib: 149.5, paused: false, temp: 13.0, tsgr: 4.4, csgr: 3.7, dailyInc: 2.0, yest: 11.7, cycle: 524 },
+  { n: 8, fed: 11.2, target: 22.0, ff: 0.90, af: 74, aw: 3.8, bf: 31.2, pop: 198640, bio: 755, feedType: "Aller Infinity", calib: 151.0, paused: false, temp: 13.5, tsgr: 4.9, csgr: 4.2, dailyInc: 2.8, yest: 21.4, cycle: 978,
     screws: [{ feedType: "Aller Infinity", calib: 151.0, share: 55 }, { feedType: "Biomar Orbit", calib: 153.5, share: 45 }] },
 ];
 

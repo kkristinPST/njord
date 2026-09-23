@@ -19,10 +19,10 @@ const TREND_CATALOG = [
   { tag: "DPT1-FT0-LT1",  name: "Water level",        unit: "cm",   base: 176,   amp: 6,    group: "Fish Tank" },
   { tag: "DPT1-FT0-TT1",  name: "Temperature",        unit: "°C",   base: 12.5,  amp: 0.5,  group: "Fish Tank" },
   // Pump Sump
-  { tag: "DPT1-SMP0-PH1", name: "pH 1",               unit: "pH",   base: 6.9,   amp: 0.18, group: "Pump Sump" },
-  { tag: "DPT1-SMP0-PH2", name: "pH 2",               unit: "pH",   base: 6.7,   amp: 0.18, group: "Pump Sump" },
+  { tag: "DPT1-SMP0-QT3", name: "pH 1",               unit: "pH",   base: 6.9,   amp: 0.18, group: "Pump Sump" },
+  { tag: "DPT1-SMP0-QT4", name: "pH 2",               unit: "pH",   base: 6.7,   amp: 0.18, group: "Pump Sump" },
   { tag: "DPT1-SMP0-QT1", name: "CO₂ in sump",        unit: "mg/L", base: 6.8,   amp: 1.1,  group: "Pump Sump" },
-  { tag: "DPT1-SMP0-OT1", name: "O₂ saturation",      unit: "%",    base: 95.2,  amp: 2.2,  group: "Pump Sump" },
+  { tag: "DPT1-SMP0-QT2", name: "O₂ saturation",      unit: "%",    base: 95.2,  amp: 2.2,  group: "Pump Sump" },
   { tag: "DPT1-SMP0-LT1", name: "Sump level",         unit: "cm",   base: 191,   amp: 7,    group: "Pump Sump" },
   { tag: "DPT1-SMP0-PT1", name: "Total pressure",     unit: "bar",  base: 2.0,   amp: 0.12, group: "Pump Sump" },
   // RAS / biofilter / drum filter
@@ -31,9 +31,9 @@ const TREND_CATALOG = [
   { tag: "DPT1-FIL0-LT1", name: "Level before filter",unit: "cm",   base: 59,    amp: 4,    group: "RAS" },
   // CO₂ stripper / oxygenation
   { tag: "DPT1-STR0-FAN", name: "CO₂ fan activity",   unit: "Hz",   base: 49,    amp: 5,    group: "CO₂ Stripper" },
-  { tag: "DPT1-STR0-PT1", name: "Stripping vacuum",   unit: "mbar", base: -44.4, amp: 4,    group: "CO₂ Stripper" },
+  { tag: "DPT1-STR1-PT1", name: "Stripping vacuum",   unit: "mbar", base: -44.4, amp: 4,    group: "CO₂ Stripper" },
   { tag: "DPT1-DOX0-OT1", name: "Cone O₂ saturation", unit: "%",    base: 87.9,  amp: 3,    group: "Oxygenation" },
-  { tag: "DPT1-DOX0-PT1", name: "Cone pressure",      unit: "bar",  base: 2.0,   amp: 0.1,  group: "Oxygenation" },
+  { tag: "DPT1-DOX1-PT1", name: "Cone pressure",      unit: "bar",  base: 2.0,   amp: 0.1,  group: "Oxygenation" },
   // Water treatment
   { tag: "WT0-FT1",       name: "Intake flow",        unit: "L/s",  base: 91.6,  amp: 6,    group: "Water Treatment" },
   { tag: "WT0-TT1",       name: "Intake water temp",  unit: "°C",   base: 6.2,   amp: 0.4,  group: "Water Treatment" },
@@ -173,7 +173,7 @@ function viewFromStore(store) {
 // both bounds. NOT from the alarm register: that keys on the QT measurement scheme, which is not
 // the id the trend pens carry, so every join missed and every line fell off-scale.
 // The pump-sump pH signals are the one place the two schemes disagree, hence the alias.
-const TREND_LIMIT_ALIAS = { "DPT1-SMP0-PH1": "DPT1-SMP0-QT3", "DPT1-SMP0-PH2": "DPT1-SMP0-QT4" };
+const TREND_LIMIT_ALIAS = { "DPT1-SMP0-QT3": "DPT1-SMP0-QT3", "DPT1-SMP0-QT4": "DPT1-SMP0-QT4" };
 let TREND_LIMITS = null;
 function njTagLimits(tag) {
   const reg = window.RAS_LIMITS;
@@ -254,7 +254,7 @@ const TREND_LS = "nj_trend_pens_v1";
 function loadPens() {
   try { const r = JSON.parse(localStorage.getItem(TREND_LS)); if (Array.isArray(r) && r.length) return r; } catch (e) {}
   // sensible defaults so the workspace isn't empty on first visit
-  return ["DPT1-FT0-OT1", "DPT1-SMP0-PH1"].map((t, i) => makePen(TREND_BY_TAG[t], i));
+  return ["DPT1-FT0-OT1", "DPT1-SMP0-QT3"].map((t, i) => makePen(TREND_BY_TAG[t], i));
 }
 function makePen(cat, colorIdx) {
   return { id: cat.tag, tag: cat.tag, name: cat.name, unit: cat.unit, base: cat.base, amp: cat.amp,
@@ -297,14 +297,35 @@ const trendStore = {
     this.emit();
     return s.label;
   },
+  // An explicit axis selection only ever means "these, out of what is plotted". It persists
+  // across sessions, so a pick for a pen that is NOT currently plotted lies dormant (picked
+  // resolves empty → automatic, every pen gets an axis) and then detonates the moment that
+  // pen is plotted again: it becomes the sole explicit pick and every other axis disappears.
+  // Prune to the plotted set on every mutation, and carry a newly added pen INTO an existing
+  // selection — adding a signal is a request to see it, never a request to hide the rest.
+  syncAxisSel(addId) {
+    const live = new Set(this.pens.map((p) => p.id));
+    const before = (this.axisSel || []);
+    let next = before.filter((id) => live.has(id));
+    // Pruning ALONE reproduces the bug: a 7-id selection with one plotted pen prunes to a
+    // 1-id selection, which is a perfectly valid explicit pick and hides the other four
+    // axes. A selection whose other members are gone is not a selection — fall back to
+    // automatic whenever anything had to be dropped.
+    if (next.length !== before.length) next = [];
+    if (addId && next.length && !next.includes(addId)) next = next.concat(addId);
+    if (next.length === this.pens.length) next = [];   // "all of them" IS automatic
+    this.axisSel = next;
+    try { localStorage.setItem("nj_trend_axissel_v1", JSON.stringify(next)); } catch (e) {}
+  },
   add(pen) {
     if (this.pens.some((p) => p.id === pen.id)) { this.focus = pen.id; this.emit(); return; }
     this.snap("add " + (pen.name || pen.tag));
     this.pens = [...this.pens, { ...pen, color: pen.color || this.nextColor() }];
     this.focus = pen.id;
+    this.syncAxisSel(pen.id);
     this.emit();
   },
-  remove(id) { this.snap("remove signal"); this.pens = this.pens.filter((p) => p.id !== id); if (this.focus === id) this.focus = null; this.emit(); },
+  remove(id) { this.snap("remove signal"); this.pens = this.pens.filter((p) => p.id !== id); if (this.focus === id) this.focus = null; this.syncAxisSel(); this.emit(); },
   // replace the entire working pen set (used when a saved Trend Group is loaded).
   // Colors are reassigned deterministically from the palette so the set reads cleanly.
   setPens(pens) {
@@ -314,6 +335,7 @@ const trendStore = {
       .filter((p) => { if (seen.has(p.id)) return false; seen.add(p.id); return true; })
       .map((p, i) => ({ ...p, color: TREND_PALETTE[i % TREND_PALETTE.length], hidden: !!p.hidden }));
     this.focus = null;
+    this.syncAxisSel();
     this.clearFocus(); // emits
   },
   toggle(id) { this.snap("show/hide signal"); this.pens = this.pens.map((p) => p.id === id ? { ...p, hidden: !p.hidden } : p); this.emit(); },
@@ -630,10 +652,22 @@ function valAt(pts, t) {
   return pts[pts.length - 1].v;
 }
 
+// The axis cap is viewport-dependent (see MultiTrendChart) and must be read, never re-typed:
+// the pen-details dialog and the in-chart picker have to agree on the same number.
+function njAxisMax(w) { const x = w || (typeof window !== "undefined" ? window.innerWidth : 1600); return x >= 1500 ? 10 : x >= 1180 ? 7 : 5; }
 // ── time-based multi-series trend chart with alarm markers, threshold + center overlays.
 // series = [{ pen, pts:[{t,v}] }]; view = viewFromStore(...); markers = markersForView(...)
 function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true, axisMode = "focus", height = 360, onOpenAlarm, onCenterAlarm }) {
   const [selId, setSelId] = React.useState(null);
+  // the chart is one fixed viewBox scaled to its container, so axis count has to answer to the
+  // real window width — nothing inside the SVG can know how small it has been drawn
+  const [vw, setVw] = React.useState(() => (typeof window !== "undefined" ? window.innerWidth : 1600));
+  React.useEffect(() => {
+    let raf = 0;
+    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setVw(window.innerWidth)); };
+    window.addEventListener("resize", on);
+    return () => { window.removeEventListener("resize", on); cancelAnimationFrame(raf); };
+  }, []);
   const [hoverT, setHoverT] = React.useState(null);
   const [moreAx, setMoreAx] = React.useState(false);
   React.useEffect(() => {
@@ -645,8 +679,13 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   const SEVm = window.SEV || {};
   const vis = series.filter((s) => !s.pen.hidden && s.pts.length);
   const sepAxes = axisMode === "separate" && vis.length > 1;
-  const AXW = 54, AXMAX = 5;
-  const W = 980, H = height, padR = 18, padT = sepAxes ? 42 : 30, padB = 30;
+  // Ten separate axes, not five: sites asked for it and say they run up to ten pens at once.
+  // The gutter width has to come DOWN as the count goes up, or ten × 54px would eat 422 of the
+  // 980 viewBox and leave the plot narrower than its own axis furniture. The SVG scales as one
+  // unit, so on a narrow screen every gutter shrinks with it — hence the viewport cap: ten axes
+  // are legible on a control-room monitor and are not in a half-width window.
+  const AXMAX = njAxisMax(vw);
+  const W = 980, H = height, padR = 18, padB = 30;
   const span = view.xMax - view.xMin || 1;
   const x = (t) => padL + ((t - view.xMin) / span) * (W - padL - padR);
   // Dynamic scale (default) fits the data in view. A pen with dyn === false plots against the
@@ -677,9 +716,17 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
     }
   }
   const axisHidden = sepAxes ? vis.length - axisPens.length : 0;
-  const padL = axisPens.length ? 22 + axisPens.length * AXW : 56;
+  const nAx = axisPens.length;
+  const AXW = nAx <= 5 ? 54 : nAx <= 7 ? 46 : 40;
+  const axNarrow = AXW < 50;
+  const padT = sepAxes ? 42 : 30;
+  const padL = nAx ? 22 + nAx * AXW : 56;
   const fr = fpen ? norm(fpen.pts, fpen.pen) : { mn: 0, mx: 1 };
-  const decOf = (r) => (Math.abs(r.mx) < 5 ? 2 : Math.abs(r.mx) < 50 ? 1 : 0);
+  // Decimals from the SPAN, not the maximum, once gutters are narrow: a pH axis maxes at ~7 but
+  // covers 0.3 of range, and rounding it to whole numbers printed "7 7 7 7 7" — five identical
+  // ticks, which is an axis that says nothing. Measured, nothing needed dropping: the widest
+  // tight label is 16u in a 40u gutter.
+  const decOf = (r) => { const m = Math.abs(r.mx), s = r.mx - r.mn; return axNarrow ? (s < 2 ? 2 : s < 20 ? 1 : 0) : (m < 5 ? 2 : m < 50 ? 1 : 0); };
   const TICKF = [0, 0.25, 0.5, 0.75, 1];
   const rngOf = {}; vis.forEach((s) => { rngOf[s.pen.id] = norm(s.pts, s.pen); });
   const yticks = fpen ? TICKF.map((f) => fr.mn + f * (fr.mx - fr.mn)) : [];
@@ -753,7 +800,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
             <line x1={gr - 4} y1={padT} x2={gr - 4} y2={H - padB} stroke={s.pen.color} strokeWidth={dim ? 1.5 : 2.5} />
             <rect x={gr - 9} y={padT - 13} width="11" height={dim ? 2.5 : 3.5} rx="1.5" fill={s.pen.color} />
             {TICKF.map((f, k) => (
-              <text key={k} className="mt-ylbl mt-ylbl-sep" x={gr - 12} y={yOf(r.mn + f * (r.mx - r.mn), r.mn, r.mx) + 3} textAnchor="end">{(r.mn + f * (r.mx - r.mn)).toFixed(d)}</text>
+              <text key={k} className={"mt-ylbl mt-ylbl-sep" + (axNarrow ? " mt-ylbl-tight" : "")} x={gr - 12} y={yOf(r.mn + f * (r.mx - r.mn), r.mn, r.mx) + 3} textAnchor="end">{(r.mn + f * (r.mx - r.mn)).toFixed(d)}</text>
             ))}
             <text className="mt-yaxname" x={gr - 12} y={padT - 21} textAnchor="end">{s.pen.unit}</text>
           </g>
@@ -993,13 +1040,13 @@ function tgSeedPens(tags) { return tags.map((t) => (TREND_BY_TAG[t] ? penDef(TRE
 function seedTrendGroups() {
   return [
     { id: "tg-seed-1", name: "Pump Sump, O₂ · pH · CO₂", visibility: "shared", owner: NJ_CURRENT_USER,
-      pens: tgSeedPens(["DPT1-SMP0-OT1", "DPT1-SMP0-PH1", "DPT1-SMP0-PH2", "DPT1-SMP0-QT1"]), updated: "26 Feb 2026" },
+      pens: tgSeedPens(["DPT1-SMP0-QT2", "DPT1-SMP0-QT3", "DPT1-SMP0-QT4", "DPT1-SMP0-QT1"]), updated: "26 Feb 2026" },
     { id: "tg-seed-2", name: "Fish Tank health", visibility: "shared", owner: "M. Haugen",
       pens: tgSeedPens(["DPT1-FT0-OT1", "DPT1-FT0-LT1", "DPT1-FT0-TT1"]), updated: "01 Mar 2026" },
     { id: "tg-seed-3", name: "CO₂ stripping & oxygenation", visibility: "shared", owner: "A. Lind",
-      pens: tgSeedPens(["DPT1-STR0-FAN", "DPT1-STR0-PT1", "DPT1-DOX0-OT1", "DPT1-DOX0-PT1"]), updated: "28 Feb 2026" },
+      pens: tgSeedPens(["DPT1-STR0-FAN", "DPT1-STR1-PT1", "DPT1-DOX0-OT1", "DPT1-DOX1-PT1"]), updated: "28 Feb 2026" },
     { id: "tg-seed-4", name: "My morning check", visibility: "private", owner: NJ_CURRENT_USER,
-      pens: tgSeedPens(["DPT1-FT0-OT1", "DPT1-SMP0-PH1", "DPT1-EP0-PWR"]), updated: "03 Mar 2026" },
+      pens: tgSeedPens(["DPT1-FT0-OT1", "DPT1-SMP0-QT3", "DPT1-EP0-PWR"]), updated: "03 Mar 2026" },
   ];
 }
 function loadTrendGroups() {
@@ -1313,11 +1360,16 @@ function trendTree() {
   }));
 }
 
+// Reconcile the PERSISTED axis selection against the pens actually restored from storage.
+// syncAxisSel only ran on mutation, so opening the page with a stale selection rendered
+// "axes 1/5" with no user action at all — the bug survived its own fix.
+trendStore.syncAxisSel();
+
 Object.assign(window, {
   trendEquip, trendTree,
   TREND_CATALOG, TREND_BY_TAG, TREND_PALETTE, TREND_RANGES, RANGE_HOURS, FOCUS_WINDOWS, INTERVALS, INTERVAL_MS, trendPointCount,
   TREND_ACCUM, TREND_AGG, TREND_COLORS, njTagLimits,
-  trendStore, useTrends, trendSeries, njSendToTrend, njTrendToast, njToast, resolveTrendPen, MultiTrendChart, TrendBtn,
+  trendStore, useTrends, trendSeries, njSendToTrend, njTrendToast, njToast, resolveTrendPen, MultiTrendChart, TrendBtn, njAxisMax,
   seriesForView, viewFromStore, markersForView, penValueAt, fmtClock, fmtDayClock, fmtFullTs, fmtAxis, njDownloadFile,
   TrendExportDialog, openTrendExport, NjDateTime,
   alarmMeasPen, resolveAlarmMeas, njInvestigateAlarm, njGoAlarm, njGoAlarmRows, useAlarmHighlight, alarmHighlight,

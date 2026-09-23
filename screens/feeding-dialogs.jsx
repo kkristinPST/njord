@@ -49,20 +49,42 @@ function EditBox({ tank, field, label, value, unit, min, max, step, options, gro
 function ffKey(field, s) { return s > 1 ? field + "#" + s : field; }
 function FeederDialog({ n, s = 1, hyflow }) {
   useFeed();
-  const feedType = feedGet(n, ffKey("feedType", s), "Aller Infinity");
-  const calib = feedGet(n, ffKey("calib", s), 148.0);
+  // THE REGISTER FIRST. Every value below falls back to this machine's own fixture row, never
+  // to a global literal: the dialog showed Aller Infinity / 148.0 g/rot for a screw the card
+  // beside it showed as Aller Futura / 146.0, and reported one tank's temperature, SGR and
+  // daily feed on every tank. Same defect as the run-state one — a child's state must be READ
+  // from the register the card reads, never assumed from a constant or from its parent.
+  const fdTank = (window.FF_TANKS || []).find((t) => t.n === n);
+  const fdScrew = fdTank && window.ffScrews ? window.ffScrews(fdTank)[s - 1] : null;
+  const feedType = feedGet(n, ffKey("feedType", s), (fdScrew && fdScrew.feedType) || "Aller Infinity");
+  const calib = feedGet(n, ffKey("calib", s), (fdScrew && fdScrew.calib) || 148.0);
   const minOp = feedGet(n, ffKey("minOp", s), 1);
   const interval = feedGet(n, ffKey("interval", s), 180);
-  const paused = feedGet(n, "paused", false);
-  const curTarget = feedGet(n, ffKey("curTarget", s), 0.19);
-  const pct = feedGet(n, ffKey("curPct", s), 1.3);
+  // the literal `false` was the same defect one line later than the ones already fixed: the
+  // store is empty, so the fixture's `paused: true` was never seen and Tank 4's dialog read
+  // "In operation" beside its own card reading "Paused"
+  const paused = feedGet(n, "paused", !!(fdTank && fdTank.paused));
+  const fdState = paused ? "paused" : (fdScrew && fdScrew.running === false) ? "stopped" : "run";
+  const fdShare = fdScrew && fdScrew.share != null ? fdScrew.share : 100;
+  const ft = fdTank || {};
+  // a machine this dialog labels Stopped cannot also be running at 1.3 % of its hourly target
+  const fdRunning = fdState === "run";
+  const curTarget = fdRunning ? feedGet(n, ffKey("curTarget", s), ft.target ? +(ft.target * fdShare / 100 / 24).toFixed(2) : 0.19) : 0;
+  const pct = fdRunning ? feedGet(n, ffKey("curPct", s), 1.3) : 0;
   const [more, setMore] = React.useState(false);
 
+  const fdNum = (v, u, d = 1) => (v == null ? "—" : v.toFixed(d) + " " + u);
   const extra = [
-    ["Recalculation time", "13:00"], ["Temperature", "12.4 °C"], ["Table SGR", "1.42 %/d"],
-    ["Calculated SGR", "1.38 %/d"], ["Feed percentage", "1.9 %"], ["Feed current day", "9.8 kg"],
-    ["Feed yesterday", "18.6 kg"], ["Feed current cycle", "412 kg"], ["Hand feed", "0.0 kg"],
-    ["Boost feed", "0.0 kg"], ["Daily feed increase", "3 %"], ["Estimated growth", "+0.4 kg/d"],
+    ["Recalculation time", "13:00"], ["Temperature", fdNum(ft.temp, "°C")], ["Table SGR", fdNum(ft.tsgr, "%/d", 2)],
+    ["Calculated SGR", fdNum(ft.csgr, "%/d", 2)], ["Feed percentage", fdNum(ft.bio ? (ft.target / ft.bio) * 100 : null, "%")],
+    ["Feed current day", fdNum(ft.fed != null ? ft.fed * fdShare / 100 : null, "kg")],
+    ["Feed yesterday", fdNum(ft.yest != null ? ft.yest * fdShare / 100 : null, "kg")],
+    ["Feed current cycle", fdNum(ft.cycle != null ? ft.cycle * fdShare / 100 : null, "kg", 0)],
+    ["Hand feed", "0.0 kg"],
+    // biomass × calculated SGR. The literal it replaces said +0.4 kg/d on a paused tank whose
+    // own SGR row read 0.00 %/d, in the same list — and was ~30× low on every other tank.
+    ["Boost feed", "0.0 kg"], ["Daily feed increase", fdNum(ft.dailyInc, "%")],
+    ["Estimated growth", ft.bio != null && ft.csgr != null ? "+" + fdNum(ft.bio * ft.csgr / 100, "kg/d") : "—"],
   ];
 
   return (
@@ -71,15 +93,19 @@ function FeederDialog({ n, s = 1, hyflow }) {
       <div className="dlg-body fd-body">
         {/* status + current target hero */}
         <div className="fd-hero">
-          <span className={"fd-state " + (paused ? "paused" : "run")}>
-            <Dot level={paused ? "diagnostic" : "ok"} size={9} /> {paused ? "Paused" : "In operation"}
+          <span className={"fd-state " + (fdState === "run" ? "run" : "paused")}>
+            <Dot level={fdState === "run" ? "ok" : "diagnostic"} size={9} /> {fdState === "paused" ? "Tank paused" : fdState === "stopped" ? "Stopped" : "In operation"}
           </span>
           <div className="fd-hero-target">
             <span className="fd-hero-l">Current target</span>
             <span className="data fd-hero-v">{curTarget.toFixed(2)} <span className="u">kg/h</span></span>
           </div>
         </div>
+        {/* The card's screw bar is TODAY'S DOSE delivered; this one is the instantaneous rate
+            against the current hourly target. Two different quantities, so the label says which
+            — unlabelled, a 1.3 % here beside a 51 % on the card reads as a contradiction. */}
         <div className="fd-progress">
+          <span className="fd-progress-l">Rate now</span>
           <div className="fd-progress-bar"><div className="fd-progress-fill" style={{ width: Math.min(100, pct) + "%" }} /></div>
           <span className="data fd-progress-pct">{pct.toFixed(1)} %</span>
         </div>

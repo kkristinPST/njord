@@ -188,7 +188,7 @@ function PenDetailsDialog({ penId }) {
               onChange={(e) => store.setPenRange(pen.id, pen.rMin, parseFloat(e.target.value))} /></label>
         </div>
         <label className={"an-pen-chk" + (store.axisMode !== "separate" ? " disabled" : "")}
-          {...(store.axisMode === "separate" ? njCheckable(() => store.toggleAxisPen(pen.id, 5, sepOn, axisSel), { on: sepOn, label: "Separate axis" }) : {})}>
+          {...(store.axisMode === "separate" ? njCheckable(() => store.toggleAxisPen(pen.id, njAxisMax(), sepOn, axisSel), { on: sepOn, label: "Separate axis" }) : {})}>
           <Check on={sepOn && store.axisMode === "separate"} />
           <span>Separate axis<i>{store.axisMode === "separate" ? "own labelled gutter" : "set Y axis to Separate first"}</i></span>
         </label>

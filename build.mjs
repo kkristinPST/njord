@@ -29,7 +29,9 @@ const OUT_DIR = path.join(ROOT, "bundle");
 const JS_FILES = [
   "lib/icon.jsx",
   "lib/facility.jsx",
+  "lib/oncall-config.jsx", // after facility, before mimic-registry (matches Redesign.html)
   "lib/mimic-registry.jsx",
+  "lib/mimic-alarms.jsx", // after mimic-registry, before mortality-causes (matches Redesign.html)
   "lib/mortality-causes.jsx",
   "lib/alarm-log.jsx",
   "lib/chrome.jsx",

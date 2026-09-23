@@ -370,7 +370,7 @@ function BlockDialog({ rows, ids, label, onDone, denied }) {
         {denied > 0 && (
           <div className="shelve-partial">
             <Icon name="shield" size={14} color="var(--warning-text)" />
-            <span><b>{denied} of {denied + ids.length}</b> cannot be blocked (critical priority, or Allow shelving = No on the master record) and will stay active.
+            <span><b>{denied} of {denied + ids.length}</b> cannot be blocked (critical priority, or Allow blocking = No on the master record) and will stay active.
               <button className="linkbtn" onClick={() => { closeDialog(); setTimeout(() => openOosDialog(rows.filter((r) => !njShelveRule(r).ok), onDone), 0); }}>Take those out of service</button></span>
           </div>
         )}
@@ -468,10 +468,19 @@ function ActiveAlarmsScreen({ filter = null }) {
   const hl = useAlarmHighlight();
   const [q, setQ] = React.useState("");
   const setFilter = (lvl) => window.__njAlarmTab && window.__njAlarmTab("Active", lvl);
+  const [st, setSt] = React.useState(null);
   const counts = alarmCounts();
   const active = hub.rows.filter(isActiveAlarm);
-  const rows = (filter ? active.filter((r) => r.level === filter) : active).filter((r) => alarmMatch(r, q));
   const fLabel = filter ? (PRIO_FILTERS.find((p) => p.level === filter) || {}).label : null;
+  // STATE filter. A returned-to-normal alarm was already in this table (isActiveAlarm keeps
+  // anything not "normal"), but the only way to find one was to read the STATE column row by
+  // row — so the philosophy's "returned but unacknowledged" had no door. Counts are read from
+  // the set the OTHER filters allow, so a count can never contradict the click.
+  const base = (filter ? active.filter((r) => r.level === filter) : active).filter((r) => alarmMatch(r, q));
+  const stCounts = { unack: 0, returned: 0, ack: 0 };
+  base.forEach((r) => { if (stCounts[r.state] != null) stCounts[r.state]++; });
+  const rows = st ? base.filter((r) => r.state === st) : base;
+  const stWord = { unack: "are unacknowledged", returned: "have returned to normal", ack: "are acknowledged" }[st];
   const visibleIds = rows.map((r) => r.id);
   const selVisible = visibleIds.filter((id) => sel.has(id));
   const allOn = visibleIds.length > 0 && selVisible.length === visibleIds.length;
@@ -497,6 +506,19 @@ function ActiveAlarmsScreen({ filter = null }) {
           <span className="fbar-group">
             <span className="lbl"><Icon name="sliders-horizontal" size={16} color="var(--slate-500)" /> Priority</span>
             <PriorityChips value={filter} onChange={setFilter} counts={counts} />
+          </span>
+          <span className="fbar-div" />
+          <span className="fbar-group">
+            <span className="lbl"><Icon name="activity" size={16} color="var(--slate-500)" /> State</span>
+            <span className="chips">
+              {[{ id: "unack", label: "Unacknowledged" }, { id: "returned", label: "Returned to normal" }, { id: "ack", label: "Acknowledged" }].map((s) => (
+                <button key={s.id} className={"chip chip-btn" + (st === s.id ? " chip-on" : "")}
+                  onClick={() => setSt(st === s.id ? null : s.id)}
+                  title={st === s.id ? "Clear filter" : s.id === "returned" ? "The condition cleared itself — the alarm stays listed until someone acknowledges it" : "Show only " + s.label.toLowerCase()}>
+                  {s.label}<span className="chip-n data">{stCounts[s.id]}</span>
+                </button>
+              ))}
+            </span>
           </span>
           {/* live operator load (ch. 11): the count that says whether this is a busy shift or a
               flood. The threshold is the one number the alarm philosophy states. */}
@@ -562,16 +584,18 @@ function ActiveAlarmsScreen({ filter = null }) {
               </tr>
             ))}
             {rows.length === 0 && (
-              /* `resolved` may ONLY be used when nothing is narrowing the list. With a query or a
+              /* `resolved` may ONLY be used when nothing is narrowing the list. With a query, a
+                 state chip or a
                  priority filter active, an empty table means "hidden", not "healthy" — claiming
                  the plant has no standing alarms while 18 are filtered out is the single most
                  dangerous thing this component could say. */
               <NjEmptyRow colSpan={8}
-                reason={q.trim() ? "search" : filter ? "filtered" : "resolved"}
-                title={q.trim() ? "No standing alarms match \u201c" + q.trim() + "\u201d"
+                reason={q.trim() ? "search" : (filter || st) ? "filtered" : "resolved"}
+                title={(st && base.length > 0) ? "No " + (fLabel ? fLabel + " alarms " : "standing alarms ") + stWord + " \u2014 " + base.length + " standing on other states"
+                  : q.trim() ? "No standing alarms match \u201c" + q.trim() + "\u201d"
                   : filter ? "No standing " + fLabel + " alarms \u2014 " + counts.total + " standing on other priorities"
                   : "No standing alarms."}
-                action={(q.trim() || filter) ? <button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setFilter(null); }}>Clear filters</button> : null} />
+                action={(q.trim() || filter || st) ? <button className="btn btn-secondary btn-sm" onClick={() => { setQ(""); setSt(null); setFilter(null); }}>Clear filters</button> : null} />
             )}
           </tbody>
         </table>

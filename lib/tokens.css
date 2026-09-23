@@ -148,6 +148,12 @@
   --sc-run:         #3c4a5e;   /* running / open — energized (solid neutral) */
   --sc-stop:        #c9d2dc;   /* stopped / closed — de-energized (light neutral) */
   --sc-abnormal:    #F53E39;   /* equipment in alarm — the only saturated symbol color */
+  /* Manual mode. Amber FAMILY, deliberately NOT --warning #FBA100: a manual chip in the exact
+     high-alarm amber, beside a high-alarm badge, reads as a second warning. Mode, not fault. */
+  --sc-manual:      #9A5C00;
+  /* Outline + letter share this ONE token (see ModeChip): there is no fill/glyph pair to keep
+     legible, and the chip cannot outweigh the alarm badges beside it. It must clear 4.5:1
+     against --sc-node, the chip's own fill. */
 }
 
 /* ============================================================
@@ -217,6 +223,12 @@
   --sc-run:         #C6D2E4;   /* running / open — light-neutral (reads as present on dark) */
   --sc-stop:        #3A4A63;   /* stopped / closed — recessed dark-neutral */
   --sc-abnormal:    #FF6F66;
+  --sc-manual:      #D08A28;   /* lifted to clear 4.5:1 on the dark node fill (--sc-node
+                                  #1B2B45). Colliding with --warning #FBA100, which is NOT
+                                  lifted in this theme, mattered when the chip was a filled
+                                  amber block; an outlined letter and a filled badge are
+                                  different shapes, and this is the most conservative of the
+                                  passing shades at 1.39:1 from it. */
 
   /* severity marks — lifted so dots/chart fills stay legible on the dark card */
   --sev-crit: #F85C55; --sev-high: #F2B341; --sev-med: #5B8DEF;
@@ -313,6 +325,7 @@
   --sc-run:         #2C3A48;
   --sc-stop:        #C4CCD4;
   --sc-abnormal:    #C8443D;
+  --sc-manual:      #A25E08;   /* the legacy skin's deeper amber */
 
   /* severity marks — the classic saturated HMI ramp, drawn from this theme's own
      palette so a dot always matches the badge beside it */

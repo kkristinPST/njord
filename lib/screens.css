@@ -173,6 +173,9 @@
 .fd-hero-v { font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: -0.2px; color: var(--fg); }
 .fd-hero-v .u { font-size: 12px; color: var(--slate-400); font-weight: 400; }
 .fd-progress { display: flex; align-items: center; gap: 10px; }
+/* names the quantity: this bar is the instantaneous rate, the card's screw bar is today's
+   dose — unlabelled, 1.3 % here beside 51 % there reads as a contradiction */
+.fd-progress-l { flex: none; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-400); }
 .fd-progress-bar { flex: 1; height: 8px; border-radius: var(--r-pill); background: var(--slate-100); overflow: hidden; }
 .fd-progress-fill { height: 100%; border-radius: var(--r-pill); background: var(--primary); }
 .fd-progress-pct { font-size: 14px; font-weight: 700; color: var(--slate-600); min-width: 44px; text-align: right; }
@@ -613,9 +616,35 @@
 .oc-policy-v .u { font-size: 12px; font-weight: 500; color: var(--slate-400); }
 .oc-toolbar-r { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .oc-modem-btn { border: none; cursor: pointer; }
+.oc-logbtn { margin-right: 0; padding: 0 9px; }
 .oc-modem-btn:hover { filter: brightness(.97); }
 
-/* group legend header */
+/* The card is `overflow:visible` so the Assign popover can escape it, which means a filled
+   child paints OVER the rounded corner instead of being clipped by it. responsive.css gives
+   .oncall-cols a surface background for its 2px grid lines, and that square fill was the
+   missing bottom radius. Every band that can be last carries the radius itself. */
+.oncall-group > :last-child { border-bottom-left-radius: calc(var(--r-lg) - 1px); border-bottom-right-radius: calc(var(--r-lg) - 1px); }
+/* Which CELL sits on the card's bottom edge depends on whether the grid has wrapped, so the
+   radius must follow VISUAL position, not source order. Three across: first cell is the
+   bottom-left, last is the bottom-right. Wrapped to one column: the LAST cell is the whole
+   bottom edge and the first is no longer on it at all. Giving :last-child both corners
+   unconditionally would curve a corner sitting mid-edge in the three-across case. */
+.oncall-cols { container-type: inline-size; }
+/* Three across (≥592px): the first cell owns the bottom-left, the last the bottom-right. */
+.oncall-cols > :first-child { border-bottom-left-radius: calc(var(--r-lg) - 1px); }
+.oncall-cols > :last-child { border-bottom-right-radius: calc(var(--r-lg) - 1px); }
+/* Two across (394–591px): the grid wraps to 2×2 and the last cell sits ALONE on the bottom
+   row, occupying the left half. It owns the bottom-left only — its right edge is mid-card, and
+   the card's own bottom-right corner is drawn by the empty track beside it. The first cell is
+   no longer on the bottom edge at all. */
+@container (max-width: 591px) {
+  .oncall-cols > :first-child { border-bottom-left-radius: 0; }
+  .oncall-cols > :last-child { border-bottom-left-radius: calc(var(--r-lg) - 1px); border-bottom-right-radius: 0; }
+}
+/* One column (≤393px): the last cell is the whole bottom edge and owns both corners. */
+@container (max-width: 393px) {
+  .oncall-cols > :last-child { border-bottom-right-radius: calc(var(--r-lg) - 1px); }
+}
 .oncall-legend { display: flex; align-items: baseline; gap: 20px; padding: 12px 16px; border-bottom: 1px solid var(--slate-200); }
 .oncall-legend-l { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--slate-500); min-width: 180px; }
 .oncall-legend-cols { font-size: 12px; color: var(--slate-400); }
@@ -654,22 +683,33 @@
 
 /* add-member popover. Flips above the button when the column sits near the bottom of the
    viewport, so the list is never half off-screen. */
-.oc-menu { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40; background: var(--surface); border: 1px solid var(--slate-200); border-radius: var(--r-md); box-shadow: 0 10px 28px rgba(15,24,43,.16); overflow: hidden; }
+/* The popover is anchored to a roster COLUMN (~215px at six shifts), which is not a width a
+   name plus a shift summary can share. It starts at the column's left edge and takes the width
+   it needs, clamped so it cannot run off a narrow card. */
+.oc-menu { position: absolute; top: calc(100% + 4px); left: 0; right: auto; min-width: 100%; width: max-content; max-width: min(340px, 86vw); z-index: 40; background: var(--surface); border: 1px solid var(--slate-200); border-radius: var(--r-md); box-shadow: 0 10px 28px rgba(15,24,43,.16); overflow: hidden; }
 .oc-menu.up { top: auto; bottom: calc(100% + 4px); }
 .oc-menu-search { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--slate-100); }
 .oc-menu-search input { flex: 1; border: none; outline: none; background: none; font-size: 14px; color: var(--fg); }
-.oc-menu-list { max-height: 240px; overflow: hidden auto; padding: 4px; }
+.oc-menu-list { max-height: 240px; overflow: hidden auto; padding: 4px 6px; }
 .oc-menu-grp { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--slate-400); padding: 8px 8px 4px; }
-.oc-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; background: none; border-radius: var(--r-sm); padding: 8px 10px; font-size: 14px; color: var(--fg); cursor: pointer; }
+.oc-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: none; background: none; border-radius: var(--r-sm); padding: 8px 10px 8px 12px; font-size: 14px; color: var(--fg); cursor: pointer; }
 .oc-menu-item:hover { background: var(--slate-50); }
 /* The NAME fills the row, not the icon. `> span:first-of-type` matched the Icon's own span,
    which stretched and shoved every name to the right edge. Target the name by class. */
-.oc-menu-name { flex: 1; min-width: 0; text-align: left; }
-.oc-menu-role { font-size: 12px; color: var(--slate-400); }
+.oc-menu-name { flex: 1; min-width: 0; text-align: left; line-height: 18px; }
+/* the shift name is the row's second column and must read as one phrase: "Around the clock"
+   broken over three lines is unreadable, and it is what forced the name column shut. The name
+   is the one allowed to wrap. */
+.oc-menu-role { flex: none; white-space: nowrap; font-size: 12px; color: var(--slate-400); }
 
 .oc-paused-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--slate-500); background: var(--slate-50); border-top: 1px solid var(--slate-100); border-radius: 0 0 calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px); }
 
 /* editor dialog */
+/* A dialog is width-capped, so the filter-bar field's 280px floor has no business inside one:
+   two of them in a row overflow before they can shrink. This is the sweep fix for the class —
+   every dialog that hosts a .field (delivery log, signal browse, report browse) is covered. */
+.dlg-body .field { min-width: 0; }
+.dlg-body .field input { min-width: 0; }
 .oc-editor { display: flex; flex-direction: column; gap: 16px; }
 .oc-ed-row { display: flex; gap: 14px; }
 .oc-field { display: flex; flex-direction: column; gap: 6px; }
@@ -999,6 +1039,44 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .rasm-rd-u { font-family: var(--font-mono); font-size: 10px; font-weight: 400; fill: var(--slate-400); }
 .rasm-rd.t { cursor: default; }
 .rasm-rd.t:hover .rasm-rd-box { stroke: var(--slate-400); }
+/* ── equipment in alarm ──────────────────────────────────────────────────────────────
+   ISA-101: normal is neutral and abnormal is the ONLY saturated state on the diagram. The
+   symbol is NOT recoloured — its fill already carries run/stop, and a red pump would read as
+   "running red". SUPERSEDED: the body IS recoloured now (.rasm-eq-abn .sc-body below). The
+   ring collided with neighbours on a dense P&ID and asked the operator to read a thin stroke
+   rather than the shape they already scan. Normal stays neutral so abnormal can own the
+   saturated colour — that is what --sc-abnormal is for. Priority is also a glyph (C/H/M/L),
+   because red-vs-amber cannot answer "critical or high" for a colour-blind operator. */
+/* No outline on the symbol either. Its fill is run/stop and that is all it should ever say —
+   an added stroke was a second treatment competing with the badge. The BADGE alone marks the
+   alarm, which also makes one consistent mark facility-wide. */
+/* badge: ONE rule, two independent axes. COLOUR = priority (red critical, amber high and
+   below) and SHAPE reinforces it (triangle critical, circle otherwise). OPACITY = whether
+   anyone has looked: solid unacknowledged, faded acknowledged. Applying that consistently is
+   what the ink-vs-outline pair got wrong — it changed hue to say "acknowledged", which reads
+   as a different kind of alarm rather than the same alarm in a later state.
+   Now that the symbol body is no longer recoloured, the badge sits on the page, so the alarm
+   colours are legible without an ink fill. */
+.rasm-abn-dot { fill: var(--warning); stroke: #fff; stroke-width: 1.4; }
+.rasm-abn.crit .rasm-abn-dot { fill: var(--sc-abnormal); }
+.rasm-abn-g { font-family: var(--font-sans); font-size: 10px; font-weight: 700; fill: #3d2c00; }
+.rasm-abn.crit .rasm-abn-g { fill: #fff; }
+/* acknowledged: the condition has not gone away, so the badge stays — same shape, same hue,
+   just quieter. The SAME rule for critical and for high: opacity is the only thing
+   acknowledgement changes, at every priority. */
+.rasm-abn:not(.unack) { opacity: .45; }
+/* a readout whose own tag is in alarm carries it too — the value IS the alarm for a sensor */
+/* A sensor readout IS its alarm, so it marks itself — but only on the box edge and the value.
+   It must not also carry a ring and a badge: a lye pump was drawing an amber ring round the
+   symbol, a second amber ring round its readout and an amber Manual chip, three amber shapes
+   for one condition. The ring belongs to the SYMBOL; the readout gets the edge. */
+.rasm-rd.abn .rasm-rd-box { stroke: var(--sc-abnormal); stroke-width: 2.4; }
+.rasm-rd.abn.warn .rasm-rd-box { stroke: var(--warning); }
+.rasm-rd.abn .rasm-rd-v { fill: var(--critical-text); }
+.rasm-rd.abn.warn .rasm-rd-v { fill: var(--warning-text); }
+.rasm-tag, .rasm-desc { transition: fill .12s; }
+g.abn > .rasm-tag { fill: var(--critical-text); }
+g.abn.warn > .rasm-tag { fill: var(--warning-text); }
 .rasm-rd-tr { pointer-events: auto; cursor: pointer; }
 .rasm-rd-trhit { fill: transparent; }
 .rasm-rd-trbg { fill: var(--sc-node); stroke: var(--slate-300); stroke-width: 1.2; transition: fill .12s, stroke .12s; }
@@ -1012,7 +1090,11 @@ textarea.form-input { resize: vertical; min-height: 70px; font-family: var(--fon
 .rasm-leg-chip { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px;
   border-radius: 3px; background: var(--sc-node); border: 1.2px solid var(--slate-300); color: var(--slate-600);
   font-size: 12px; font-weight: 800; }
-.rasm-leg-chip.man { background: var(--warning); border-color: var(--warning); color: #3d2c00; }
+/* Manual keeps amber, but a DARKER, browner shade than --warning (#FBA100): a manual chip in
+   the exact high-alarm amber, sitting beside a high-alarm badge, read as a second warning.
+   Same family, unmistakably not the same colour. Defined once and used by the mimic symbols
+   too — the legend cannot drift from the drawing. */
+.rasm-leg-chip.man { background: var(--sc-node); border-color: var(--sc-manual); color: var(--sc-manual); }
 .btn-active { background: var(--ink); border-color: var(--fg); color: #fff; }
 .btn-active:hover { background: var(--slate-800); }
 
@@ -1256,6 +1338,9 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
   font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-500);
 }
 .bfoot-st[data-st="high"] { color: var(--warning-text); }
+.bfoot-st[data-st="medium"] { color: var(--medium-text); }
+/* two unrelated facts, so they get the top bar's own separator rather than a bare gap */
+.bfoot-div { width: 1px; align-self: stretch; margin: 1px 0; background: var(--slate-200); }
 .bfoot-st[data-st="critical"] { color: var(--critical-text); }
 .bfoot-n { font-family: var(--font-mono); font-size: 12px; color: var(--slate-400); }
 
@@ -1294,8 +1379,16 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
   background: var(--slate-300);
 }
 .pnode[data-st="high"]::before { background: var(--warning); }
+.pnode[data-st="medium"]::before { background: var(--medium); }
+.pnode[data-st="low"]::before { background: var(--slate-400); }
 .pnode[data-st="critical"]::before { background: var(--critical); }
 .pnode-l { flex: 1; min-width: 0; font-weight: 500; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* how many standing alarms this system holds — the plan's own answer to "why is it red" */
+.pnode-n { flex: none; font-size: 11px; font-weight: 700; color: var(--slate-500); }
+.pnode[data-st="critical"] .pnode-n { color: var(--critical-text); }
+.pnode[data-st="high"] .pnode-n { color: var(--warning-text); }
+.pnode[data-st="medium"] .pnode-n { color: var(--medium-text); }
+.pnode[data-st="low"] .pnode-n { color: var(--slate-500); }
 .pnode-go { opacity: 0; margin-left: -2px; color: var(--primary); transition: opacity 120ms ease, transform 120ms ease; transform: translateX(-2px); }
 .pnode:hover { background: var(--slate-100); }
 .pnode:hover .pnode-l { color: var(--primary-text); }
@@ -1572,6 +1665,9 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .an-axis-lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--slate-500); }
 .an-axis-ctl .segmented .seg { padding: 4px 10px; font-size: 12px; }
 .mt-ylbl-sep { font-size: 10px; fill: var(--fg-muted); }
+/* eight or more gutters: the axis is 40px, so the tick label loses a point of size rather
+   than colliding with the line beside it */
+.mt-ylbl-tight { font-size: 9px; }
 .mt-yaxname { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .4px; fill: var(--fg-muted); }
 .mt-yaxmore { font-family: var(--font-mono); font-size: 10px; fill: var(--fg-muted); cursor: default; }
 .mt-yaxmore.on { fill: var(--fg); text-decoration: underline; }
@@ -1819,6 +1915,45 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
    ON-CALL · DUTY ROSTER, SHIFTS, BY-PERSON, COVERAGE (oncall-roster.jsx)
    ============================================================ */
 .oc-viewseg { margin-right: 4px; }
+/* the tab's cards were bare siblings with no gap — every other settings tab is a single card,
+   so nothing had ever spaced them. One owner for the rhythm, and the toolbar joins the stack
+   rather than carrying its own margin (which would have doubled to 32px against the gap). */
+.oc-stack { display: flex; flex-direction: column; gap: 16px; }
+.oc-stack > .oc-toolbar { margin-bottom: 0; }
+/* the second legacy margin: .dv-card predates the stack and carries its own 20px top margin,
+   which ADDS to the gap here. Neutralised in the stack, not on the class, which is used
+   outside this tab. */
+.oc-stack > .dv-card { margin-top: 0; }
+/* dated planning: the strip is the day selector. "Standing" is the rota that repeats; a date
+   chip carries a dot when that day has its own changes, so an unplanned week reads as empty. */
+.ocr-strip { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.ocr-strip-div { width: 1px; height: 20px; background: var(--slate-200); margin: 0 4px; }
+.ocr-daychip { position: relative; height: 30px; padding: 0 12px; border: 1px solid var(--slate-200); border-radius: 999px; background: var(--surface);
+  color: var(--slate-600); font: 600 13px/1 var(--font-sans); cursor: pointer; }
+.ocr-daychip:hover { border-color: var(--primary); color: var(--primary-text); }
+.ocr-daychip.today { font-weight: 700; color: var(--fg); }
+.ocr-daychip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.ocr-daychip.has::after { content: ""; position: absolute; top: 4px; right: 6px; width: 5px; height: 5px; border-radius: 999px; background: var(--primary); }
+.ocr-daychip.on.has::after { background: #fff; }
+.ocr-strip-note { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 12px; line-height: 18px; color: var(--slate-500); }
+.ocr-person.chg { border-color: var(--primary); box-shadow: inset 2px 0 0 var(--primary); }
+/* change log: an incident-review surface, so it is a dialog behind one icon, not a tab */
+.ocr-log { display: flex; flex-direction: column; padding: 0; }
+.ocr-log-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--slate-100); }
+.ocr-log-ts { flex: none; width: 104px; font-size: 12px; color: var(--slate-500); }
+.ocr-log-b { flex: 1; min-width: 0; }
+.ocr-log-w { font-size: 14px; color: var(--fg); }
+.ocr-log-d { margin-top: 2px; font-size: 12px; color: var(--slate-500); }
+.ocr-log-who { flex: none; font-size: 12px; color: var(--slate-400); }
+.usr-row-off { opacity: .55; }
+.usr-off-badge { margin-left: 8px; padding: 2px 6px; border-radius: 6px; background: var(--slate-100); color: var(--slate-500); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.usr-oncall { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.usr-oncall-n { font-size: 12px; color: var(--slate-500); }
+.usr-oncall-none { font-size: 12px; color: var(--slate-400); }
+.usr-search { position: relative; }
+/* the label belongs on the channel line, right-aligned: it is a statement about those channels */
+.oc-unreach { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 6px;
+  background: var(--critical-bg); color: var(--critical-text); font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
 /* the roster board: Off duty is a COLUMN, so "nobody is paging me" is a place you can see
    someone standing in, not an absence you have to deduce from the other columns */
 .ocr-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
@@ -1857,6 +1992,8 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .ocr-day-ivs { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .ocr-iv { display: inline-flex; align-items: center; gap: 2px; padding: 2px 2px 2px 8px; background: var(--surface); border: 1px solid var(--slate-200); border-radius: 8px; }
 .ocr-iv input { width: 92px; border: none; background: none; font-family: var(--font-mono); font-size: 12px; color: var(--fg); outline: none; }
+.ocr-iv.bad { border-color: var(--warning); background: var(--warning-bg); }
+.ocr-iv.bad input { color: var(--warning-text); }
 .ocr-iv-add { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 1px dashed var(--slate-300); border-radius: 8px; background: none; color: var(--slate-500); cursor: pointer; }
 .ocr-iv-add:hover { border-color: var(--primary); color: var(--primary-text); }
 .ocr-copy { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
@@ -1864,13 +2001,26 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .ocr-td-d { color: var(--slate-500); }
 .ocr-td-a { text-align: right; white-space: nowrap; }
 .ocr-head-r { display: flex; align-items: center; gap: 8px; }
-.ocr-search { width: 200px; }
+.ocr-search { width: 220px; min-width: 0; position: relative; }
+/* every search field in this product should be clearable without selecting the text first */
+.ocr-search-x { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex: none; margin-left: 2px;
+  border: none; border-radius: 999px; background: var(--slate-100); color: var(--slate-500); cursor: pointer; }
+.ocr-search-x:hover { background: var(--slate-200); color: var(--fg); }
+/* a Coverage finding brings you to the group it named — mark which one it meant */
+.oc-flash { box-shadow: 0 0 0 2px var(--primary); animation: ocFlash 2.2s ease-out 1; }
+@keyframes ocFlash { 0%, 70% { box-shadow: 0 0 0 2px var(--primary); } 100% { box-shadow: 0 0 0 2px transparent; } }
 .ocr-at { display: flex; flex-wrap: wrap; gap: 6px; }
 .ocr-at-i { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px 3px 4px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 999px; font-size: 12px; color: var(--slate-600); }
 /* coverage: the legacy banner said only "no receivers are third in line"; severity here is
    ordered by what it costs — an alarm that reaches nobody outranks a thin third line */
 .ocr-cov-body { display: flex; flex-direction: column; }
 .ocr-cov-row { display: flex; align-items: flex-start; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--slate-100); }
+/* a finding is a control: it takes you to the thing it names */
+.ocr-cov-row.go { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; font: inherit; cursor: pointer; }
+.ocr-cov-row.go > div { flex: 1; min-width: 0; }
+.ocr-cov-row.go:hover { background: var(--slate-50); }
+.ocr-cov-row.go > svg:last-child { opacity: 0; color: var(--slate-400); transition: opacity 120ms ease; }
+.ocr-cov-row.go:hover > svg:last-child { opacity: 1; }
 .ocr-cov-row:first-child { border-top: none; }
 .ocr-cov-row.crit { color: var(--critical-text); }
 .ocr-cov-row.warn { color: var(--warning-text); }
@@ -1879,6 +2029,10 @@ button.pv { font-family: var(--font-mono); line-height: 1.25; -webkit-appearance
 .ocr-cov-t { font-size: 14px; font-weight: 600; }
 .ocr-cov-d { margin-top: 2px; font-size: 12px; line-height: 18px; color: var(--slate-500); }
 .ocr-cov-sum { font-size: 12px; color: var(--slate-400); }
+/* lookahead: deliberately the quietest row on the card. A gap next Tuesday is worth knowing
+   and must never compete with a group that reaches nobody right now. */
+.ocr-cov-ahead { display: flex; align-items: flex-start; gap: 8px; padding: 10px 20px; border-top: 1px solid var(--slate-100); background: var(--slate-50); color: var(--slate-500); font-size: 12px; line-height: 18px; }
+.ocr-cov-ahead b { color: var(--slate-600); font-weight: 600; }
 
 /* ============================================================
    TREND GROUPS (library + editor dialogs)
