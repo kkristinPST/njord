@@ -50,7 +50,6 @@ function ScPump({ cx, cy, tag, name, group, value, unit = "Hz", running, mode = 
   return (
     <g>
       <Eq title={name} onClick={onClick}><SymPump cx={cx} cy={cy} running={running} /></Eq>
-      {green && <GreenMark x={cx - 46} y={cy - 8} />}
       <ModeChip x={modeX} y={cy - 8} mode={mode} />
       <SymTrend cx={cx + 30} cy={cy} tag={tag} name={name} group={group} running={running} />
       <RD x={cx - 32} y={cy - 50} w={64} value={value} unit={unit} tag={tag} name={name + " " + (unit === "l/h" ? "rate" : "speed")} group={group} />

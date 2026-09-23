@@ -172,8 +172,7 @@ function viewFromStore(store) {
 // Alarm limits per signal, from RAS_LIMITS — the per-signal limit registry with correct units and
 // both bounds. NOT from the alarm register: that keys on the QT measurement scheme, which is not
 // the id the trend pens carry, so every join missed and every line fell off-scale.
-// The pump-sump pH signals are the one place the two schemes disagree, hence the alias.
-const TREND_LIMIT_ALIAS = { "DPT1-SMP0-QT3": "DPT1-SMP0-QT3", "DPT1-SMP0-QT4": "DPT1-SMP0-QT4" };
+// The pens now carry the QT scheme too, so the tag keys RAS_LIMITS directly — no alias.
 let TREND_LIMITS = null;
 function njTagLimits(tag) {
   const reg = window.RAS_LIMITS;
@@ -189,7 +188,7 @@ function njTagLimits(tag) {
       });
     });
   }
-  return TREND_LIMITS[TREND_LIMIT_ALIAS[tag] || tag] || [];
+  return TREND_LIMITS[tag] || [];
 }
 // sample one pen across a view → [{ t, v }]
 // Accumulate flow: the pen's source is a RATE, so the plotted series is its running integral in

@@ -73,7 +73,7 @@ function SortingScreen() {
 // Faithful P&ID rebuilt in the RAS-mimic style (shared symbols from ras-mimic.jsx).
 // Two symmetric vacuum-degasser / incubation loops (ENS1 top, ENS2 bottom) feeding a
 // shared bank of 4 incubation cabinets. Reuses the exact SymPump / SymValve / SymMotor /
-// RD / Tag2 / Eq / Flag / SumpBasin / StripperColumn / ModeChip / GreenMark primitives.
+// RD / Tag2 / Eq / Flag / SumpBasin / StripperColumn / ModeChip primitives.
 
 // solid directional check valve (▶) — sits beside the emergency bowtie valve
 function HxCheck({ cx, cy, s = 1 }) {

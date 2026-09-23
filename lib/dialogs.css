@@ -361,6 +361,21 @@
 .man-def dd { font-size: 14px; line-height: 1.55; color: var(--slate-600); margin: 0; }
 .man-end { margin-top: 12px; padding-top: 16px; border-top: 1px solid var(--slate-100); font-size: 12px; color: var(--slate-400); }
 @media (max-width: 720px) { .man-toc { display: none; } .man-def { grid-template-columns: 1fr; gap: 2px; } }
+/* Download PDF prints the manual as rendered: #man-print is portalled onto <body> while printing */
+#man-print { display: none; }
+@media print {
+  body.man-printing { background: #fff !important; }
+  body.man-printing > *:not(#man-print) { display: none !important; }
+  body.man-printing #man-print { display: block; color: #0F182B; font-family: var(--font-sans); }
+  #man-print .man-lead-t, #man-print .man-h, #man-print .man-def dt { color: #0F182B; }
+  #man-print .man-sub { color: #3a4452; }
+  #man-print .man-p, #man-print li, #man-print .man-def dd, #man-print .man-note span, #man-print .man-lead-s { color: #3a4452; }
+  #man-print .man-note { background: #fff; border: 1px solid #CAD5E2; border-left: 3px solid #00AEEE; }
+  #man-print .man-p, #man-print .man-ul, #man-print .man-ol, #man-print .man-lead-s { max-width: none; }
+  #man-print .man-h { break-after: avoid; } #man-print .man-sub { break-after: avoid; }
+  #man-print .man-def, #man-print .man-note, #man-print li { break-inside: avoid; }
+  @page { margin: 16mm; }
+}
 
 /* ── About NJORD (release notes) ── */
 .about-body { display: flex; flex-direction: column; gap: 0; max-height: 74vh; }

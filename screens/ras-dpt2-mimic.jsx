@@ -3,7 +3,7 @@
 // CO₂ stripper (2 fans) → pump sump (2 lift pumps + sensor stack) → SIX oxygenation pumps
 // (kar 7–12), each through a dose valve into an O₂ cone → fish tanks; lye dosing loop on the left.
 // Reuses the RAS symbol set exported by ras-mimic.jsx (SymPump/SymFan/SymMotor/SymValve/SymCone/
-// RD/Tag2/Eq/Flag/SumpBasin/StripperColumn/Bioreactor/GreenMark/ModeChip/SymTrend). window.Dpt2RasMimic.
+// RD/Tag2/Eq/Flag/SumpBasin/StripperColumn/Bioreactor/ModeChip/SymTrend). window.Dpt2RasMimic.
 
 function d2Eq(tag, name, kind, extra) { return () => openEquipment(njBuildEquip(tag, name, kind, extra)); }
 
@@ -120,12 +120,12 @@ function Dpt2RasMimic() {
       <Tag2 x={330} y={776} tag="DPT2-DNA0-PU1" desc={["Lye pump 1"]} />
       <RD x={297} y={732} w={64} value="4.4" unit="l/h" tag="DPT2-DNA0-PU1" name="Lye pump 1 rate" group="Lye Dosing" />
       <Eq title="Lye pump 1" onClick={d2Eq("DPT2-DNA0-PU1", "Lye pump 1", "pump", { primary: { l: "Rate", v: "4.4", u: "l/h" }, readouts: [{ l: "Dosing rate", v: "4.4", u: "l/h", tag: "DPT2-DNA0-PU1" }], setpoints: [{ key: "r", l: "Dosing rate setpoint", v: 4.4, u: "l/h", step: 0.1, min: 0, max: 60 }], trend: { label: "Dosing rate", base: 4.4, amp: 0.5, seed: 2.1, unit: "l/h", hi: 60 } })}><SymPump cx={330} cy={838} running /></Eq>
-      <GreenMark x={284} y={830} /><ModeChip x={356} y={830} mode="M" />
+      <ModeChip x={356} y={830} mode="M" />
 
       <Tag2 x={330} y={942} tag="DPT2-DNA0-PU2" desc={["Lye pump 2"]} />
       <RD x={297} y={898} w={64} value="0.0" unit="l/h" tag="DPT2-DNA0-PU2" name="Lye pump 2 rate" group="Lye Dosing" />
       <Eq title="Lye pump 2" onClick={d2Eq("DPT2-DNA0-PU2", "Lye pump 2", "pump", { primary: { l: "Rate", v: "0.0", u: "l/h" }, status: "low", readouts: [{ l: "Dosing rate", v: "0.0", u: "l/h", tag: "DPT2-DNA0-PU2" }] })}><SymPump cx={330} cy={1000} running={false} /></Eq>
-      <GreenMark x={284} y={992} /><ModeChip x={356} y={992} mode="M" />
+      <ModeChip x={356} y={992} mode="M" />
 
       {/* ───── MBBR / BIOREACTOR ───── */}
       <Tag2 x={988} y={150} tag="DPT2-AEB0-BM1-TT1" desc={["Blower cabinet", "temperature 1"]} />
@@ -201,7 +201,6 @@ function Dpt2RasMimic() {
         const y = 408 + i * 34;
         return (
           <g key={i}>
-            <GreenMark x={1770} y={y} />
             <RD x={1794} y={y - 4} w={72} value={s.v} unit={s.u} tag={s.tag} name={s.d} group="Pump Sump" accent={s.accent} />
           </g>
         );

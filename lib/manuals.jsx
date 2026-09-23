@@ -37,8 +37,27 @@ function ManualDialog({ manual }) {
     manual.sections.forEach((s) => { const el = c.querySelector("#sec-" + s.id); if (el && el.offsetTop <= y) cur = s.id; });
     setActive(cur);
   };
+  // Download PDF = print THIS manual. It used to link the legacy vendor userguide PDF, which
+  // (a) describes the old UI, not the content on screen, and (b) is an <a download>, which the
+  // browser silently drops inside a sandboxed/cross-origin frame. Printing the rendered text
+  // always matches what the operator is reading and needs no download permission.
+  const [printing, setPrinting] = React.useState(false);
+  React.useEffect(() => {
+    if (!printing) return;
+    const done = () => { document.body.classList.remove("man-printing"); setPrinting(false); };
+    document.body.classList.add("man-printing");
+    window.addEventListener("afterprint", done, { once: true });
+    const t = setTimeout(() => { try { window.print(); } catch (e) {} setTimeout(done, 800); }, 60);
+    return () => { clearTimeout(t); window.removeEventListener("afterprint", done); document.body.classList.remove("man-printing"); };
+  }, [printing]);
   return (
     <Dialog width={960}>
+      {printing && ReactDOM.createPortal(
+        <div id="man-print">
+          <div className="man-lead"><div className="man-lead-t">NJORD {manual.title}</div><p className="man-lead-s">{manual.subtitle}</p><p className="man-lead-s">Rev {manual.rev}</p></div>
+          {manual.sections.map((s) => <section className="man-sec" key={s.id}><h3 className="man-h">{s.title}</h3><ManBlocks blocks={s.blocks} /></section>)}
+          <div className="man-end">NJORD {manual.title} · Rev {manual.rev} · © Pure Salmon Technology</div>
+        </div>, document.body)}
       <DlgHeader icon={manual.icon} name={manual.title} tag={"Rev " + manual.rev} onClose={closeDialog} />
       <div className="dlg-body man-body">
         <nav className="man-toc" aria-label="Contents">
@@ -64,7 +83,7 @@ function ManualDialog({ manual }) {
       <div className="dlg-foot dlg-foot-split">
         <span className="dlg-foot-meta"><Icon name="book-open" size={14} /> {manual.sections.length} sections</span>
         <div style={{ display: "flex", gap: 10 }}>
-          <a className="btn btn-secondary" href={(window.__resources && window.__resources[manual.resId]) || manual.pdf} download><Icon name="download" size={16} /> Download PDF</a>
+          <button className="btn btn-secondary" onClick={() => setPrinting(true)} title="Opens the print dialog — choose Save as PDF"><Icon name="download" size={16} /> Download PDF</button>
           <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
         </div>
       </div>
@@ -74,7 +93,7 @@ function ManualDialog({ manual }) {
 
 // ── SCADA manual content ──────────────────────────────────────────────────────
 const SCADA_MANUAL = {
-  key: "scada", icon: "book-open", title: "SCADA Manual", rev: "2.1", resId: "njScadaPdf",
+  key: "scada", icon: "book-open", title: "SCADA Manual", rev: "2.3", resId: "njScadaPdf",
   pdf: "assets/manuals/Njord_SCADA_userguide_EN.pdf",
   subtitle: "Operating the NJORD SCADA console, navigation, process objects, trends, reports, maneuver history and alarms.",
   sections: [
@@ -95,7 +114,12 @@ const SCADA_MANUAL = {
       { t: "p", x: "Preferences are per operator and per device: theme (Light, Dark or Legacy), table density, text size (Normal / Large / Extra large), default screen and units. They are reachable from the user menu at the bottom of the sidebar and in the Preferences dialog itself, both write the same preference." },
       { t: "note", x: "Settings holds the facility's record, users, roles, on-call groups, project configuration and alarm performance targets, one shared truth for everyone. Preferences only change what you see." },
     ]},
+    { id: "dashboard", title: "Dashboard", blocks: [
+      { t: "p", x: "The Dashboard is the facility overview: KPIs, the annunciator, and the Tank Vitals card with every department's tanks in one rail." },
+      { t: "p", x: "Click a department's name in the rail to open its process sheet directly beneath: one symbol per process stage in the order water travels, the key reading with its setpoint, run-state dots per unit (green running, amber in service but stopped, gray out of service), a Manual mark on any stage not in Auto, and the last maneuver in that department. Click a stage to open its full process diagram." },
+    ]},
     { id: "nav", title: "Site Plan", blocks: [
+      { t: "p", x: "The status chips above the plan (Nominal, Warning, Critical) carry counts and filter the plan: matching systems stay, the rest dim." },
       { t: "p", x: "The Site Plan screen is a top-down view of the facility: buildings are footprints, departments are zones, and each system is a node showing only its name and status. Click a system node to open its process mimic." },
       { t: "p", x: "Every pipe on a mimic is tinted by the fluid it carries, process water, raw water, drain, sludge, glycol loop, brine loop, lye dosing, and gas lines (oxygen, air and CO₂ off-gas) are dashed. The legend strip under each mimic lists only the fluids that screen carries. Equipment status keeps its own colours (green running, gray stopped, red alarm), which always read louder than the pipework." },
       { t: "p", x: "A department with many systems shows the first few and folds the rest behind Show n more, which is remembered per department. A system in alarm is always visible, the fold can never hide one." },
@@ -104,8 +128,10 @@ const SCADA_MANUAL = {
     { id: "objects", title: "Process objects", blocks: [
       { t: "p", x: "Process mimics use live objects for equipment. Each object shows status through color and shape and opens a details popup when clicked." },
       { t: "defs", x: [
-        ["Analog sensors", "Value fields on the mimic. A red border means an active alarm on the sensor; a red fill means an invalid reading (sensor fault). Open the equipment popup to trend the value or inspect details."],
-        ["Motors", "Dynamic circles that turn green and rotate in the flow direction while running, sit black at standstill, and blink red on alarm. The popup exposes start/stop, mode and setpoints where permitted."],
+        ["Alarm marker", "Equipment with an active alarm carries a marker with an exclamation mark on its symbol: a red triangle for Critical, an amber circle for every other priority. Once acknowledged the marker stays, drawn faded, until the condition clears. Hover it for the alarm text."],
+        ["Analog sensors", "Value fields on the mimic. A sensor in alarm marks the edge of its own value box and the value; a red fill means an invalid reading (sensor fault). Open the equipment popup to trend the value or inspect details."],
+        ["Motors", "Dynamic circles that turn green and rotate in the flow direction while running and sit black at standstill. The popup exposes start/stop, mode and setpoints where permitted."],
+        ["Control mode", "A letter beside the equipment: A for Auto, an outlined M for Manual. Manual is the exception worth noticing; switching mode is logged to maneuver history."],
         ["Valves", "Change color by state: gray = manual/unpowered, black = closed, green = open, amber = no position feedback, red = alarm."],
         ["Value fields", "Display parameters, alarm limits and other values. Read-only fields can be sent to Trends; writable fields open an edit popup with a change history and (where configured) a required comment."],
       ]},
@@ -117,11 +143,12 @@ const SCADA_MANUAL = {
       { t: "p", x: "The Analytics screen adds a pen catalog, per-pen focus on the Y-axis, statistics, live updates and total-flow calculations, plus CSV / Excel export of the plotted data." },
       { t: "sub", x: "Trend Groups" },
       { t: "p", x: "A trend group is a saved collection of parameters you analyse together. Save the current pens as a group from the Pens panel, then reopen it later from the Groups library, where groups can be searched, loaded, duplicated, edited or deleted. A group is private to you or shared with the whole plant, and the creator is shown on every shared group." },
-      { t: "sub", x: "Alarm linkage" },
       { t: "sub", x: "Reading and scaling a pen" },
       { t: "p", x: "Each pen in the Signals panel carries Min / Max / Avg for the window currently in view, recomputed as you pan or change the range, so an outlier can be judged without opening a second screen. The scale button on a pen reads Auto or its fixed range: set an explicit Range min / max for that pen, keep dynamic auto-scaling, or move it to its own axis when the Y axis is set to Separate." },
       { t: "sub", x: "Browse signals" },
       { t: "p", x: "Browse signals opens the full catalog as a system → equipment → parameter tree with a filter over both names and tags (typing expands every node that has a hit). Select several parameters at once, or Select all for one equipment; anything already plotted shows as checked and disabled. The Add dropdown remains for the quick single-parameter case." },
+      { t: "p", x: "Undo reverts the last change to the plotted pens and Clear removes them all, on both the Signals card and the floating Trends window. Before applying a long custom range the query line states what it will fetch (range × interval × visible pens); a very large query can be downloaded without plotting." },
+      { t: "sub", x: "Alarm linkage" },
       { t: "p", x: "Alarms and trends are linked one to one. Investigating an alarm plots the process value that triggered it, centred on the alarm moment with a ±30 minute focus window, its threshold drawn as a dashed line. Alarm markers on a pen open a detail popover with a link back to the alarm row. Discrete alarms with no measured value open an event timeline instead of a chart." },
     ]},
     { id: "reports", title: "Reports", blocks: [
@@ -160,13 +187,13 @@ const SCADA_MANUAL = {
       { t: "p", x: "Alarms start out not-configured and must be rationalized before they annunciate, setting alarm text, priority, limits, delays, consequence and operator response. The Rationalization tab holds the master register: filter by status and priority, edit inline, bulk-edit selections and import/export, and re-evaluate or de-rationalize any alarm at any time (authorized users)." },
       { t: "sub", x: "Alarm list" },
       { t: "p", x: "Tabs switch between Active, All Alarms, Historical, Statistics, Deactivated and Rationalization. Sort by any column, select one or more rows (or the whole page) to Acknowledge, Block or set Out of service, and open an object popup for a pre-filtered, area-level view. Deactivated splits into Blocked (by operator, optionally with an auto-reactivate timer, or logic-controlled) and Out of service." },
-      { t: "sub", x: "Statistics & on-call" },
       { t: "sub", x: "Deactivating an alarm" },
       { t: "p", x: "Blocking (shelving in ISA-18.2) is governed by the master record: a Critical alarm can never be blocked, and neither can an alarm whose record forbids blocking. Where the rule refuses, the product says so and offers Take out of service instead, which is the maintenance route and is logged as such. The Deactivated tab has its own search and a Blocked / Out of service filter; bulk Return to active only ever picks up rows that can actually be restored, a logic-controlled block is read-only." },
       { t: "sub", x: "Master record, change history and review" },
       { t: "p", x: "Editing a controlled field on the Rationalization register (priority, limits, delays, classification) asks for a reason, and every such change is written to the alarm's change history with the operator and timestamp; any entry can be reverted from there. The Master Alarm Report generates the controlled snapshot with a signature block. Critical and High alarms carry an annual review date, and Review overdue is both a KPI and a filter, any edit re-stamps the review date." },
       { t: "p", x: "Where there is no round-the-clock on-site presence, remote alarms leave the facility on two independent paths, as NS 9416 requires. Independence counts paths, not channels: SMS and voice both ride GSM and therefore count once. The on-call editor refuses to save a Priority 1 tier served by fewer than two paths." },
-      { t: "p", x: "The Statistics tab compares alarm activity across periods to surface repeat offenders." },
+      { t: "sub", x: "Statistics" },
+      { t: "p", x: "The Statistics tab compares alarm activity across periods to surface repeat offenders. The time range (including the Day 06–22 and Night 22–06 presets) is the query and needs Search; Priority, Area and Alarm group then narrow the result live. Priority chips count what the other two filters allow." },
       { t: "sub", x: "Finding an alarm in the list" },
       { t: "p", x: "The Active list holds every alarm that is not back to normal and acknowledged. Two chip rows narrow it: Priority, and State, which separates unacknowledged alarms, alarms that have returned to normal but are still waiting for an acknowledgement, and alarms already acknowledged while the condition persists. Each chip carries a count read from the set the other filters allow, so a count never contradicts the click. An empty table always names what emptied it." },
     ]},

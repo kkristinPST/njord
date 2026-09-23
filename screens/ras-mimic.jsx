@@ -77,9 +77,8 @@ function ModeChip({ x, y, mode }) {
 // `GreenMark` is GONE. It came from the legacy sheet as a green square with a white X read as
 // "signal online", but nothing in this product ever set or cleared it — a constant dressed as
 // state, most likely a maintenance marker originally. If that meaning is wanted it should
-// return as real state with a source behind it. It rendered as a no-op placeholder for one
-// pass; the component is removed and so are its 3 call sites.
-function GreenMark() { return null; }
+// return as real state with a source behind it. The component and every call site (RAS,
+// DPT2 RAS, Water Treatment dosing pumps) are removed.
 
 /* ───────────── labelled bits ───────────── */
 function Tag2({ x, y, tag, desc, anchor = "middle" }) {
@@ -436,4 +435,4 @@ function RasMimic() {
 }
 
 Object.assign(window, { RasMimic, SymPump, SymFan, SymMotor, SymValve, SymCone,
-  RD, Tag2, Eq, Flag, SumpBasin, StripperColumn, Bioreactor, GreenMark, ModeChip, SymTrend });
+  RD, Tag2, Eq, Flag, SumpBasin, StripperColumn, Bioreactor, ModeChip, SymTrend });

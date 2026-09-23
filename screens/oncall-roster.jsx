@@ -258,10 +258,10 @@ function shCoverage() {
 }
 
 // ── small parts ──
-function ShiftBadge({ id, compact }) {
+function ShiftBadge({ id }) {
   const s = shiftStore.shiftOf(id);
   if (!s) return <span className="ocr-badge off" title="Not on the duty roster. This recipient is paged by nothing.">Off duty</span>;
-  return <span className="ocr-badge" title={s.name + " · " + shSummary(s)}>{compact ? s.name : s.name}</span>;
+  return <span className="ocr-badge" title={s.name + " · " + shSummary(s)}>{s.name}</span>;
 }
 
 function ShiftPicker({ used, day, onPick, onClose }) {

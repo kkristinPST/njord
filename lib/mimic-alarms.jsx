@@ -161,13 +161,4 @@ function AbnormalRing({ at, tone, unack, level }) {
   );
 }
 
-function useBBox(ref, deps) {
-  const [box, setBox] = React.useState(null);
-  React.useEffect(() => {
-    if (!ref.current) return;
-    try { const b = ref.current.getBBox(); if (b.width) setBox({ x: b.x, y: b.y, width: b.width, height: b.height }); } catch (e) {}
-  }, deps || []);
-  return box;
-}
-
 Object.assign(window, { njTagAlarm, njAlarmTone, njAlarmTitle, useMimicAlarms, AbnormalRing, njSystemAlarms, njLiveSystemStatus, njAreaDept, njPlaceSystem, njTagSystem });
