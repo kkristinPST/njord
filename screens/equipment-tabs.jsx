@@ -88,7 +88,7 @@ function MaintenanceLogDialog({ equip }) {
     const date = eqPad(now.getDate()) + "/" + eqPad(now.getMonth() + 1) + "/" + now.getFullYear();
     setRows((rs) => [{ date, type: f.type, tech: f.tech, wo: f.wo.trim() || "—", note: f.note.trim() }, ...rs]);
     setAdding(false); setF({ type: MAINT_TYPES[0], tech: MAINT_TECHS[0], wo: "", note: "" });
-    njToast("Maintenance logged for " + equip.tag + ".", "Maneuver history", () => window.__njNavigate && window.__njNavigate("maneuver"));
+    njToast("Maintenance logged for " + equip.tag + ".", "Maneuver History", () => window.__njNavigate && window.__njNavigate("maneuver"));
   };
   return (
     <Dialog width={620}>
@@ -189,7 +189,7 @@ const EQ_ACTIVE_ALARMS = [
 function genEqAlarmHist(equip) {
   const h = eqHash(equip.tag || equip.name);
   const names = ["Missing operation feedback", "Communication error with drive", "General fault from drive"];
-  const rows = []; let t = new Date(2026, 5, 1, 17, 3, 0).getTime();
+  const rows = []; let t = (window.NJ_NOW || Date.now()) - (2 + (h % 20)) * 3600000;   // history is in the PAST of the demo clock
   for (let i = 0; i < 6; i++) {
     const d = new Date(t);
     rows.push({ t: eqPad(d.getDate()) + "/" + eqPad(d.getMonth() + 1) + "/" + d.getFullYear() + " " + eqPad(d.getHours()) + ":" + eqPad(d.getMinutes()), a: names[(i + (h % 3)) % 3], s: "Returned" });
@@ -199,25 +199,31 @@ function genEqAlarmHist(equip) {
 }
 function EqAlarmsTab({ equip }) {
   const hist = genEqAlarmHist(equip);
+  // live register rows when the dialog resolved them; the fixture list only without a hub
+  const live = equip.liveAlarms;
+  const rowsA = live
+    ? live.map((a) => ({ a: a.alarm, p: a.level, s: a.state === "unack" ? "Unacknowledged" : a.state === "returned" ? "Returned, not acknowledged" : "Acknowledged", src: a, t: a.t }))
+    : (equip.status === "ok" || !equip.status ? [] : EQ_ACTIVE_ALARMS);
   return (
     <div className="eqx-tab">
       <div className="eqx-h"><Icon name="bell" size={14} /> Active alarms</div>
-      {equip.status === "ok" || !equip.status ? (
+      {rowsA.length === 0 ? (
         <NjInline align="left" icon="check-circle-2">No active alarms on this unit.</NjInline>
       ) : (
         <table className="eqx-tbl eqx-alm">
           <thead><tr><th>Alarm</th><th>Priority</th><th>State</th><th style={{ textAlign: "right" }}>Trend</th></tr></thead>
           <tbody>
-            {EQ_ACTIVE_ALARMS.map((r, i) => {
+            {rowsA.map((r, i) => {
               const sev = SEV[r.p] || SEV.low;
+              const st = r.src ? r.src.state : null;
               return (
                 <tr key={i}>
-                  <td className="td-strong">{r.a}</td>
+                  <td className="td-strong">{r.a}{r.t && <div className="eqx-alm-t data">{r.t}</div>}</td>
                   <td><span className="badge" style={{ background: sev.bg, color: sev.text }}>{sev.label}</span></td>
-                  <td><span className="evt returned"><Dot level="ok" size={7} /> {r.s}</span></td>
+                  <td>{r.src && window.StateTag ? <StateTag state={st} /> : <span className="evt returned"><Dot level="ok" size={7} /> {r.s}</span>}</td>
                   <td style={{ textAlign: "right" }}>
                     <button className="icnact act-inv" title="Investigate: open the trend / event timeline"
-                      onClick={() => njInvestigateAlarm({ id: "EQ-" + equip.tag + "-" + i, tag: equip.tag, area: equip.name || equip.tag, alarm: r.a, level: r.p, t: fmtFullTs(window.NJ_NOW), meas: null })}>
+                      onClick={() => { closeDialog(); njInvestigateAlarm(r.src || { id: "EQ-" + equip.tag + "-" + i, tag: equip.tag, area: equip.name || equip.tag, alarm: r.a, level: r.p, t: fmtFullTs(window.NJ_NOW), meas: null }); }}>
                       <Icon name="line-chart" size={14} /> Trend
                     </button>
                   </td>
@@ -284,7 +290,7 @@ function EqAdminTab({ equip }) {
     title="Reset total runtime?"
     message={"This clears the accumulated runtime counter for " + equip.name + ". The action is logged to the maneuver history."}
     detail={equip.tag} confirmLabel="Reset runtime" tone="danger"
-    onConfirm={() => njToast("Total runtime reset for " + equip.tag + ".", "Maneuver history", () => window.__njNavigate && window.__njNavigate("maneuver"))} />);
+    onConfirm={() => njToast("Total runtime reset for " + equip.tag + ".", "Maneuver History", () => window.__njNavigate && window.__njNavigate("maneuver"))} />);
   return (
     <div className="eqx-tab">
       <div className="eqx-h"><Icon name="shield" size={14} /> General settings</div>

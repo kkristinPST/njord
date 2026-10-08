@@ -334,7 +334,7 @@ function RecordValueDialog({ tag }) {
   const save = () => {
     const dt = deTsParse(date, time);
     deStore.record(tag.id, value.trim(), comment.trim(), dt ? deTsOf(dt) : null);
-    njToast(`Added ${value.trim()}${tag.unit ? " " + tag.unit : ""} to ${tag.name}.`, numeric ? "Trends" : null, numeric ? () => njSendToTrend(tag.name, { name: tag.name, unit: tag.unit, value: num, group: "Manual" }) : null);
+    njToast(`Added ${value.trim()}${tag.unit ? " " + tag.unit : ""} to ${tag.name}.`, numeric ? "Trends" : null, numeric ? () => njSendToTrend("MAN-" + tag.id, { manual: tag.id, name: tag.name, unit: tag.unit, value: num, group: "Manual" }) : null);
     closeDialog();
   };
   return (
@@ -485,7 +485,7 @@ function TagDetailDialog({ tagId, existingPaths }) {
             <span className="de-detail-big data">{tag.value}{tag.unit ? <span className="de-u"> {tag.unit}</span> : null}</span>
           </div>
           <div className="de-detail-actions">
-            {numeric && <TrendBtn id={tag.name} tag={tag.name} name={tag.name} unit={tag.unit} value={deNum(tag)} group="Manual" title="Send to Trends" />}
+            {numeric && <TrendBtn id={"MAN-" + tag.id} manual={tag.id} tag={tag.name} name={tag.name} unit={tag.unit} value={deNum(tag)} group="Manual" title="Send to Trends" />}
             <button className="btn btn-secondary btn-sm" onClick={() => openDialog(<TagDialog tag={tag} existingPaths={existingPaths} />)}><Icon name="pencil" size={14} /> Edit</button>
             <button className="btn btn-primary btn-sm" onClick={() => openDialog(<RecordValueDialog tag={tag} />)}><Icon name="plus" size={14} /> Add</button>
           </div>
@@ -660,7 +660,7 @@ function MeasurementRow({ tag, paths, onEnter, showPath }) {
   const items = [
     { icon: "pencil", label: "Edit tag details", onClick: () => openDialog(<TagDialog tag={tag} existingPaths={paths} />) },
     { icon: "history", label: "View value history", onClick: () => openDialog(<TagDetailDialog tagId={tag.id} existingPaths={paths} />) },
-    ...(numeric ? [{ icon: "line-chart", label: "Send to Trends", onClick: () => njSendToTrend(tag.name, { name: tag.name, unit: tag.unit, value: deNum(tag), group: "Manual" }) }] : []),
+    ...(numeric ? [{ icon: "line-chart", label: "Send to Trends", onClick: () => njSendToTrend("MAN-" + tag.id, { manual: tag.id, name: tag.name, unit: tag.unit, value: deNum(tag), group: "Manual" }) }] : []),
     { sep: true },
     { icon: "copy", label: "Duplicate", onClick: () => { deStore.duplicateTag(tag.id); njToast(`"${tag.name}" duplicated.`); } },
     { icon: "folder-input", label: "Move to folder…", onClick: () => openDialog(<MoveTagDialog tag={tag} existingPaths={paths} />) },

@@ -9,7 +9,7 @@
    classic light rail (#E7EAED). Both are AA-clean; the app is the reference. */
 :root {
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-mono: 'JetBrains Mono', Consolas, ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* neutrals (slate ramp) */
   --ink:       #0F182B;
@@ -25,7 +25,6 @@
   --slate-200: #E0E5EB;
   --slate-100: #EFF2F5;
   --slate-50:  #F8FAFC;
-  --neutral-100: #F4F4F4;
   --white:     #FFFFFF;
   --black:     #000000;
 
@@ -151,6 +150,9 @@
   /* Manual mode. Amber FAMILY, deliberately NOT --warning #FBA100: a manual chip in the exact
      high-alarm amber, beside a high-alarm badge, reads as a second warning. Mode, not fault. */
   --sc-manual:      #9A5C00;
+  /* medium / low alarm on the mimic — "yellowish", distinct from high amber. Fill for the badge
+     (dark "!" glyph on it), a deeper edge for readout strokes, an AA text shade for values/tags. */
+  --sc-alarm-lo: #F2CC2E; --sc-alarm-lo-edge: #C9A300; --sc-alarm-lo-text: #6B5700;
   /* Outline + letter share this ONE token (see ModeChip): there is no fill/glyph pair to keep
      legible, and the chip cannot outweigh the alarm badges beside it. It must clear 4.5:1
      against --sc-node, the chip's own fill. */
@@ -174,7 +176,6 @@
   --slate-200:  #28374F;   /* default borders / dividers */
   --slate-100:  #1C2B45;   /* hover fills / row dividers */
   --slate-50:   #13203A;   /* subtle surface / table header / row hover */
-  --neutral-100:#1C2B45;
   --white:      #FFFFFF;   /* keep true white for glyphs on color/dark */
 
   --primary:    #00AEEE;
@@ -223,6 +224,7 @@
   --sc-run:         #C6D2E4;   /* running / open — light-neutral (reads as present on dark) */
   --sc-stop:        #3A4A63;   /* stopped / closed — recessed dark-neutral */
   --sc-abnormal:    #FF6F66;
+  --sc-alarm-lo: #E8C94A; --sc-alarm-lo-edge: #E8C94A; --sc-alarm-lo-text: #EDD677;
   --sc-manual:      #D08A28;   /* lifted to clear 4.5:1 on the dark node fill (--sc-node
                                   #1B2B45). Colliding with --warning #FBA100, which is NOT
                                   lifted in this theme, mattered when the chip was a filled
@@ -274,7 +276,6 @@
   --slate-200:  #B4BCC5;   /* default borders (heavier than modern) */
   --slate-100:  #D3D8DD;   /* hover / dividers */
   --slate-50:   #E4E7EA;   /* subtle bg / table header */
-  --neutral-100:#E4E7EA;
   --white:      #FFFFFF;
 
   --primary:    #2F6CB0;   /* classic blue */
@@ -326,6 +327,7 @@
   --sc-stop:        #C4CCD4;
   --sc-abnormal:    #C8443D;
   --sc-manual:      #A25E08;   /* the legacy skin's deeper amber */
+  --sc-alarm-lo: #E3BE2C; --sc-alarm-lo-edge: #B39200; --sc-alarm-lo-text: #5E4D00;
 
   /* severity marks — the classic saturated HMI ramp, drawn from this theme's own
      palette so a dot always matches the badge beside it */

@@ -40,6 +40,7 @@ function buildCommandIndex() {
     { label: "Help", sub: "help manual documentation user guide", hint: "Open the user manual", run: () => window.openHelp && window.openHelp() },
     { label: "Preferences", sub: "theme density text size units default screen", hint: "Your per-device view settings", run: () => window.openPreferences && window.openPreferences() },
     { label: "Notes", sub: "shift handover note", hint: "Open notes", run: () => window.openNotes && window.openNotes() },
+    { label: "Paging groups", sub: "on-call duty list vaktliste roster who is on duty tonight swap", hint: "Edit who is on call, in a window", run: () => window.openDutyList && window.openDutyList() },
     { label: "Discover NJORD", sub: "modules add-ons package licence upgrade", hint: "Your package & further modules", run: () => window.openDiscover && window.openDiscover() },
   ].forEach((a) => items.push(Object.assign({ kind: "Action" }, a)));
   return items;

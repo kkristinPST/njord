@@ -36,13 +36,12 @@ const RATN_COLUMNS = [
   // padding needs 137px. table-layout is fixed, so a short column clips at ANY viewport.
   { key: "priority", label: "Priority", type: "priority", w: 138, edit: true },
   { key: "comment", label: "Comment", type: "longtext", w: 260, edit: true },
-  { key: "groups", label: "Alarm group", type: "enum", opts: () => RATN_GROUPS, w: 158, edit: true, off: true },
   { key: "setpoint", label: "Setpoint", type: "num", w: 116, edit: true, unitFrom: "unit" },
   { key: "deadband", label: "Deadband", type: "num", w: 104, edit: true, unitFrom: "unit", off: true },
   { key: "onDelay", label: "On-delay", type: "num", w: 98, edit: true, suffix: "s" },
   { key: "offDelay", label: "Off-delay", type: "num", w: 98, edit: true, suffix: "s" },
   { key: "resetAck", label: "Reset ack after", type: "num", w: 128, edit: true, suffix: "min", off: true },
-  { key: "allowShelving", label: "Allow shelving", type: "bool", w: 124, edit: true, off: true },
+  { key: "allowShelving", label: "Allow blocking", type: "bool", w: 124, edit: true, off: true },
   { key: "justification", label: "Justification", type: "longtext", w: 260, edit: true },
   { key: "status", label: "Status", type: "status", w: 176, edit: true, always: true },
   { key: "reviewedAt", label: "Last reviewed", type: "review", w: 150 },
@@ -56,11 +55,10 @@ const RATN_PRIO_LABEL = Object.fromEntries(RATN_PRIOS.map(([k, l]) => [k, l]));
 // they stay individual. Justification is required and IS bulk-editable (stakeholder decision).
 const RATN_BULK_FIELDS = [
   { key: "priority", label: "Priority", kind: "options", opts: () => RATN_PRIOS.map(([v, l]) => ({ value: v, label: l, swatch: SEV[v].dot })) },
-  { key: "groups", label: "Alarm group", kind: "options", opts: () => RATN_GROUPS.map((g) => ({ value: g, label: g })) },
   { key: "onDelay", label: "On-delay", kind: "num", suffix: "s" },
   { key: "offDelay", label: "Off-delay", kind: "num", suffix: "s" },
   { key: "resetAck", label: "Reset ack after", kind: "num", suffix: "min" },
-  { key: "allowShelving", label: "Allow shelving", kind: "options", opts: () => [{ value: true, label: "Allowed" }, { value: false, label: "Blocked" }] },
+  { key: "allowShelving", label: "Allow blocking", kind: "options", opts: () => [{ value: true, label: "Allowed" }, { value: false, label: "Blocked" }] },
   { key: "status", label: "Status", kind: "options", opts: () => RATN_STATUS_ORDER.map((k) => ({ value: k, label: RATN_STATUS[k].label, swatch: RATN_STATUS[k].dot })) },
   { key: "justification", label: "Justification", kind: "text", required: true },
 ];
@@ -518,7 +516,7 @@ function AlarmRationalizationScreen() {
       if (revF === "due" && !njReviewDue(r)) return false;
       if (revF === "indate" && (njReviewDue(r) || !njReviewRequired(r))) return false;
       if (prioF && r.priority !== prioF) return false;
-      if (ql && ![r.tag, r.alarm, r.area, r.equipment, r.groups, r.consequence, r.response, r.cause, r.cls, r.justification].filter(Boolean).join(" ").toLowerCase().includes(ql)) return false;
+      if (ql && ![r.tag, r.alarm, r.area, r.equipment, r.consequence, r.response, r.cause, r.cls, r.justification].filter(Boolean).join(" ").toLowerCase().includes(ql)) return false;
       return true;
     });
     const k = sort.key;

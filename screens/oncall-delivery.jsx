@@ -8,7 +8,7 @@
 
 const DL_LS = "nj_delivery_log_v1", HB_LS = "nj_heartbeat_v1";
 const DL_NOW = window.NJ_NOW || Date.now();
-const DL_TYPES = ["All", "SMS", "Voice", "UHF"];
+const DL_TYPES = ["All", "SMS", "Voice", "Email", "UHF"];
 const DL_KINDS = [{ id: "all", label: "All messages" }, { id: "alarm", label: "Alarms" }, { id: "test", label: "Tests & heartbeats" }];
 
 function dlAt(daysAgo, h, m) { const d = new Date(DL_NOW); d.setDate(d.getDate() - daysAgo); d.setHours(h, m, 0, 0); return d.getTime(); }
@@ -58,7 +58,7 @@ function dlSeed() {
       }
     });
   });
-  for (let d = 1; d <= 4; d++) ["Duty phone 1", "Duty phone 2"].forEach((r, i) => out.push({ ts: dlAt(d, 21, 0) + i * 22000, type: i ? "UHF" : "SMS", msg: "Heartbeat · NJORD Kloven dispatcher online", rcpt: r, kind: "heartbeat", result: "Succeeded" }));
+  for (let d = 1; d <= 4; d++) ["Duty phone 1", "Duty phone 2"].forEach((r, i) => out.push({ ts: dlAt(d, 21, 0) + i * 22000, type: i ? "UHF" : "SMS", msg: "Heartbeat · NJORD dispatcher online", rcpt: r, kind: "heartbeat", result: "Succeeded" }));
   ["Duty phone 1", "Duty phone 2"].forEach((r, i) => out.push({ ts: DL_NOW - 7200000 + i * 24000, type: i ? "UHF" : "SMS", msg: "TEST · Delivery test · All Alarms · no action required", rcpt: r, kind: "test", result: "Succeeded" }));
   return out;
 }
@@ -80,6 +80,8 @@ function useDeliveryLog() { const [, force] = React.useReducer((x) => x + 1, 0);
 // ── heartbeat schedule ──
 const HB_DAYS = [{ id: "daily", label: "Every day" }, { id: "weekdays", label: "Mon–Fri" }, { id: "weekly", label: "Sundays" }];
 function hbDayLabel(id) { return (HB_DAYS.find((d) => d.id === id) || HB_DAYS[0]).label; }
+const HB_MSG_DEFAULT = "Heartbeat · NJORD dispatcher online";
+function hbMsg(h) { return (h && h.msg && h.msg.trim()) || HB_MSG_DEFAULT; }
 const njHeartbeat = {
   list: (function () { try { const r = JSON.parse(localStorage.getItem(HB_LS)); if (Array.isArray(r)) return r; } catch (e) {} return [{ id: "hb1", time: "21:00", days: "daily", groupId: "g_all" }]; })(),
   subs: new Set(),
@@ -95,6 +97,9 @@ function dlGroups() { return (window.oncallStore && window.oncallStore.groups) |
 function dlGroup(id) { return dlGroups().find((g) => g.id === id) || dlGroups()[0] || null; }
 function dlChanLabel(c) { return c === "sms" ? "SMS" : c === "voice" ? "Voice" : "UHF"; }
 function dlChanType(c) { return dlChanLabel(c); }
+// each recipient on their OWN contact; UHF is the site sender, one broadcast, not per person
+function dlViaType(v) { return v === "sms" ? "SMS" : v === "voice" ? "Voice" : "Email"; }
+function dlPathLabel() { const s = window.ocSite ? window.ocSite() : { uhf: { on: false } }; return "Each recipient's contact" + (s.uhf.on ? " + UHF" : ""); }
 function dlMemberName(id) { const m = window.ocMember ? window.ocMember(id) : null; return m ? m.name : id; }
 function dlResultTone(r) { return r === "Succeeded" ? "ok" : r === "Pending" ? "wait" : "bad"; }
 
@@ -111,19 +116,20 @@ function TestDispatchDialog({ groupId }) {
   const [sending, setSending] = React.useState(false);
   const [rows, setRows] = React.useState(null);
   const g = dlGroup(gid);
-  const tiers = scope === "p1" ? ["p1"] : ["p1", "p2", "p3"];
+  // around-the-clock recipients get every alarm of the group at any hour, so every test reaches them
+  const tiers = scope === "p1" ? ["p1", "b247"] : ["p1", "p2", "p3", "b247"];
   const targets = [];
   tiers.forEach((t) => {
-    const chans = (g && g.chan && g.chan[t]) || [];
-    ((g && g.tiers && g.tiers[t]) || []).forEach((mid) => chans.forEach((c) => targets.push({ tier: t, name: dlMemberName(mid), type: dlChanType(c) })));
+    ((g && g.tiers && g.tiers[t]) || []).forEach((mid) => { const c = window.ocContactOfId ? window.ocContactOfId(mid) : null; if (c) targets.push({ tier: t, name: dlMemberName(mid), type: dlViaType(c.via) }); });
   });
+  if (g && window.ocSite && window.ocSite().uhf.on) targets.push({ tier: "site", name: "UHF sender · site channel", type: "UHF" });
   const msg = "TEST · Delivery test · " + (g ? g.name : "") + " · no action required";
   const send = () => {
     if (!targets.length) return;
     setSending(true);
     setRows(targets.map((t) => Object.assign({}, t, { result: "Pending" })));
     const ts = Date.now();
-    njDeliveryLog.append(targets.map((t, i) => ({ ts: DL_NOW + i * 1000, type: t.type, msg: msg, rcpt: t.name, kind: "test", result: "Pending", batch: ts })));
+    njDeliveryLog.append(targets.map((t, i) => ({ ts: DL_NOW + i * 1000, type: t.type, msg: msg, rcpt: t.name, tier: t.tier, kind: "test", result: "Pending", batch: ts })));
     targets.forEach((t, i) => setTimeout(() => {
       setRows((rs) => rs && rs.map((r, j) => (j === i ? Object.assign({}, r, { result: "Succeeded" }) : r)));
       njDeliveryLog.patchLast((r) => r.batch === ts && r.result === "Pending", { result: "Succeeded" });
@@ -160,14 +166,14 @@ function TestDispatchDialog({ groupId }) {
         <div className="dv-test-list">
           {(rows || targets).map((t, i) => (
             <div className="dv-test-item" key={i}>
-              <Icon name={t.type === "UHF" ? "radio" : t.type === "Voice" ? "phone" : "message-square"} size={14} color="var(--slate-400)" />
+              <Icon name={t.type === "UHF" ? "radio" : t.type === "Voice" ? "phone" : t.type === "Email" ? "mail" : "message-square"} size={14} color="var(--slate-400)" />
               <span className="dv-test-n">{t.name}</span>
               <span className="tag">{t.type}</span>
-              <span className="dv-test-tier">P{t.tier.slice(1)}</span>
+              <span className="dv-test-tier">{t.tier === "b247" ? "24/7" : "P" + t.tier.slice(1)}</span>
               {rows ? <DlResult r={t.result} /> : <span className="dv-test-idle">Ready</span>}
             </div>
           ))}
-          {!targets.length && <NjInline align="left" icon="alert-triangle">This group has no recipient with a channel on the selected tiers.</NjInline>}
+          {!targets.length && <NjInline align="left" icon="alert-triangle">This group has no recipient on the selected levels.</NjInline>}
         </div>
       </div>
       <div className="dlg-foot dlg-foot-split">
@@ -185,7 +191,8 @@ function njOpenTestDispatch(groupId) { openDialog(<TestDispatchDialog groupId={g
 // ── heartbeat editor ──
 function HeartbeatDialog({ hb }) {
   const groups = dlGroups();
-  const [h, setH] = React.useState(() => hb ? Object.assign({}, hb) : { id: "hb" + Date.now(), time: "21:00", days: "daily", groupId: (groups[0] || {}).id });
+  const [h, setH] = React.useState(() => hb ? Object.assign({}, hb) : { id: "hb" + Date.now(), time: "21:00", days: "daily", groupId: (groups[0] || {}).id, msg: HB_MSG_DEFAULT });
+  if (h.msg == null) h.msg = HB_MSG_DEFAULT;
   const set = (p) => setH((x) => Object.assign({}, x, p));
   const g = dlGroup(h.groupId);
   return (
@@ -193,6 +200,10 @@ function HeartbeatDialog({ hb }) {
       <DlgHeader icon="heart-pulse" name={hb ? "Edit scheduled test" : "Schedule a test message"} onClose={closeDialog} />
       <div className="dlg-body dv-hbed">
         <p className="dv-test-intro">A scheduled test (heartbeat) proves the chain end to end while nothing is wrong: if the duty phone stops receiving it, the path is down before an alarm needs it.</p>
+        <label className="dv-test-row dv-hb-msgrow">
+          <span className="oc-field-l">Message</span>
+          <input className="oos-input" value={h.msg} maxLength={160} onChange={(e) => set({ msg: e.target.value })} placeholder={HB_MSG_DEFAULT} aria-label="Message text" />
+        </label>
         <div className="dv-test-row">
           <span className="oc-field-l">Send at</span>
           <input className="oos-input dv-hb-time" type="time" value={h.time} onChange={(e) => set({ time: e.target.value })} />
@@ -209,11 +220,11 @@ function HeartbeatDialog({ hb }) {
             {groups.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
         </div>
-        <p className="dv-hb-prev">{hbDayLabel(h.days)} at <b className="data">{h.time}</b> to <b>{g ? g.name : "—"}</b> on {(((g || {}).chan || {}).p1 || []).map(dlChanLabel).join(" + ") || "no channel"}</p>
+        <p className="dv-hb-prev">{hbDayLabel(h.days)} at <b className="data">{h.time}</b> to <b>{g ? g.name : "—"}</b> on {dlPathLabel()}</p>
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" onClick={() => { njHeartbeat.upsert(h); closeDialog(); njToast((hb ? "Updated" : "Scheduled") + " test message · " + hbDayLabel(h.days).toLowerCase() + " at " + h.time + "."); }}>{hb ? "Save" : "Schedule"}</button>
+        <button className="btn btn-primary" onClick={() => { njHeartbeat.upsert(Object.assign({}, h, { msg: hbMsg(h) })); closeDialog(); njToast((hb ? "Updated" : "Scheduled") + " test message · " + hbDayLabel(h.days).toLowerCase() + " at " + h.time + "."); }}>{hb ? "Save" : "Schedule"}</button>
       </div>
     </Dialog>
   );
@@ -272,7 +283,7 @@ function DeliveryLogDialog({ initial }) {
                     <span className="dv-log-msg">{r.msg}</span>
                     {r.kind !== "alarm" && <span className={"dv-kind " + r.kind}>{r.kind === "test" ? "TEST" : "HEARTBEAT"}</span>}
                   </td>
-                  <td className="td-strong">{r.rcpt}</td>
+                  <td className="td-strong">{r.rcpt}{r.tier === "b247" && <span className="dv-kind test" title="Around-the-clock recipient: reached by every alarm of the group at any hour"> 24/7</span>}</td>
                   <td><DlResult r={r.result} /></td>
                 </tr>
               ))}
@@ -347,7 +358,8 @@ function DeliveryVerificationCard() {
                   <Icon name="heart-pulse" size={14} color="var(--slate-400)" />
                   <span className="dv-hb-t">{hbDayLabel(h.days)} at <b className="data">{h.time}</b></span>
                   <span className="dv-hb-g">→ {g ? g.name : "group removed"}</span>
-                  <span className="dv-hb-c">{(((g || {}).chan || {}).p1 || []).map(dlChanLabel).join(" + ") || "no channel"}</span>
+                  <span className="dv-hb-c">{dlPathLabel()}</span>
+                  <span className="dv-hb-msg" title="Message text">“{hbMsg(h)}”</span>
                   <div className="dv-hb-act">
                     <button className="icon-btn" title="Edit this scheduled test" onClick={() => openDialog(<HeartbeatDialog hb={h} />)}><Icon name="pencil" size={16} /></button>
                     <button className="icon-btn" title="Remove this scheduled test" onClick={() => openDialog(<ConfirmDialog title="Remove scheduled test" message={"Stop the " + hbDayLabel(h.days).toLowerCase() + " test message at " + h.time + "?"} detail="Nothing will verify the dispatch path between real alarms." confirmLabel="Remove" tone="danger" onConfirm={() => { njHeartbeat.remove(h.id); njToast("Scheduled test removed."); }} />)}><Icon name="trash-2" size={16} /></button>

@@ -462,8 +462,66 @@ function AlarmBulkActions({ rows, sel, selVisible }) {
   );
 }
 
+// Default order of the Active list: STATE GROUP first, then priority, then newest. Priority-first
+// was rejected on the scaling case: with many acknowledged Criticals standing, a fresh
+// unacknowledged High fell below all of them — out of view, though it is the one row nobody
+// has answered yet. An acknowledged alarm has an owner; a returned-unacknowledged one is
+// housekeeping (the condition cleared). Within each group priority still rules. Matches the
+// annunciator ribbon, which is the unacknowledged group alone in the same order.
+const ALM_GRP = [
+  { id: "unack", label: "Unacknowledged", hint: "Active, not yet responded to" },
+  { id: "ack", label: "Acknowledged", hint: "Active, being handled" },
+  { id: "returned", label: "Returned to normal", hint: "Condition cleared, waiting for acknowledgement" },
+];
+const ALM_GRP_RANK = { unack: 0, ack: 1, returned: 2 };
+const ALM_PRIO_RANK = { critical: 0, high: 1, medium: 2, low: 3, diagnostic: 4 };
+// time from the displayed timestamp (dd/mm/yyyy hh:mm:ss) so the order never contradicts the
+// Date / Time column; `since` is only a fallback (the fixture's `since` values drift from `t`)
+function almTs(r) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/.exec(r.t || "");
+  if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4], +m[5], +m[6]);
+  return r.since == null ? -Infinity : -r.since * 3600e3;
+}
+const almSince = (r) => -almTs(r);
+function almDefaultCmp(a, b) {
+  return ((ALM_GRP_RANK[a.state] ?? 9) - (ALM_GRP_RANK[b.state] ?? 9))
+    || ((ALM_PRIO_RANK[a.level] ?? 9) - (ALM_PRIO_RANK[b.level] ?? 9))
+    || (almSince(a) - almSince(b));
+}
+// column sorts; ties fall back to the default order so equal keys never shuffle
+const ALM_COL_CMP = {
+  t: (a, b) => almSince(b) - almSince(a),
+  area: (a, b) => String(a.area).localeCompare(String(b.area)),
+  tag: (a, b) => String(a.tag).localeCompare(String(b.tag)),
+  alarm: (a, b) => String(a.alarm).localeCompare(String(b.alarm)),
+  level: (a, b) => (ALM_PRIO_RANK[a.level] ?? 9) - (ALM_PRIO_RANK[b.level] ?? 9),
+  state: (a, b) => (ALM_GRP_RANK[a.state] ?? 9) - (ALM_GRP_RANK[b.state] ?? 9),
+};
+// toolbar Sort picker: presets over the same `sort` state the column headers drive
+const ALM_SORT_OPTS = [
+  { id: "default", label: "Default order", s: null },
+  { id: "t-desc", label: "Time · newest first", s: { k: "t", dir: -1 } },
+  { id: "t-asc", label: "Time · oldest first", s: { k: "t", dir: 1 } },
+  { id: "state", label: "State", s: { k: "state", dir: 1 } },
+  { id: "level", label: "Priority", s: { k: "level", dir: 1 } },
+];
+const almSortId = (s) => !s ? "default" : s.k === "t" ? (s.dir === -1 ? "t-desc" : "t-asc") : (s.k === "state" || s.k === "level") && s.dir === 1 ? s.k : "custom";
+const ALM_COL_LBL = { t: "Date / Time", area: "Area", tag: "Tag", alarm: "Alarm", level: "Priority", state: "State" };
+function SortTh({ k, sort, onSort, children }) {
+  const on = sort && sort.k === k;
+  return (
+    <th className="sortable" onClick={() => onSort(k)} aria-sort={on ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
+      title={on ? (sort.dir === 1 ? "Sorted ascending · click for descending" : "Sorted descending · click for default order") : "Sort by " + ALM_COL_LBL[k]}>
+      <span className="th-in">{children} <Icon name={on ? (sort.dir === 1 ? "chevron-up" : "chevron-down") : "chevrons-up-down"} size={12} color={on ? "var(--primary)" : "var(--slate-400)"} /></span>
+    </th>
+  );
+}
+
 function ActiveAlarmsScreen({ filter = null }) {
   const hub = useAlarmHub();
+  const [sort, setSort] = React.useState(null);
+  // asc → desc → default order
+  const onSort = (k) => setSort((s) => (!s || s.k !== k ? { k, dir: 1 } : s.dir === 1 ? { k, dir: -1 } : null));
   const sel = useRowSelection();
   const hl = useAlarmHighlight();
   const [q, setQ] = React.useState("");
@@ -479,7 +537,11 @@ function ActiveAlarmsScreen({ filter = null }) {
   const base = (filter ? active.filter((r) => r.level === filter) : active).filter((r) => alarmMatch(r, q));
   const stCounts = { unack: 0, returned: 0, ack: 0 };
   base.forEach((r) => { if (stCounts[r.state] != null) stCounts[r.state]++; });
-  const rows = st ? base.filter((r) => r.state === st) : base;
+  const rows = (st ? base.filter((r) => r.state === st) : base).slice()
+    .sort(sort ? (a, b) => (ALM_COL_CMP[sort.k](a, b) * sort.dir) || almDefaultCmp(a, b) : almDefaultCmp);
+  // group headers only in the default order and only when more than one group is on screen
+  const grouped = !sort && !st;
+  const grpN = {}; rows.forEach((r) => { grpN[r.state] = (grpN[r.state] || 0) + 1; });
   const stWord = { unack: "are unacknowledged", returned: "have returned to normal", ack: "are acknowledged" }[st];
   const visibleIds = rows.map((r) => r.id);
   const selVisible = visibleIds.filter((id) => sel.has(id));
@@ -519,6 +581,15 @@ function ActiveAlarmsScreen({ filter = null }) {
                 </button>
               ))}
             </span>
+          </span>
+          <span className="fbar-div" />
+          <span className="fbar-group">
+            <span className="lbl"><Icon name="arrow-up-down" size={16} color="var(--slate-500)" /> Sort</span>
+            <select className="nj-select" aria-label="Sort alarms" value={almSortId(sort)}
+              onChange={(e) => { const o = ALM_SORT_OPTS.find((x) => x.id === e.target.value); if (o) setSort(o.s); }}>
+              {ALM_SORT_OPTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              {almSortId(sort) === "custom" && <option value="custom">{ALM_COL_LBL[sort.k]} · {sort.dir === 1 ? "ascending" : "descending"}</option>}
+            </select>
           </span>
           {/* live operator load (ch. 11): the count that says whether this is a busy shift or a
               flood. The threshold is the one number the alarm philosophy states. */}
@@ -565,14 +636,19 @@ function ActiveAlarmsScreen({ filter = null }) {
           <thead>
             <tr>
               <th style={{ width: 40 }}><Check on={allOn} indeterminate={selVisible.length > 0 && !allOn} onClick={() => sel.setAll(visibleIds, !allOn)} /></th>
-              <Th>Date / Time</Th><Th>Area</Th><Th>Tag</Th><Th>Alarm</Th>
-              <Th>Priority</Th><Th>State</Th>
+              <SortTh k="t" sort={sort} onSort={onSort}>Date / Time</SortTh><SortTh k="area" sort={sort} onSort={onSort}>Area</SortTh>
+              <SortTh k="tag" sort={sort} onSort={onSort}>Tag</SortTh><SortTh k="alarm" sort={sort} onSort={onSort}>Alarm</SortTh>
+              <SortTh k="level" sort={sort} onSort={onSort}>Priority</SortTh><SortTh k="state" sort={sort} onSort={onSort}>State</SortTh>
               <th style={{ textAlign: "right" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} {...njAlmRow(r.state, r.level)} className={(sel.has(r.id) ? "row-sel " : "") + (hl.includes(r.id) ? "row-hl " : "") + (r.state === "unack" && r.level === "critical" ? "row-crit" : r.state === "unack" && r.level === "high" ? "row-warn" : "")}>
+            {rows.map((r, i) => (
+              <React.Fragment key={r.id}>
+              {grouped && (i === 0 || rows[i - 1].state !== r.state) && (() => { const g = ALM_GRP.find((x) => x.id === r.state); return g ? (
+                <tr className="al-grp"><td colSpan={8}><span className="al-grp-in"><span className="al-grp-l">{g.label}</span><span className="al-grp-n data">{grpN[r.state]}</span><span className="al-grp-h">{g.hint}</span></span></td></tr>
+              ) : null; })()}
+              <tr {...njAlmRow(r.state, r.level)} className={(sel.has(r.id) ? "row-sel " : "") + (hl.includes(r.id) ? "row-hl " : "") + (r.state === "unack" && r.level === "critical" ? "row-crit" : r.state === "unack" && r.level === "high" ? "row-warn" : "")}>
                 <td><Check on={sel.has(r.id)} onClick={() => sel.toggle(r.id)} /></td>
                 <td><span className="data td-strong">{r.t}</span>{isStale(r) && <span className="stale-pill" title={`Standing ${Math.round(r.since)}h: exceeds 24h`}><Icon name="clock" size={12} /> STALE</span>}</td>
                 <td><AreaLink area={r.area} strong /></td>
@@ -582,6 +658,7 @@ function ActiveAlarmsScreen({ filter = null }) {
                 <td><StateTag state={r.state} /></td>
                 <td><RowActions row={r} /></td>
               </tr>
+              </React.Fragment>
             ))}
             {rows.length === 0 && (
               /* `resolved` may ONLY be used when nothing is narrowing the list. With a query, a
@@ -602,6 +679,11 @@ function ActiveAlarmsScreen({ filter = null }) {
         </div>
         <div className="tbl-foot">
           <span className="rows-select">Show <span className="select">100 rows <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span></span>
+          <span className="al-sortnote small">
+            {sort
+              ? <React.Fragment>Sorted by {ALM_COL_LBL[sort.k]} <button className="linkbtn" onClick={() => setSort(null)}>Default order</button></React.Fragment>
+              : "Unacknowledged first, then priority, newest first"}
+          </span>
           <span className="small">{rows.length} of {counts.total} active{fLabel ? " · " + fLabel.toLowerCase() : ""}</span>
         </div>
       </div>

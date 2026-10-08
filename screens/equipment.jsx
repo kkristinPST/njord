@@ -23,7 +23,13 @@ function EqModeToggle({ mode, onChange }) {
   );
 }
 
-function EquipmentDialog({ equip }) {
+function EquipmentDialog({ equip: equip0 }) {
+  // Alarm state is read LIVE from the register, the same source the mimic badge and the Site
+  // Plan use — never the fixture's `status`. The grinder pump showed a medium badge on the mimic
+  // and "OK / No active alarms" in its own popup.
+  if (window.useAlarmHub) window.useAlarmHub();
+  const liveAlarms = njEquipAlarms(equip0.tag, equip0.alarmTags);
+  const equip = window.alarmHub ? { ...equip0, status: liveAlarms.length ? njWorstLevel(liveAlarms) : "ok", liveAlarms } : equip0;
   const [tab, setTab] = React.useState("Overview");
   const [mode, setMode] = React.useState(equip.mode || "Auto");
   const [running, setRunning] = React.useState(equip.running !== false);
@@ -102,7 +108,7 @@ function EquipmentDialog({ equip }) {
 
       <div className="eq-tabs">
         <div className="segmented eq-tabstrip">
-          {tabDefs.map((t) => <button key={t.id} className={"seg" + (t.id === tab ? " active" : "")} onClick={() => setTab(t.id)}><Icon name={t.icon} size={14} /> {t.id}</button>)}
+          {tabDefs.map((t) => <button key={t.id} className={"seg" + (t.id === tab ? " active" : "")} onClick={() => setTab(t.id)}><Icon name={t.icon} size={14} /> {t.id}{t.id === "Alarms" && equip.liveAlarms && equip.liveAlarms.length > 0 && <span className="eq-tab-n data">{equip.liveAlarms.length}</span>}</button>)}
         </div>
       </div>
 
@@ -202,7 +208,7 @@ function EquipmentDialog({ equip }) {
 /* ── RAS-* equipment registry ── */
 const EQUIP = {
   "DPT1-FIL0": {
-    tag: "DPT1-FIL0", name: "Drum Filter", kind: "drumfilter", status: "high",
+    tag: "DPT1-FIL0", name: "Drum filter", kind: "drumfilter", status: "high",
     mode: "Auto", running: true, runLabel: "Backwashing",
     primary: { l: "Level before filter", v: "59", u: "cm" },
     readouts: [
@@ -278,7 +284,7 @@ const EQUIP = {
     ],
   },
   "DPT1-SMP0-PU1": {
-    tag: "DPT1-SMP0-PU1", name: "Lift Pump 1", kind: "pump", status: "ok",
+    tag: "DPT1-SMP0-PU1", name: "Lift pump 1", kind: "pump", status: "ok",
     mode: "Auto", running: true,
     primary: { l: "Speed", v: "41", u: "Hz" },
     readouts: [
@@ -307,11 +313,25 @@ function njBuildEquip(tag, name, kind, extra) {
     mode: "Auto", running: true, canStartStop: kind === "pump" || kind === "blower",
   }, extra || {});
 }
+// standing alarms on one equipment: its own tag and any sub-tag (DPT1-FIL0 → DPT1-FIL0-PT1),
+// plus any extra tags — the clicked mimic symbol's tag when it opens a shared spec
+function njEquipAlarms(tag, extra) {
+  const rows = (window.alarmHub && window.alarmHub.rows) || [];
+  const tags = [tag].concat(extra || []).filter(Boolean);
+  if (!tags.length) return [];
+  return rows.filter((a) => a.tag && tags.some((t) => a.tag === t || a.tag.indexOf(t + "-") === 0) && (!window.isActiveAlarm || window.isActiveAlarm(a)));
+}
+function njWorstLevel(list) {
+  const rank = { critical: 4, high: 3, medium: 2, low: 1 };
+  return list.reduce((w, a) => ((rank[a.level] || 0) > (rank[w] || 0) ? a.level : w), "low");
+}
 function openEquipment(tagOrSpec) {
   const spec = typeof tagOrSpec === "string"
     ? (EQUIP[tagOrSpec] || njBuildEquip(tagOrSpec))
     : tagOrSpec;
-  openDialog(<EquipmentDialog equip={spec} />);
+  const ct = window.__njEqClickTag;
+  const withTag = ct && ct !== spec.tag ? { ...spec, alarmTags: [ct].concat(spec.alarmTags || []) } : spec;
+  openDialog(<EquipmentDialog equip={withTag} />);
 }
 
-Object.assign(window, { EquipmentDialog, EQUIP, openEquipment, njBuildEquip });
+Object.assign(window, { EquipmentDialog, EQUIP, openEquipment, njBuildEquip, njEquipAlarms, njWorstLevel });

@@ -27,8 +27,43 @@ function njTagAlarm(tag) {
   });
   return best;
 }
-// unacknowledged is the louder of the two: it means nobody has looked yet
-function njAlarmTone(a) { return a && a.level === "critical" ? "crit" : "warn"; }
+// A tag whose alarm is BLOCKED or OUT OF SERVICE, when it has no standing alarm. The mimic must not
+// draw a suppressed tag exactly like a healthy one: "nothing is wrong" and "we stopped listening"
+// are different claims. It gets a quiet neutral mark (dashed outline + ban / wrench icon), never an
+// alarm colour, so the noise blocking removed does not come back. Active alarm > suppression > none.
+function njTagSupp(tag) {
+  if (!tag || tag === "—" || !window.alarmHub || njTagAlarm(tag)) return null;
+  let s = null;
+  window.alarmHub.rows.forEach((a) => { if (a.tag === tag && (a.supp === "oos" || (a.supp === "blocked" && !s))) s = a.supp; });
+  return s;
+}
+// neutral suppression mark, same anchor as the alarm badge. Icon, not letter: the register's OOS
+// glyph is "M", which would sit directly under a Manual "M" mode chip in the same column.
+function SuppMark({ at, supp }) {
+  if (!at || !supp) return null;
+  return (
+    <g className={"rasm-sup " + supp} pointerEvents="none" transform={`translate(${at[0]},${at[1]})`}>
+      <rect className="rasm-sup-box" x="-8" y="-8" width="16" height="16" rx="3" />
+      <g className="rasm-sup-ic" transform="translate(-5.5,-5.5) scale(0.46)">
+        {supp === "oos"
+          ? <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+          : <React.Fragment><circle cx="12" cy="12" r="10" /><path d="M4.93 4.93l14.14 14.14" /></React.Fragment>}
+      </g>
+    </g>
+  );
+}
+function njSuppTitle(s) { return s === "oos" ? "Alarm out of service" : s === "blocked" ? "Alarm blocked" : ""; }
+// Three tones on the mimic: crit (red triangle), high (amber circle), and "warn lo" for medium /
+// low (yellow diamond). "lo" is ADDITIVE to "warn" so every existing .warn rule still applies and
+// only the colour + shape are overridden. Shape repeats priority for colour-blind operators.
+function njAlarmTone(a) { return !a ? "warn" : a.level === "critical" ? "crit" : a.level === "high" ? "warn" : "warn lo"; }
+// ── equipment out of service (PLC) ── NOT the alarm's out-of-service: this is the MACHINE locked
+// out for maintenance, reported per equipment by the PLC. Drawn as: symbol ghosted (it cannot run)
+// and the mode chip replaced by a lock — Auto/Manual means nothing while the unit is locked out, so
+// the chip slot is the honest place and no mimic geometry moves. Alarm badges still draw on top.
+// NJ_EQ_STATE stands in for the PLC feed; keys are equipment tags.
+window.NJ_EQ_STATE = window.NJ_EQ_STATE || { "DPT1-SMP0-PU2": "oos" };
+function njEqOos(tag) { return !!(tag && window.NJ_EQ_STATE && window.NJ_EQ_STATE[tag] === "oos"); }
 
 // ── site-plan roll-up ──
 // The Site Plan read a hard-coded `status` on every system in FACILITY, so DPT1 RAS showed
@@ -47,7 +82,12 @@ const MA_EQ = {
 };
 function njTagSystem(tag) {
   const m = /^[A-Z0-9]+-([A-Z]+)\d*-/i.exec(String(tag || ""));
-  return m ? MA_EQ[m[1].toUpperCase()] || null : null;
+  if (!m) return null;
+  // FHA (fish handling) is also used by the fish-transport line (OTL1-FHA0-…), which no mimic
+  // draws. Only the DFS0 plant IS the Dead Fish screen — attributing transport alarms to it lit
+  // the Dead Fish node medium with nothing on the screen to show for it.
+  if (m[1].toUpperCase() === "FHA" && !/^DFS/i.test(String(tag))) return null;
+  return MA_EQ[m[1].toUpperCase()] || null;
 }
 const MA_SYS = [
   [/fish\s*tank|tank\s*\d/i, "Fish Tank"],
@@ -150,15 +190,16 @@ function useMimicAlarms() { const [, f] = React.useReducer((x) => x + 1, 0); Rea
 // and the body is only OUTLINED now, so a badge inside the glyph would sit on its detail.
 function AbnormalRing({ at, tone, unack, level }) {
   if (!at) return null;
-  const crit = level === "critical";
+  const crit = level === "critical", lo = level === "medium" || level === "low";
   return (
     <g className={"rasm-abn " + tone + (unack ? " unack" : "")} pointerEvents="none" transform={`translate(${at[0]},${at[1]})`}>
       {crit
         ? <path className="rasm-abn-dot" d="M0 -8.8 L9 6.6 L-9 6.6 Z" strokeLinejoin="round" />
+        : lo ? <path className="rasm-abn-dot" d="M0 -9 L9 0 L0 9 L-9 0 Z" strokeLinejoin="round" />
         : <circle className="rasm-abn-dot" r="8" />}
       <text className="rasm-abn-g" y={crit ? 5.6 : 3.8} textAnchor="middle">!</text>
     </g>
   );
 }
 
-Object.assign(window, { njTagAlarm, njAlarmTone, njAlarmTitle, useMimicAlarms, AbnormalRing, njSystemAlarms, njLiveSystemStatus, njAreaDept, njPlaceSystem, njTagSystem });
+Object.assign(window, { njEqOos, njTagSupp, SuppMark, njSuppTitle, njTagAlarm, njAlarmTone, njAlarmTitle, useMimicAlarms, AbnormalRing, njSystemAlarms, njLiveSystemStatus, njAreaDept, njPlaceSystem, njTagSystem });

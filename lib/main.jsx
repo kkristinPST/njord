@@ -51,6 +51,9 @@ function App() {
       <DialogHost />
       <TrendWindow />
       <ReportWindow />
+      <OcDutyListWindow />
+      <OcGroupDrawer />
+      <OcDispatchDrawer />
       <CommandPalette />
       <AlarmDrawer />
     </React.Fragment>

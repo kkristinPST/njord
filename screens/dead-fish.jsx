@@ -55,13 +55,13 @@ function DfValve({ cx, cy, tag, desc, open, mode = "A", lx, ly, anchor = "middle
   const name = desc.join(" ");
   return (
     <g>
-      <Eq title={name} onClick={() => openEquipment(njBuildEquip(tag, name, "valve", {
+      <Eq title={name} tag={tag} onClick={() => openEquipment(njBuildEquip(tag, name, "valve", {
         running: open, canStartStop: true, primary: { l: "Position", v: open ? "Open" : "Closed", u: "" },
         readouts: [{ l: "Position", v: open ? "Open" : "Closed", u: "" }],
       }))}>
         <SymValve cx={cx} cy={cy} s={0.86} running={open} />
       </Eq>
-      <ModeChip x={cx + 13} y={cy - 8} mode={mode} />
+      <ModeChip x={cx + 13} y={cy - 8} mode={mode} tag={tag} />
       <Tag2 x={lx} y={ly} anchor={anchor} tag={tag} desc={desc} />
     </g>
   );
@@ -104,13 +104,13 @@ function DeadFishMimic() {
       <path d="M592,252 l6,11 l6,-11 Z" fill="var(--sc-edge)" />
       <DfValve cx={598} cy={290} tag="DFS0-FHA0-PV4" desc={["Vent valve"]} open={false} lx={560} ly={272} anchor="end" />
       <DfValve cx={740} cy={282} tag="DFS0-FHA0-PV3" desc={["Vacuum pump", "shutoff valve"]} open={true} lx={800} ly={258} anchor="start" />
-      <Eq title="Vacuum pump" onClick={() => openEquipment(njBuildEquip("DFS0-FHA0-JK1", "Vacuum pump", "blower", {
+      <Eq title="Vacuum pump" tag="DFS0-FHA0-JK1" mark={[978, 234]} onClick={() => openEquipment(njBuildEquip("DFS0-FHA0-JK1", "Vacuum pump", "blower", {
         running: true, primary: { l: "Vacuum in cyclone", v: "-482", u: "mbar" },
         readouts: [{ l: "Vacuum in cyclone", v: "-482", u: "mbar", tag: "DFS0-FHA0-PT1" }, { l: "Run-on time", v: "600", u: "s" }],
       }))}>
         <SymFan cx={1010} cy={225} running={true} />
       </Eq>
-      <ModeChip x={1032} y={217} mode="A" />
+      <ModeChip x={1032} y={217} mode="A" tag="DFS0-FHA0-JK1" />
       <SymTrend cx={1070} cy={225} tag="DFS0-FHA0-JK1" name="Vacuum pump" group="Dead Fish" running={true} />
       <Tag2 x={1010} y={168} tag="DFS0-FHA0-JK1" desc={["Vacuum pump"]} />
       <path d="M1118,219 l22,6 l-22,6 Z" fill="var(--sc-edge)" />
@@ -142,13 +142,13 @@ function DeadFishMimic() {
       }))}>
         <DfBasin x={480} y={740} w={420} h={150} />
       </Eq>
-      <Eq title="Grinder pump" onClick={() => openEquipment(njBuildEquip("DFS0-FHA0-GR1", "Grinder pump", "pump", {
+      <Eq title="Grinder pump" tag="DFS0-FHA0-GR1" mark={[648, 857]} onClick={() => openEquipment(njBuildEquip("DFS0-FHA0-GR1", "Grinder pump", "pump", {
         running: false, primary: { l: "Run time", v: "0", u: "s" },
         readouts: [{ l: "Actual grinder run time", v: "0", u: "s" }, { l: "Grinding time", v: "3600", u: "s" }],
       }))}>
         <SymPump cx={680} cy={848} running={false} />
       </Eq>
-      <ModeChip x={628} y={840} mode="A" />
+      <ModeChip x={628} y={840} mode="A" tag="DFS0-FHA0-GR1" />
       <SymTrend cx={718} cy={848} tag="DFS0-FHA0-GR1" name="Grinder pump" group="Dead Fish" running={false} />
       <Tag2 x={680} y={908} tag="DFS0-FHA0-GR1" desc={["Grinder pump"]} />
 
@@ -220,7 +220,7 @@ function DeadFishScreen() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [full]);
-  const maneuver = (msg) => njToast(msg, "Maneuver history", () => window.__njNavigate && window.__njNavigate("maneuver"));
+  const maneuver = (msg) => njToast(msg, "Maneuver History", () => window.__njNavigate && window.__njNavigate("maneuver"));
   const emptyCyclone = () => openDialog(<ConfirmDialog
     title="Empty the vacuum cyclone?"
     message="Opens the emptying valve and drops the collected dead fish into the grinder tank. Vacuum collection pauses until the cyclone is sealed again."

@@ -29,14 +29,16 @@ function SymFan({ cx, cy, s = 1.25, running }) {
     </g>
   );
 }
-// motor / impeller in a ring — used inside drum filter & MBBR blower cabinet
+// motor — used inside drum filter & sump agitator. Same two-tone rule as pump/fan/valve: the ring + shaft
+// are the BODY (run/stop fill), the ground is always --sc-fill-lite. It used to paint ring and shaft in
+// --sc-edge in both states, so a stopped motor read almost as dark as a running one.
 function SymMotor({ cx, cy, s = 1, running }) {
-  const inner = running ? "var(--sc-run)" : "var(--sc-stop)";
+  const body = running ? "var(--sc-run)" : "var(--sc-stop)";
   return (
     <g transform={`translate(${cx},${cy}) scale(${s}) translate(-21.08,-18.55)`}>
-      <path d="M39.637 18.5555C39.637 8.30849 31.3302 0.00164795 21.0832 0.00164795C10.8361 0.00164795 2.5293 8.30849 2.5293 18.5555C2.5293 28.8025 10.8361 37.1094 21.0832 37.1094C31.3302 37.1094 39.637 28.8025 39.637 18.5555Z" fill="var(--sc-edge)" />
-      <path d="M36.7374 18.5561C36.7374 9.91019 29.7285 2.90129 21.0826 2.90129C12.4366 2.90129 5.42773 9.91019 5.42773 18.5561C5.42773 27.202 12.4366 34.2109 21.0826 34.2109C29.7285 34.2109 36.7374 27.202 36.7374 18.5561Z" className="sc-body" fill={inner} />
-      <path d="M15.2852 5.79898L15.2852 31.3105H26.8813V5.79898H15.2852Z" fill="var(--sc-edge)" />
+      <path d="M39.637 18.5555C39.637 8.30849 31.3302 0.00164795 21.0832 0.00164795C10.8361 0.00164795 2.5293 8.30849 2.5293 18.5555C2.5293 28.8025 10.8361 37.1094 21.0832 37.1094C31.3302 37.1094 39.637 28.8025 39.637 18.5555Z" className="sc-body" fill={body} />
+      <path d="M36.7374 18.5561C36.7374 9.91019 29.7285 2.90129 21.0826 2.90129C12.4366 2.90129 5.42773 9.91019 5.42773 18.5561C5.42773 27.202 12.4366 34.2109 21.0826 34.2109C29.7285 34.2109 36.7374 27.202 36.7374 18.5561Z" fill="var(--sc-fill-lite)" />
+      <path d="M15.2852 5.79898L15.2852 31.3105H26.8813V5.79898H15.2852Z" className="sc-body" fill={body} />
     </g>
   );
 }
@@ -64,8 +66,15 @@ function SymCone({ cx, cy, s = 1.05 }) {
 // the colour differing. A filled chip carried more weight than the alarm badges beside it,
 // and the fill/glyph contrast pair it needed is what kept failing across the three themes.
 // Outline and letter share ONE token, so there is no second colour to keep legible.
-function ModeChip({ x, y, mode }) {
+function ModeChip({ x, y, mode, tag }) {
   const man = mode === "M";
+  if (tag && njEqOos(tag)) return (
+    <g className="rasm-eqoos-chip">
+      <title>Equipment out of service</title>
+      <rect x={x} y={y} width="17" height="17" rx="3" />
+      <g transform={`translate(${x + 3},${y + 3}) scale(0.46)`}><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></g>
+    </g>
+  );
   return (
     <g>
       <title>{man ? "Manual mode" : "Automatic mode"}</title>
@@ -108,10 +117,11 @@ function RD({ x, y, w = 60, h = 25, value, unit, tag, name, group, accent, mono 
   // the readout carries the tag already, so every mimic in the facility gets alarm-aware
   // values from this one place — no per-screen wiring
   const alarm = tag ? njTagAlarm(tag) : null;
+  const supp = tag && !alarm ? njTagSupp(tag) : null;
   const send = (e) => { e.stopPropagation(); e.preventDefault(); njSendToTrend(tag, { name, unit, value: String(value), group }); };
   return (
-    <g className={"rasm-rd" + (trendable ? " t" : "") + (alarm ? " abn " + njAlarmTone(alarm) : "")}>
-      <title>{[name || tag || "", alarm ? njAlarmTitle(alarm) : null].filter(Boolean).join(" — ")}</title>
+    <g className={"rasm-rd" + (trendable ? " t" : "") + (alarm ? " abn " + njAlarmTone(alarm) : "") + (supp ? " sup" : "")}>
+      <title>{[name || tag || "", alarm ? njAlarmTitle(alarm) : supp ? njSuppTitle(supp) : null].filter(Boolean).join(" — ")}</title>
       <rect className="rasm-rd-box" x={x} y={y} width={w} height={h} rx="4" />
       <text className={"rasm-rd-v" + (mono ? "" : " s")} x={x + w / 2} y={y + h / 2 + 5} textAnchor="middle" fill={accent}>{value}<tspan className="rasm-rd-u"> {unit}</tspan></text>
       {trendable && (
@@ -136,12 +146,18 @@ function RD({ x, y, w = 60, h = 25, value, unit, tag, name, group, accent, mono 
 function Eq({ onClick, title, children, tag, mark }) {
   useMimicAlarms();
   const alarm = tag ? njTagAlarm(tag) : null;
+  const supp = tag && !alarm ? njTagSupp(tag) : null;
+  const eqOos = njEqOos(tag);
+  // the popup a symbol opens is often a SHARED spec (both CO₂ fans open DPT1-STR0-FAN), so the
+  // clicked symbol's own tag is handed over — its alarms must appear in the popup it opens
+  const click = onClick ? (e) => { window.__njEqClickTag = tag || null; try { onClick(e); } finally { window.__njEqClickTag = null; } } : null;
   return (
-    <g className={(onClick ? "rasm-eq" : "") + (alarm ? " rasm-eq-abn " + njAlarmTone(alarm) + (alarm.state === "unack" ? " unack" : "") : "")}
-      onClick={onClick} role={onClick ? "button" : undefined} {...(onClick ? njActivate(onClick) : null)}>
-      {(title || alarm) && <title>{[title, alarm ? njAlarmTitle(alarm) : null].filter(Boolean).join(" — ")}</title>}
+    <g className={(onClick ? "rasm-eq" : "") + (eqOos ? " eq-oos" : "") + (alarm ? " rasm-eq-abn " + njAlarmTone(alarm) + (alarm.state === "unack" ? " unack" : "") : "")}
+      onClick={click} role={onClick ? "button" : undefined} {...(click ? njActivate(click) : null)}>
+      {(title || alarm || supp || eqOos) && <title>{[title, eqOos ? "Equipment out of service" : null, alarm ? njAlarmTitle(alarm) : supp ? njSuppTitle(supp) : null].filter(Boolean).join(" — ")}</title>}
       {children}
       {alarm && mark && <AbnormalRing at={mark} tone={njAlarmTone(alarm)} unack={alarm.state === "unack"} level={alarm.level} />}
+      {supp && mark && <SuppMark at={mark} supp={supp} />}
     </g>
   );
 }
@@ -274,31 +290,31 @@ function RasMimic() {
 
       {/* ───── FILTER / BACKWASH ───── */}
       <Eq title="Backwash pump filter 1" tag="DPT1-FIL0-PU1" mark={[118, 309]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={150} cy={300} running={false} /></Eq>
-      <ModeChip x={110} y={280} mode="A" />
+      <ModeChip x={110} y={280} mode="A" tag="DPT1-FIL0-PU1" />
       <SymTrend cx={180} cy={300} tag="DPT1-FIL0-PU1" name="Backwash pump filter 1" group="Filter" running={false} />
       <RD x={120} y={250} value="0" unit="Hz" tag="DPT1-FIL0-PU1" name="Backwash pump 1 speed" group="Filter" />
       <Tag2 x={150} y={220} tag="DPT1-FIL0-PU1" desc={["Backwash pump filter 1"]} />
 
       <Eq title="Backwash pump filter 2" tag="DPT1-FIL0-PU2" mark={[118, 529]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={150} cy={520} running={false} /></Eq>
-      <ModeChip x={110} y={500} mode="A" />
+      <ModeChip x={110} y={500} mode="A" tag="DPT1-FIL0-PU2" />
       <SymTrend cx={180} cy={520} tag="DPT1-FIL0-PU2" name="Backwash pump filter 2" group="Filter" running={false} />
       <RD x={120} y={555} value="0" unit="Hz" tag="DPT1-FIL0-PU2" name="Backwash pump 2 speed" group="Filter" />
       <Tag2 x={150} y={601} tag="DPT1-FIL0-PU2" desc={["Backwash pump filter 2"]} />
 
-      <Eq title="Drum filter 1" tag="DPT1-FIL1-FE1" onClick={open("DPT1-FIL0")}>
+      <Eq title="Drum filter 1" tag="DPT1-FIL1-FE1" mark={[289, 318]} onClick={open("DPT1-FIL0")}>
         <rect className="rasm-box" x={236} y={270} width={62} height={58} rx="6" />
         <SymMotor cx={267} cy={299} s={0.7} running={false} />
       </Eq>
-      <ModeChip x={280} y={272} mode="A" />
+      <ModeChip x={280} y={272} mode="A" tag="DPT1-FIL1-FE1" />
       <SymTrend cx={312} cy={299} tag="DPT1-FIL1-FE1" name="Drum filter 1" group="Filter" running={false} />
       <RD x={237} y={236} value="0" unit="Hz" tag="DPT1-FIL1-FE1" name="Drum filter 1 speed" group="Filter" />
       <Tag2 x={267} y={344} tag="DPT1-FIL1-FE1" desc={["Drum filter 1"]} />
 
-      <Eq title="Drum filter 2" onClick={open("DPT1-FIL0")}>
+      <Eq title="Drum filter 2" tag="DPT1-FIL2-FE1" mark={[289, 538]} onClick={open("DPT1-FIL0")}>
         <rect className="rasm-box" x={236} y={490} width={62} height={58} rx="6" />
         <SymMotor cx={267} cy={519} s={0.7} running={false} />
       </Eq>
-      <ModeChip x={280} y={492} mode="A" />
+      <ModeChip x={280} y={492} mode="A" tag="DPT1-FIL2-FE1" />
       <SymTrend cx={312} cy={519} tag="DPT1-FIL2-FE1" name="Drum filter 2" group="Filter" running={false} />
       <RD x={237} y={456} value="0" unit="Hz" tag="DPT1-FIL2-FE1" name="Drum filter 2 speed" group="Filter" />
       <Tag2 x={267} y={564} tag="DPT1-FIL2-FE1" desc={["Drum filter 2"]} />
@@ -309,13 +325,13 @@ function RasMimic() {
       {/* ───── LYE DOSING ───── */}
       <Flag x={40} y={688} label="Lye" dir="r" />
       <Eq title="Lye pump 1" tag="DPT1-DNA0-PU1" mark={[156, 714]} onClick={open("DPT1-DNA0-PU1")}><SymPump cx={222} cy={705} running={false} /></Eq>
-      <ModeChip x={148} y={685} mode="M" />
+      <ModeChip x={148} y={685} mode="M" tag="DPT1-DNA0-PU1" />
       <SymTrend cx={252} cy={705} tag="DPT1-DNA0-PU1" name="Lye pump 1" group="Lye Dosing" running={false} />
       <RD x={163} y={655} w={64} value="0.0" unit="l/h" tag="DPT1-DNA0-PU1" name="Lye pump 1 rate" group="Lye Dosing" />
       <Tag2 x={222} y={742} tag="DPT1-DNA0-PU1" desc={["Lye pump 1"]} />
 
       <Eq title="Lye pump 2" tag="DPT1-DNA0-PU2" mark={[156, 824]} onClick={open("DPT1-DNA0-PU2")}><SymPump cx={222} cy={815} running={false} /></Eq>
-      <ModeChip x={148} y={795} mode="M" />
+      <ModeChip x={148} y={795} mode="M" tag="DPT1-DNA0-PU2" />
       <SymTrend cx={252} cy={815} tag="DPT1-DNA0-PU2" name="Lye pump 2" group="Lye Dosing" running={false} />
       <RD x={163} y={848} w={64} value="0.0" unit="l/h" tag="DPT1-DNA0-PU2" name="Lye pump 2 rate" group="Lye Dosing" />
       <Tag2 x={222} y={773} tag="DPT1-DNA0-PU2" desc={["Lye pump 2"]} />
@@ -351,13 +367,13 @@ function RasMimic() {
       <Tag2 x={752} y={246} tag="DPT1-STR0-AV1" desc={["CO₂-fan 1"]} />
       <RD x={719} y={284} value="0" unit="Hz" tag="DPT1-STR0-AV1" name="CO₂-fan 1 speed" group="CO₂ Stripper" />
       <Eq title="CO₂-fan 1" tag="DPT1-STR0-AV1" mark={[720, 356]} onClick={open("DPT1-STR0-FAN")}><SymFan cx={752} cy={330} running={false} /></Eq>
-      <ModeChip x={712} y={322} mode="M" />
+      <ModeChip x={712} y={322} mode="M" tag="DPT1-STR0-AV1" />
       <SymTrend cx={782} cy={330} tag="DPT1-STR0-AV1" name="CO₂-fan 1" group="CO₂ Stripper" running={false} />
 
       <Tag2 x={848} y={246} tag="DPT1-STR0-AV2" desc={["CO₂-fan 2"]} />
       <RD x={815} y={284} value="0" unit="Hz" tag="DPT1-STR0-AV2" name="CO₂-fan 2 speed" group="CO₂ Stripper" />
       <Eq title="CO₂-fan 2" tag="DPT1-STR0-AV2" mark={[816, 356]} onClick={open("DPT1-STR0-FAN")}><SymFan cx={848} cy={330} running={false} /></Eq>
-      <ModeChip x={808} y={322} mode="M" />
+      <ModeChip x={808} y={322} mode="M" tag="DPT1-STR0-AV2" />
       <SymTrend cx={878} cy={330} tag="DPT1-STR0-AV2" name="CO₂-fan 2" group="CO₂ Stripper" running={false} />
 
       <Eq title="CO₂ stripper column" tag="DPT1-STR1-PT1" onClick={open("DPT1-STR0-FAN")}><StripperColumn x={700} y={556} w={184} h={150} /></Eq>
@@ -368,13 +384,13 @@ function RasMimic() {
       <Eq title="Pump sump" onClick={open("DPT1-SMP0")}><SumpBasin x={904} y={604} w={296} h={120} /></Eq>
 
       <Eq title="Lift pump 1" tag="DPT1-SMP0-PU1" mark={[953, 677]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={985} cy={668} running={true} /></Eq>
-      <ModeChip x={945} y={648} mode="A" />
+      <ModeChip x={945} y={648} mode="A" tag="DPT1-SMP0-PU1" />
       <SymTrend cx={1015} cy={668} tag="DPT1-SMP0-PU1" name="Lift pump 1" group="Pump Sump" running={true} />
       <RD x={952} y={620} value="37" unit="Hz" tag="DPT1-SMP0-PU1" name="Lift pump 1 speed" group="Pump Sump" />
       <Tag2 x={985} y={708} tag="DPT1-SMP0-PU1" desc={["Lift pump 1"]} />
 
       <Eq title="Lift pump 2" tag="DPT1-SMP0-PU2" mark={[1068, 677]} onClick={open("DPT1-SMP0-PU1")}><SymPump cx={1100} cy={668} running={false} /></Eq>
-      <ModeChip x={1060} y={648} mode="A" />
+      <ModeChip x={1060} y={648} mode="A" tag="DPT1-SMP0-PU2" />
       <SymTrend cx={1130} cy={668} tag="DPT1-SMP0-PU2" name="Lift pump 2" group="Pump Sump" running={false} />
       <RD x={1067} y={620} value="0" unit="Hz" tag="DPT1-SMP0-PU2" name="Lift pump 2 speed" group="Pump Sump" />
       <Tag2 x={1100} y={708} tag="DPT1-SMP0-PU2" desc={["Lift pump 2"]} />
@@ -405,11 +421,11 @@ function RasMimic() {
       <Tag2 x={1010} y={74} tag="DPT1-DOX0-PU1" desc={["Oxygenation pump 1"]} anchor="middle" />
       <RD x={977} y={99} value="0" unit="Hz" tag="DPT1-DOX0-PU1" name="Oxygenation pump 1 speed" group="Oxygenation" />
       <Eq title="Oxygenation pump 1" tag="DPT1-DOX0-PU1" mark={[978, 159]} onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={150} running={false} /></Eq>
-      <ModeChip x={970} y={130} mode="M" />
+      <ModeChip x={970} y={130} mode="M" tag="DPT1-DOX0-PU1" />
       <SymTrend cx={1040} cy={150} tag="DPT1-DOX0-PU1" name="Oxygenation pump 1" group="Oxygenation" running={false} />
 
       <Eq title="Oxygenation pump 2" tag="DPT1-DOX0-PU2" mark={[978, 259]} onClick={open("DPT1-DOX0")}><SymPump cx={1010} cy={250} running={false} /></Eq>
-      <ModeChip x={970} y={230} mode="M" />
+      <ModeChip x={970} y={230} mode="M" tag="DPT1-DOX0-PU2" />
       <SymTrend cx={1040} cy={250} tag="DPT1-DOX0-PU2" name="Oxygenation pump 2" group="Oxygenation" running={false} />
       <RD x={977} y={284} value="0" unit="Hz" tag="DPT1-DOX0-PU2" name="Oxygenation pump 2 speed" group="Oxygenation" />
       <Tag2 x={1010} y={324} tag="DPT1-DOX0-PU2" desc={["Oxygenation pump 2"]} />
@@ -418,12 +434,12 @@ function RasMimic() {
       <RD x={1147} y={300} w={66} value="0.3" unit="bar" tag="DPT1-DOX1-PT1" name="Oxygen water pressure" group="Oxygenation" />
       <Tag2 x={1158} y={340} tag="DPT1-DOX1-PT1" desc={["Oxygen water pressure"]} />
 
-      <Eq title="Base dose valve" onClick={open(njBuildEquip("DPT1-DOX1-SV1", "Base dose valve", "valve", { primary: { l: "Opening", v: "0", u: "%" }, readouts: [{ l: "Valve opening", v: "0", u: "%", tag: "DPT1-DOX1-SV1" }] }))}><SymValve cx={1266} cy={150} running={false} /></Eq>
-      <ModeChip x={1282} y={142} mode="M" />
+      <Eq title="Base dose valve" tag="DPT1-DOX1-SV1" mark={[1290.5, 172]} onClick={open(njBuildEquip("DPT1-DOX1-SV1", "Base dose valve", "valve", { primary: { l: "Opening", v: "0", u: "%" }, readouts: [{ l: "Valve opening", v: "0", u: "%", tag: "DPT1-DOX1-SV1" }] }))}><SymValve cx={1266} cy={150} running={false} /></Eq>
+      <ModeChip x={1282} y={142} mode="M" tag="DPT1-DOX1-SV1" />
       <Tag2 x={1266} y={84} tag="DPT1-DOX1-SV1" desc={["Base dose valve"]} />
 
-      <Eq title="Extra dose valve" onClick={open(njBuildEquip("DPT1-DOX1-SV2", "Extra dose valve", "valve", { primary: { l: "Opening", v: "0", u: "%" }, readouts: [{ l: "Valve opening", v: "0", u: "%", tag: "DPT1-DOX1-SV2" }] }))}><SymValve cx={1392} cy={150} running={false} /></Eq>
-      <ModeChip x={1408} y={142} mode="M" />
+      <Eq title="Extra dose valve" tag="DPT1-DOX1-SV2" mark={[1416.5, 172]} onClick={open(njBuildEquip("DPT1-DOX1-SV2", "Extra dose valve", "valve", { primary: { l: "Opening", v: "0", u: "%" }, readouts: [{ l: "Valve opening", v: "0", u: "%", tag: "DPT1-DOX1-SV2" }] }))}><SymValve cx={1392} cy={150} running={false} /></Eq>
+      <ModeChip x={1408} y={142} mode="M" tag="DPT1-DOX1-SV2" />
       <Tag2 x={1392} y={84} tag="DPT1-DOX1-SV2" desc={["Extra dose valve"]} />
 
       {/* ───── right-edge flags ───── */}

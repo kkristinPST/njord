@@ -147,11 +147,26 @@ function eventValueAt(pen, tMs, ev) {
   const end = 2 * thr - safe; // symmetric so the line is exactly at thr at the center
   return safe + (end - safe) * s + penNoise(pen, tMs) * 0.45;
 }
-// build a { xMin, xMax, n, mode, ... } view from the store state
+// build a { xMin, xMax, n, mode, ... } view from the store state.
+// A drag-zoom narrows the BASE view (range / custom / focus) to an absolute sub-window and
+// re-samples it at full density: zooming asks the historian for finer data, it does not just
+// magnify the coarse line. `base` carries the outer window for the overview strip.
 function viewFromStore(store) {
+  const base = viewBaseFromStore(store);
+  const z = store.zoom;
+  if (!z) return base;
+  const xMin = Math.max(base.xMin, z.xMin), xMax = Math.min(base.xMax, z.xMax);
+  if (xMax - xMin < 60000) return base;
+  const n = Math.max(base.n, trendPointCount(xMax - xMin, store.interval, 120));
+  return { ...base, xMin, xMax, n, zoomed: true, base: { xMin: base.xMin, xMax: base.xMax, n: base.n }, baseSpan: base.xMax - base.xMin };
+}
+function viewBaseFromStore(store) {
   if (store.centerTs) {
     const w = (store.windowMin || 30) * 60000;
-    return { mode: "focus", xMin: store.centerTs - w, xMax: store.centerTs + w, n: 121,
+    // never sample the future: an alarm from the last few minutes would otherwise draw a
+    // made-up line past NOW. The window slides back to end at now; the event stays marked.
+    const xMax = Math.min(store.centerTs + w, njNow());
+    return { mode: "focus", xMin: xMax - 2 * w, xMax, n: 121,
       centerTs: store.centerTs, windowMin: store.windowMin || 30, focusEvent: store.focusEvent };
   }
   const h = RANGE_HOURS[store.range] || 6;
@@ -188,7 +203,24 @@ function njTagLimits(tag) {
       });
     });
   }
-  return TREND_LIMITS[tag] || [];
+  // The limit registry covers only part of the plant; the alarm register knows every analog
+  // alarm's threshold. Merge both so a trended value shows its limits wherever an alarm exists.
+  // The register wins on conflict (it is what actually fired), and a registry level that
+  // contradicts it (H above HH, L below LL) is dropped rather than drawn upside down.
+  const out = (TREND_LIMITS[tag] || []).slice();
+  const rows = (window.alarmHub && window.alarmHub.rows) || [];
+  rows.forEach((a) => {
+    if (!a.meas || a.meas.tag !== tag || !a.meas.thr || a.meas.thr.value == null) return;
+    const k = a.meas.thr.kind, v = a.meas.thr.value;
+    const i = out.findIndex((l) => l.kind === k);
+    if (i >= 0) out[i] = { ...out[i], value: v }; else out.push({ value: v, kind: k, unit: a.meas.unit });
+  });
+  const val = (k) => (out.find((l) => l.kind === k) || {}).value;
+  return out.filter((l) => {
+    if (l.kind === "hi" && val("hihi") != null && l.value >= val("hihi")) return false;
+    if (l.kind === "lo" && val("lolo") != null && l.value <= val("lolo")) return false;
+    return true;
+  });
 }
 // sample one pen across a view → [{ t, v }]
 // Accumulate flow: the pen's source is a RATE, so the plotted series is its running integral in
@@ -215,16 +247,79 @@ function trendFit(pts) {
   const m = (n * sxy - sx * sy) / d, b = (sy - m * sx) / n;
   return { at: (t) => b + m * ((t - t0) / 60000) };
 }
+// ── manual data-entry pens: real readings, never a synthesised curve ──
+// A manual tag has one reading a day at best. Drawing it as a continuous signal invents data,
+// and a window with no reading in it is a normal state, not an error: return [] and let the
+// chart and pen row say so. Data-entry timestamps are "dd.mm.yyyy, hh:mm".
+function njManualTag(pen) {
+  const st = window.deStore; if (!st || !pen) return null;
+  if (!pen.manual && pen.group !== "Manual") return null;
+  st.load && st.load();
+  const tags = st.tags || [];
+  return tags.find((t) => t.id === pen.manual) || (!pen.manual ? tags.find((t) => t.name === pen.name) : null) || null;
+}
+function njManualTs(s) {
+  const m = /^(\d{2})\.(\d{2})\.(\d{4}),?\s*(\d{2}):(\d{2})/.exec(s || ""); if (!m) return null;
+  return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]).getTime();
+}
+function njManualReadings(pen) {
+  const t = njManualTag(pen); if (!t) return null;
+  return (t.history || []).map((h) => ({ t: njManualTs(h.ts), v: parseFloat(h.value) }))
+    .filter((p) => p.t != null && isFinite(p.v) && p.t <= njNow()).sort((a, b) => a.t - b.t);
+}
+// the latest value a pen row should show: last sample in view, else (manual) the last reading
+// ever taken, else null — never a fabricated 0.
+function njPenCurrent(pen, pts) {
+  if (pts && pts.length) return pts[pts.length - 1].v;
+  const r = njManualReadings(pen);
+  return r && r.length ? r[r.length - 1].v : null;
+}
+function njPenLastReadingTs(pen) {
+  const r = njManualReadings(pen);
+  return r && r.length ? r[r.length - 1].t : null;
+}
+// ── data gaps: periods the historian holds NO samples for (comms loss, sensor off-line) ──
+// Demo fixture, minutes relative to the demo clock. A gap is drawn as a gap — the line breaks,
+// the focused pen's gap is shaded and labelled, the crosshair says "no data" — and is never
+// bridged by interpolation. Joining across a hole is what makes a trend "lie" (Kim: interpolation
+// is sometimes wrong). In production the backend reports the gaps; the GUI only draws them.
+const TREND_GAP_DEFS = {
+  "DPT1-SMP0-QT3": [[-160, 35]],
+  "DPT1-SMP0-QT4": [[-1260, 95], [-112, 14]],
+  "DPT1-FT0-OT1": [[-600, 50]],
+};
+let TREND_GAP_ANCHOR = null;
+function njPenGaps(pen) {
+  const defs = TREND_GAP_DEFS[pen && (pen.tag || pen.id)]; if (!defs) return [];
+  if (TREND_GAP_ANCHOR == null) TREND_GAP_ANCHOR = njNow();
+  return defs.map(([off, dur]) => [TREND_GAP_ANCHOR + off * 60000, TREND_GAP_ANCHOR + (off + dur) * 60000]);
+}
+function njInGap(gaps, t) { return !!(gaps && gaps.some((g) => t > g[0] && t < g[1])); }
+// true when a gap sits between two consecutive samples → the path must break there
+function njGapBetween(gaps, a, b) { return !!(gaps && gaps.some((g) => g[0] < b && g[1] > a)); }
 function seriesForView(pen, view) {
+  const man = njManualReadings(pen);
+  if (man) return man.filter((p) => p.t >= view.xMin && p.t <= view.xMax);
   const n = view.n, span = view.xMax - view.xMin;
   const ev = (view.focusEvent && view.focusEvent.penId === pen.id)
-    ? { centerTs: view.focusEvent.centerTs, thr: view.focusEvent.thr, windowMs: span / 2 } : null;
-  const pts = [];
+    ? { centerTs: view.focusEvent.centerTs, thr: view.focusEvent.thr, windowMs: (view.baseSpan || span) / 2 } : null;
+  const gaps = njPenGaps(pen).filter((g) => g[1] > view.xMin && g[0] < view.xMax)
+    .map((g) => [Math.max(g[0], view.xMin), Math.min(g[1], view.xMax)]);
+  let pts = [];
   for (let i = 0; i < n; i++) {
     const t = view.xMin + (i / (n - 1)) * span;
+    if (njInGap(gaps, t)) continue;
     pts.push({ t, v: ev ? eventValueAt(pen, t, ev) : penValueAt(pen, t) });
   }
-  return pen.accum ? trendAccumulate(pts, pen.accum) : pts;
+  // the line ends AT the gap edges, not at the nearest coarse sample — at 24 h one sample is
+  // 15 min, so a 14-min gap would otherwise fall between samples and never show
+  gaps.forEach((g) => [g[0], g[1]].forEach((t) => {
+    if (t > view.xMin && t < view.xMax) pts.push({ t, v: ev ? eventValueAt(pen, t, ev) : penValueAt(pen, t) });
+  }));
+  pts.sort((a, b) => a.t - b.t);
+  if (pen.accum) pts = trendAccumulate(pts, pen.accum);
+  pts.gaps = gaps;
+  return pts;
 }
 // alarm markers visible on the plotted pens within a view.
 // Strict 1:1 — an analog alarm marks ONLY the pen whose tag is its measured value.
@@ -276,6 +371,19 @@ const trendStore = {
   focusEvent: null,     // { alarmId, penId, centerTs, thr, kind, level } — chart overlay for the investigated alarm
   focusAlarm: null,     // the full alarm object being investigated (may be a lite/historical row)
   eventTimeline: null,  // alarm object when investigating a DISCRETE alarm (no analog value)
+  zoom: null,           // { xMin, xMax } absolute sub-window of the base view (drag-to-zoom)
+  zoomStack: [],        // previous zoom levels — double-click / Back steps out one level
+  zoomTo(a, b) {
+    let lo = Math.min(a, b), hi = Math.max(a, b);
+    if (hi - lo < 120000) { const c = (lo + hi) / 2; lo = c - 60000; hi = c + 60000; }   // 2 min floor
+    this.zoomStack = this.zoomStack.concat([this.zoom]).slice(-12);
+    this.zoom = { xMin: lo, xMax: hi }; this.emit();
+  },
+  zoomOut() { if (!this.zoom) return; this.zoom = this.zoomStack.length ? this.zoomStack[this.zoomStack.length - 1] : null; this.zoomStack = this.zoomStack.slice(0, -1); this.emit(); },
+  zoomReset() { if (!this.zoom) return; this.zoom = null; this.zoomStack = []; this.emit(); },
+  // drag the band in the overview strip — a pan, not a new zoom level
+  zoomPan(xMin, xMax) { this.zoom = { xMin, xMax }; this.emit(); },
+  dropZoom() { this.zoom = null; this.zoomStack = []; },
   subs: new Set(),
   sub(fn) { this.subs.add(fn); return () => this.subs.delete(fn); },
   emit() { this.persist(); this.subs.forEach((f) => f()); },
@@ -329,6 +437,7 @@ const trendStore = {
   // Colors are reassigned deterministically from the palette so the set reads cleanly.
   setPens(pens) {
     this.snap("load signal set");
+    this.loadedGroup = null;
     const seen = new Set();
     this.pens = (pens || [])
       .filter((p) => { if (seen.has(p.id)) return false; seen.add(p.id); return true; })
@@ -373,12 +482,13 @@ const trendStore = {
     try { localStorage.setItem("nj_trend_axissel_v1", JSON.stringify(next)); } catch (e) {}
     this.emit();
   },
-  setRange(r) { this.range = r; this.rangeOffset = 0; this.customRange = false; this.centerTs = null; this.focusEvent = null; this.eventTimeline = null; this.emit(); },
-  prevWindow() { const h = RANGE_HOURS[this.range] || 6; this.rangeOffset = (this.rangeOffset || 0) + h * 3600000; this.emit(); },
-  nextWindow() { const h = RANGE_HOURS[this.range] || 6; this.rangeOffset = Math.max(0, (this.rangeOffset || 0) - h * 3600000); this.emit(); },
+  setRange(r) { this.dropZoom(); this.range = r; this.rangeOffset = 0; this.customRange = false; this.centerTs = null; this.focusEvent = null; this.eventTimeline = null; this.emit(); },
+  prevWindow() { this.dropZoom(); const h = RANGE_HOURS[this.range] || 6; this.rangeOffset = (this.rangeOffset || 0) + h * 3600000; this.emit(); },
+  nextWindow() { this.dropZoom(); const h = RANGE_HOURS[this.range] || 6; this.rangeOffset = Math.max(0, (this.rangeOffset || 0) - h * 3600000); this.emit(); },
   setInterval(iv) { this.interval = iv; this.emit(); },
   setDynamic(b) { this.dynamic = b; this.emit(); },
   setCustomRange(startTs, endTs, interval, dynamic) {
+    this.dropZoom();
     this.startTs = startTs; this.endTs = endTs;
     if (interval) this.interval = interval;
     if (dynamic != null) this.dynamic = dynamic;
@@ -392,10 +502,11 @@ const trendStore = {
   },
   toggleMarkers() { this.showMarkers = !this.showMarkers; this.emit(); },
   setAxisMode(m) { this.axisMode = m; try { localStorage.setItem("nj_trend_axis_v1", m); } catch (e) {} this.emit(); },
-  setWindowMin(m) { this.windowMin = m; this.emit(); },
+  setWindowMin(m) { this.dropZoom(); this.windowMin = m; this.emit(); },
   // center the timeline on an alarm event (analog: also carries the crossed threshold)
   centerOn(alarm) {
     const ts = window.alarmTs(alarm); if (ts == null) return;
+    this.dropZoom();
     this.centerTs = ts;
     this.focusAlarm = alarm;
     if (window.alarmIsAnalog(alarm)) {
@@ -412,8 +523,11 @@ const trendStore = {
     this.showMarkers = true;
     this.emit();
   },
-  clearFocus() { this.centerTs = null; this.focusEvent = null; this.eventTimeline = null; this.focusAlarm = null; this.emit(); },
-  clear() { this.snap("clear signals"); this.pens = []; this.focus = null; this.clearFocus(); },
+  clearFocus() { this.dropZoom(); this.centerTs = null; this.focusEvent = null; this.eventTimeline = null; this.focusAlarm = null; this.emit(); },
+  clear() { this.snap("clear signals"); this.pens = []; this.focus = null; this.loadedGroup = null; this.clearFocus(); },
+  // the Trend Group last loaded — { id, name, ids[] }. Shown as a quiet label beside the chart
+  // title; reads "modified" once the plotted set no longer matches it. Not persisted.
+  loadedGroup: null,
 };
 function useTrends() {
   const [, force] = React.useReducer((x) => x + 1, 0);
@@ -431,7 +545,7 @@ function resolveTrendPen(idOrTag, meta) {
   const base = isFinite(val) ? val : 50;
   const amp = Math.max(Math.abs(base) * 0.06, 0.4);
   const name = meta.name || idOrTag;
-  return { id: idOrTag, tag: meta.tag || idOrTag, name, unit: meta.unit || "", base, amp,
+  return { id: idOrTag, tag: meta.tag || idOrTag, name, unit: meta.unit || "", base, amp, manual: meta.manual || undefined,
            group: meta.group || "Ad-hoc", color: trendStore.nextColor(), hidden: false };
 }
 // public: add a parameter to the trend register and surface a subtle, dismissible
@@ -474,7 +588,9 @@ function njInvestigateAlarm(alarm) {
     if (!trendStore.pens.some((p) => p.id === penId)) trendStore.add(alarmMeasPen(a));
   }
   trendStore.centerOn(a);
-  if (window.__njNavigate) window.__njNavigate("analytics");
+  // the floating window, when open, IS the trend surface — don't also swap the page under it
+  if (window.trendWin && window.trendWin.open) { window.trendWin.show(); }
+  else if (window.__njNavigate) window.__njNavigate("analytics");
   if (penId && others > 0) {
     njToast("Added to " + others + " signal" + (others === 1 ? "" : "s") + " already plotted", "Show only this", () => trendStore.solo(penId));
   }
@@ -624,7 +740,7 @@ function njTrendToast(pen, fresh) {
 // ── explicit "send to trends" affordance — a small icon button placed next to a readout ──
 // It reflects register state: once the parameter is in Trends the button reads "on" and a
 // second click takes it back out again (so repeat clicks can never stack duplicates).
-function TrendBtn({ id, name, unit, value, group, tag, title, className }) {
+function TrendBtn({ id, name, unit, value, group, tag, title, className, manual }) {
   useTrends();
   const penId = (TREND_BY_TAG[id] && TREND_BY_TAG[id].tag) || id;
   const on = trendStore.pens.some((p) => p.id === penId);
@@ -634,7 +750,7 @@ function TrendBtn({ id, name, unit, value, group, tag, title, className }) {
       title={on ? (name || "Value") + " is in Trends · click to remove" : (title || ("Send " + (name || "value") + " to Trends"))}
       onClick={(e) => { e.stopPropagation(); e.preventDefault();
         if (on) { trendStore.remove(penId); njToast((name || "Parameter") + " removed from Trends", "line-chart"); }
-        else njSendToTrend(id, { name, unit, value, group, tag }); }}>
+        else njSendToTrend(id, { name, unit, value, group, tag, manual }); }}>
       <Icon name="line-chart" size={14} />
     </button>
   );
@@ -654,10 +770,70 @@ function valAt(pts, t) {
 // The axis cap is viewport-dependent (see MultiTrendChart) and must be read, never re-typed:
 // the pen-details dialog and the in-chart picker have to agree on the same number.
 function njAxisMax(w) { const x = w || (typeof window !== "undefined" ? window.innerWidth : 1600); return x >= 1500 ? 10 : x >= 1180 ? 7 : 5; }
+// ── zoom bar: shown only while zoomed. Names the zoomed span, steps back, and draws the whole
+// base window as an overview with the zoomed span marked — drag the band to pan, click
+// outside it to move it there. Hidden at full range: a permanent strip is chart height lost.
+function TrendZoomBar({ series, view, focus }) {
+  const store = useTrends();
+  const ref = React.useRef(null);
+  const drag = React.useRef(null);
+  if (!view.zoomed || !view.base) return null;
+  const b = view.base, bs = b.xMax - b.xMin || 1;
+  const vis = (series || []).filter((s) => !s.pen.hidden);
+  const fp = vis.find((s) => s.pen.id === focus) || vis[0];
+  const bview = { ...view, xMin: b.xMin, xMax: b.xMax, n: 160, zoomed: false };
+  const pts = fp ? seriesForView(fp.pen, bview) : [];
+  const W = 1000, H = 34;
+  let path = "";
+  if (pts.length > 1) {
+    let mn = Infinity, mx = -Infinity; pts.forEach((p) => { if (p.v < mn) mn = p.v; if (p.v > mx) mx = p.v; });
+    if (mn === mx) { mn -= 1; mx += 1; }
+    path = pts.map((p, i) => (i === 0 || njGapBetween(pts.gaps, pts[i - 1].t, p.t) ? "M" : "L") + ((p.t - b.xMin) / bs * W).toFixed(1) + "," + (4 + (1 - (p.v - mn) / (mx - mn)) * (H - 8)).toFixed(1)).join(" ");
+  }
+  const zx = (view.xMin - b.xMin) / bs * W, zw = Math.max(4, (view.xMax - view.xMin) / bs * W);
+  const zspan = view.xMax - view.xMin;
+  const tAt = (clientX) => { const r = ref.current.getBoundingClientRect(); return b.xMin + Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * bs; };
+  const place = (c) => { let lo = c - zspan / 2; lo = Math.max(b.xMin, Math.min(lo, b.xMax - zspan)); store.zoomPan(lo, lo + zspan); };
+  const down = (e) => {
+    const t = tAt(e.clientX);
+    if (t < view.xMin || t > view.xMax) { place(t); }
+    drag.current = { t0: t, lo: t < view.xMin || t > view.xMax ? Math.max(b.xMin, Math.min(t - zspan / 2, b.xMax - zspan)) : view.xMin };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const move = (e) => { if (!drag.current) return; let lo = drag.current.lo + (tAt(e.clientX) - drag.current.t0); lo = Math.max(b.xMin, Math.min(lo, b.xMax - zspan)); store.zoomPan(lo, lo + zspan); };
+  const up = () => { drag.current = null; };
+  const lbl = (zspan > 26 * 3600000 ? fmtDayClock : fmtClock);
+  const durM = Math.round(zspan / 60000);
+  return (
+    <div className="tzb">
+      <div className="tzb-head">
+        <Icon name="zoom-in" size={14} />
+        <span className="tzb-span data">{lbl(view.xMin)} – {lbl(view.xMax)}</span>
+        <span className="tzb-dur">{durM < 120 ? durM + " min" : durM < 2880 ? (durM / 60).toFixed(durM < 600 ? 1 : 0) + " h" : Math.round(durM / 1440) + " d"}</span>
+        <span className="tzb-sp"></span>
+        <button className="btn btn-secondary btn-sm" onClick={() => store.zoomOut()} title="One zoom level back (or double-click the chart)"><Icon name="zoom-out" size={14} /> Back</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => store.zoomReset()} title="Show the whole range again"><Icon name="maximize" size={14} /> Full range</button>
+      </div>
+      <div className="tzb-ov" ref={ref} onPointerDown={down} onPointerMove={move} onPointerUp={up} title="Drag the marked span to pan · click to move it">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H}>
+          {(pts.gaps || []).map((g, i) => <rect key={i} x={(g[0] - b.xMin) / bs * W} y="0" width={Math.max(2, (g[1] - g[0]) / bs * W)} height={H} className="mt-gap" />)}
+          {path && <path d={path} fill="none" stroke={fp.pen.color} strokeWidth="1.4" vectorEffect="non-scaling-stroke" opacity=".8" />}
+          <rect x="0" y="0" width={Math.max(0, zx)} height={H} className="tzb-dim" />
+          <rect x={zx + zw} y="0" width={Math.max(0, W - zx - zw)} height={H} className="tzb-dim" />
+          <rect x={zx} y="0.5" width={zw} height={H - 1} className="tzb-band" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <span className="tzb-ov-l data">{fmtAxis(b.xMin, bs)}</span>
+        <span className="tzb-ov-r data">{fmtAxis(b.xMax, bs)}</span>
+      </div>
+    </div>
+  );
+}
+
 // ── time-based multi-series trend chart with alarm markers, threshold + center overlays.
 // series = [{ pen, pts:[{t,v}] }]; view = viewFromStore(...); markers = markersForView(...)
-function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true, axisMode = "focus", height = 360, onOpenAlarm, onCenterAlarm }) {
+function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true, axisMode = "focus", height = 360, width, onOpenAlarm, onCenterAlarm, onZoom, onZoomOut }) {
   const [selId, setSelId] = React.useState(null);
+  const [brush, setBrush] = React.useState(null);   // { a, b } data-time while drag-zooming
   // the chart is one fixed viewBox scaled to its container, so axis count has to answer to the
   // real window width — nothing inside the SVG can know how small it has been drawn
   const [vw, setVw] = React.useState(() => (typeof window !== "undefined" ? window.innerWidth : 1600));
@@ -684,7 +860,9 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   // unit, so on a narrow screen every gutter shrinks with it — hence the viewport cap: ten axes
   // are legible on a control-room monitor and are not in a half-width window.
   const AXMAX = njAxisMax(vw);
-  const W = 980, H = height, padR = 18, padB = 30;
+  // `width` (optional) = the container's real px width, so a floating window draws at k=1
+  // instead of scaling a 980 viewBox down until the axis labels are unreadable.
+  const W = width ? Math.max(420, Math.round(width)) : 980, H = height, padR = 18, padB = 30;
   const span = view.xMax - view.xMin || 1;
   const x = (t) => padL + ((t - view.xMin) / span) * (W - padL - padR);
   // Dynamic scale (default) fits the data in view. A pen with dyn === false plots against the
@@ -732,7 +910,9 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
   const dec = fpen ? decOf(fr) : 0;
   const ev = view.focusEvent;
   const now = njNow();
-  const showNow = now >= view.xMin && now <= view.xMax + 1000 && Math.abs(now - (view.centerTs || -1)) > span * 0.02;
+  // the NOW pill sits beside the event flag, not on it: an alarm from the last minutes is
+  // already pinned to the right edge (the focus window never runs past now)
+  const showNow = now >= view.xMin && now <= view.xMax + 1000 && Math.abs(now - (view.centerTs || -1)) > span * 0.08;
 
   // x ticks
   let ticks;
@@ -741,6 +921,8 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
 
   const sel = markers.find((m) => m.id === selId);
   const thrY = ev && fpen && fpen.pen.id === ev.penId ? yOf(ev.thr, fr.mn, fr.mx) : null;
+  // threshold tag goes to the left edge when the event itself sits at the right edge
+  const thrX = ev && x(ev.centerTs) > W - padR - 100 ? padL + 4 : W - padR - 66;
 
   // crosshair readout — value of every visible pen at the hovered instant
   const ptFromEvent = (e) => {
@@ -749,27 +931,41 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
     const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
     return p.matrixTransform(m.inverse());
   };
+  const tOfEvent = (e) => { const p = ptFromEvent(e); if (!p) return null; const f = (p.x - padL) / (W - padL - padR); return view.xMin + Math.min(1, Math.max(0, f)) * span; };
   const onMove = (e) => {
-    const p = ptFromEvent(e); if (!p) return;
-    const f = (p.x - padL) / (W - padL - padR);
-    setHoverT(view.xMin + Math.min(1, Math.max(0, f)) * span);
+    const t = tOfEvent(e); if (t == null) return;
+    if (brush) { setBrush({ a: brush.a, b: t }); return; }
+    setHoverT(t);
+  };
+  // drag across the plot = zoom to that span; double-click = one level back out
+  const onDown = (e) => {
+    if (!onZoom || e.button !== 0) return;
+    const t = tOfEvent(e); if (t == null) return;
+    e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId);
+    setBrush({ a: t, b: t }); setHoverT(null);
+  };
+  const onUp = () => {
+    if (!brush) return;
+    const wpx = Math.abs(x(brush.b) - x(brush.a));
+    setBrush(null);
+    if (wpx > 8) onZoom(Math.min(brush.a, brush.b), Math.max(brush.a, brush.b));
   };
   let cross = null;
-  if (hoverT != null && !sel && vis.length) {
+  if (hoverT != null && !sel && !brush && vis.length) {
     // Rows are capped to what fits the plot height — the focused pen always makes the cut.
     const maxRows = Math.max(3, Math.floor((H - padT - padB - 44) / 19));
     let shown = vis.slice(0, maxRows);
     if (fpen && !shown.includes(fpen)) shown = [fpen].concat(vis.filter((s) => s !== fpen).slice(0, maxRows - 1));
     const more = vis.length - shown.length;
     const rows = shown.map((s) => {
-      const r = rngOf[s.pen.id], v = valAt(s.pts, hoverT);
-      return { pen: s.pen, v: v + 0, y: yOf(v, r.mn, r.mx), dec: decOf(r) };
+      const r = rngOf[s.pen.id], gap = njInGap(s.pts.gaps, hoverT), v = gap ? null : valAt(s.pts, hoverT);
+      return { pen: s.pen, v, y: gap ? null : yOf(v, r.mn, r.mx), dec: decOf(r) };
     });
     const bw = 268, bh = 32 + rows.length * 19 + (more > 0 ? 21 : 0) + 6;
     const cx = x(hoverT);
     const right = cx < (padL + W - padR) / 2;
     const bx = right ? Math.min(cx + 16, W - padR - bw) : Math.max(padL + 4, cx - 16 - bw);
-    cross = { rows, more, dots: vis.map((s) => { const r = rngOf[s.pen.id]; return { id: s.pen.id, color: s.pen.color, y: yOf(valAt(s.pts, hoverT), r.mn, r.mx) }; }), bw, bh, cx, bx, by: Math.max(6, Math.min(padT + 6, H - padB - bh)) };
+    cross = { rows, more, dots: vis.filter((s) => !njInGap(s.pts.gaps, hoverT)).map((s) => { const r = rngOf[s.pen.id]; return { id: s.pen.id, color: s.pen.color, y: yOf(valAt(s.pts, hoverT), r.mn, r.mx) }; }), bw, bh, cx, bx, by: Math.max(6, Math.min(padT + 6, H - padB - bh)) };
   }
 
   // tooltip geometry
@@ -830,8 +1026,8 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
       {thrY != null && (
         <g>
           <line x1={padL} y1={thrY} x2={W - padR} y2={thrY} stroke="var(--critical)" strokeWidth="1.4" strokeDasharray="5 4" opacity="0.85" />
-          <rect x={W - padR - 66} y={thrY - 17} width="66" height="15" rx="3" fill="var(--critical)" />
-          <text x={W - padR - 33} y={thrY - 6} textAnchor="middle" className="mt-thr">{(window.THR_LABEL[ev.kind] || "LIM") + " " + ev.thr}</text>
+          <rect x={thrX} y={thrY - 17} width="66" height="15" rx="3" fill="var(--critical)" />
+          <text x={thrX + 33} y={thrY - 6} textAnchor="middle" className="mt-thr">{(window.THR_LABEL[ev.kind] || "LIM") + " " + ev.thr}</text>
         </g>
       )}
 
@@ -854,17 +1050,40 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
         </g>
       )}
 
+      {/* data gaps — EVERY visible pen's. A break in a thin, dimmed line is easy to miss, so each gap
+          is shaded; the focused pen's is stronger. Labels stagger by pen so two gaps at the same
+          time stay legible, and name the pen when more than one is plotted. */}
+      {vis.map((s, pi) => (s.pts.gaps || []).map((g, i) => {
+        const isF = fpen && s.pen.id === fpen.pen.id;
+        const gx = x(g[0]), gw = Math.max(2, x(g[1]) - gx), mins = Math.round((g[1] - g[0]) / 60000);
+        const ly = padT + 30 + pi * 28;
+        const lx = Math.min(W - padR - 52, Math.max(padL + 52, gx + gw / 2));
+        const nm = s.pen.name.length > 16 ? s.pen.name.slice(0, 15) + "\u2026" : s.pen.name;
+        const dur = mins < 90 ? mins + " min" : (mins / 60).toFixed(1) + " h";
+        return (
+          <g key={"gap" + s.pen.id + i} pointerEvents="none">
+            <rect x={gx} y={padT} width={gw} height={H - padT - padB} className={"mt-gap" + (isF ? " focus" : "")} />
+            <rect x={gx} y={padT} width={gw} height="3" fill={s.pen.color} opacity={isF ? 0.9 : 0.6} />
+            <text x={lx} y={ly} textAnchor="middle" className="mt-gaplbl">No data</text>
+            <text x={lx} y={ly + 12} textAnchor="middle" className="mt-gapsub">{(vis.length > 1 ? nm + " \u00b7 " : "") + dur}</text>
+          </g>
+        );
+      }))}
+
       {/* pens */}
       {vis.map((s) => {
         const { mn, mx } = norm(s.pts, s.pen);
         const isFocus = fpen && s.pen.id === fpen.pen.id;
-        const d = s.pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(p.t).toFixed(1)},${yOf(p.v, mn, mx).toFixed(1)}`).join(" ");
+        const d = s.pts.map((p, i) => `${i === 0 || njGapBetween(s.pts.gaps, s.pts[i - 1].t, p.t) ? "M" : "L"}${x(p.t).toFixed(1)},${yOf(p.v, mn, mx).toFixed(1)}`).join(" ");
+        const man = !!njManualTag(s.pen);
         const last = s.pts[s.pts.length - 1];
         // estimation line: the fit extended dashed to the right edge of the window
         const fit = s.pen.estimate ? trendFit(s.pts) : null;
         return (
           <g key={s.pen.id} opacity={fpen && !isFocus ? 0.66 : 1}>
-            <path d={d} fill="none" stroke={s.pen.color} strokeWidth={isFocus ? 2.6 : 1.7} strokeLinejoin="round" strokeLinecap="round" />
+            {/* manual readings: a dot per reading, joined by a thin dotted line — nothing was measured in between */}
+            <path d={d} fill="none" stroke={s.pen.color} strokeWidth={man ? 1.4 : isFocus ? 2.6 : 1.7} strokeDasharray={man ? "2 4" : undefined} strokeLinejoin="round" strokeLinecap="round" />
+            {man && s.pts.map((p, i) => <circle key={i} cx={x(p.t)} cy={yOf(p.v, mn, mx)} r="3.6" fill="var(--surface)" stroke={s.pen.color} strokeWidth="2"><title>{s.pen.name + " · " + p.v + " " + (s.pen.unit || "") + " · " + fmtDayClock(p.t)}</title></circle>)}
             {fit && (
               <path d={`M${x(view.xMin).toFixed(1)},${yOf(fit.at(view.xMin), mn, mx).toFixed(1)}L${x(view.xMax).toFixed(1)},${yOf(fit.at(view.xMax), mn, mx).toFixed(1)}`}
                 fill="none" stroke={s.pen.color} strokeWidth="1.4" strokeDasharray="6 5" opacity=".75" />
@@ -874,12 +1093,17 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
         );
       })}
 
+      {/* every visible pen is empty in this window (manual tags between readings) — say so, don't error */}
+      {!vis.length && series.some((s) => !s.pen.hidden) && (
+        <text x={(padL + W - padR) / 2} y={(padT + H - padB) / 2} textAnchor="middle" className="mt-nodata">No readings in this time range — widen the range to see the last one.</text>
+      )}
+
       {/* Static alarm-limit lines for the FOCUSED pen only — every limit the register holds for
           its tag, not just the ones that fired in view. With several pens on their own normalised
           scales a limit line has no honest position, so it follows the focus. */}
       {showMarkers && fpen && !fpen.pen.accum && (() => {
         const { mn, mx } = norm(fpen.pts, fpen.pen);
-        return njTagLimits(fpen.pen.id).map((l) => {
+        return njTagLimits(fpen.pen.id).filter((l) => !(thrY != null && l.kind === ev.kind && l.value === ev.thr)).map((l) => {
           const inside = l.value >= mn && l.value <= mx;
           const ly = inside ? yOf(l.value, mn, mx) : (l.value > mx ? padT + 7 : H - padB - 7);
           const lab = (window.THR_LABEL[l.kind] || "LIM") + " " + l.value + (inside ? "" : l.value > mx ? " \u2191" : " \u2193");
@@ -894,7 +1118,17 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
 
       {/* hover capture → crosshair readout (below the markers so their hit areas still win) */}
       <rect x={padL} y={padT} width={W - padL - padR} height={H - padT - padB} fill="transparent"
-        onMouseMove={onMove} onMouseLeave={() => setHoverT(null)} style={{ cursor: "crosshair" }} />
+        onMouseMove={onMove} onMouseLeave={() => setHoverT(null)} onPointerDown={onDown} onPointerMove={brush ? onMove : undefined} onPointerUp={onUp}
+        onDoubleClick={(e) => { e.stopPropagation(); onZoomOut && onZoomOut(); }}
+        style={{ cursor: onZoom ? "crosshair" : "crosshair" }}>
+        {onZoom && <title>{view.zoomed ? "Drag to zoom further · double-click to zoom out" : "Drag across the chart to zoom"}</title>}
+      </rect>
+      {brush && (() => { const bx0 = Math.min(x(brush.a), x(brush.b)), bw0 = Math.abs(x(brush.b) - x(brush.a)); return (
+        <g pointerEvents="none">
+          <rect x={bx0} y={padT} width={bw0} height={H - padT - padB} className="mt-brush" />
+          {bw0 > 70 && <text x={bx0 + bw0 / 2} y={H - padB - 8} textAnchor="middle" className="mt-brushlbl">{fmtClock(Math.min(brush.a, brush.b)) + " – " + fmtClock(Math.max(brush.a, brush.b))}</text>}
+        </g>
+      ); })()}
 
       {/* alarm markers */}
       {showMarkers && markers.map((m) => {
@@ -942,7 +1176,7 @@ function MultiTrendChart({ series, view, focus, markers = [], showMarkers = true
               <g key={r.pen.id}>
                 <circle cx={cross.bx + 18} cy={ry - 4} r="3.6" fill={r.pen.color} />
                 <text x={cross.bx + 28} y={ry} className="mt-cross-nm">{nm}</text>
-                <text x={cross.bx + cross.bw - 14} y={ry} textAnchor="end" className="mt-cross-val">{r.v.toFixed(r.dec).replace(/^-(0(?:\.0+)?)$/, "$1")}<tspan className="mt-cross-unit"> {r.pen.unit}</tspan></text>
+                <text x={cross.bx + cross.bw - 14} y={ry} textAnchor="end" className={"mt-cross-val" + (r.v == null ? " nodata" : "")}>{r.v == null ? "no data" : r.v.toFixed(r.dec).replace(/^-(0(?:\.0+)?)$/, "$1")}{r.v != null && <tspan className="mt-cross-unit"> {r.pen.unit}</tspan>}</text>
               </g>
             );
           })}
@@ -1046,10 +1280,19 @@ function seedTrendGroups() {
       pens: tgSeedPens(["DPT1-STR0-FAN", "DPT1-STR1-PT1", "DPT1-DOX0-OT1", "DPT1-DOX1-PT1"]), updated: "28 Feb 2026" },
     { id: "tg-seed-4", name: "My morning check", visibility: "private", owner: NJ_CURRENT_USER,
       pens: tgSeedPens(["DPT1-FT0-OT1", "DPT1-SMP0-QT3", "DPT1-EP0-PWR"]), updated: "03 Mar 2026" },
+    TG_DEMO_GAPS,
   ];
 }
+// Demo fixture: the three signals that carry TREND_GAP_DEFS, opened on 24 h so every gap is in
+// view. `range` on a group is optional — only this one sets it. Injected into stored group lists
+// that predate it, so it shows up without wiping anyone's saved groups.
+const TG_DEMO_GAPS = { id: "tg-demo-gaps", name: "Demo · data gaps", visibility: "shared", owner: "System", range: "24h",
+  pens: tgSeedPens(["DPT1-SMP0-QT3", "DPT1-SMP0-QT4", "DPT1-FT0-OT1"]), updated: "04 Mar 2026" };
 function loadTrendGroups() {
-  try { const r = JSON.parse(localStorage.getItem(TREND_GROUPS_LS)); if (Array.isArray(r)) return r; } catch (e) {}
+  try {
+    const r = JSON.parse(localStorage.getItem(TREND_GROUPS_LS));
+    if (Array.isArray(r)) return r.some((g) => g.id === TG_DEMO_GAPS.id) ? r : r.concat(TG_DEMO_GAPS);
+  } catch (e) {}
   return seedTrendGroups();
 }
 const trendGroupStore = {
@@ -1095,9 +1338,30 @@ function groupToPens(group) {
 function njLoadTrendGroup(group) {
   if (!group) return;
   trendStore.setPens(groupToPens(group));
-  if (window.__njNavigate) window.__njNavigate("analytics");
+  trendStore.loadedGroup = { id: group.id, name: group.name, ids: trendStore.pens.map((p) => p.id) };
+  if (group.range && RANGE_HOURS[group.range]) trendStore.setRange(group.range);
+  // the floating window, when open, is the trend surface — load into it instead of swapping the page
+  if (window.trendWin && window.trendWin.open) window.trendWin.show();
+  else if (window.__njNavigate) window.__njNavigate("analytics");
   const n = (group.pens || []).length;
   njToast(`Loaded “${group.name}” · ${n} parameter${n !== 1 ? "s" : ""} on the chart.`);
+}
+
+// label for the loaded Trend Group, or null. "modified" = signals added/removed since loading.
+function njLoadedGroupLabel(store) {
+  const g = store.loadedGroup; if (!g) return null;
+  const live = store.pens.map((p) => p.id);
+  const same = live.length === g.ids.length && g.ids.every((id) => live.includes(id));
+  return { name: g.name, modified: !same };
+}
+function TrendGroupLabel() {
+  const store = useTrends();
+  const l = njLoadedGroupLabel(store); if (!l) return null;
+  return (
+    <span className="tg-label" title={l.name + (l.modified ? " · signals changed since loading" : "")}>
+      <Icon name="folder" size={12} /><span className="tg-label-name">{l.name}</span>{l.modified && <span className="tg-label-mod">modified</span>}
+    </span>
+  );
 }
 
 // ── custom date + time picker (replaces the native datetime-local; NJORD-styled) ──
@@ -1371,6 +1635,7 @@ Object.assign(window, {
   trendStore, useTrends, trendSeries, njSendToTrend, njTrendToast, njToast, resolveTrendPen, MultiTrendChart, TrendBtn, njAxisMax,
   seriesForView, viewFromStore, markersForView, penValueAt, fmtClock, fmtDayClock, fmtFullTs, fmtAxis, njDownloadFile,
   TrendExportDialog, openTrendExport, NjDateTime,
+  njManualTag, njManualReadings, njPenCurrent, njPenLastReadingTs, njPenGaps, njInGap, TrendZoomBar, TrendGroupLabel, njLoadedGroupLabel,
   alarmMeasPen, resolveAlarmMeas, njInvestigateAlarm, njGoAlarm, njGoAlarmRows, useAlarmHighlight, alarmHighlight,
   NJ_CURRENT_USER, trendGroupStore, useTrendGroups, groupToPens, njLoadTrendGroup, penDef, trendGroupIsOwner,
 });

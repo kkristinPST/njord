@@ -275,17 +275,48 @@ function DashTankVitals() {
 // viewBox: squeezed into a dashboard card it scales to ~0.5 and renders its tags at 5px. It
 // stays where it is readable — its own Overview tab, which has the width and the SCADA zoom —
 // and the drawer links to it rather than shrinking it.
+// Standing alarms of the department, by priority, as ONE link to the alarm list (those rows
+// highlighted). Each priority carries the same shape the mimic badges use — triangle critical,
+// circle high, diamond medium/low — so the summary reads as the badges on the sheet below.
+// Counts the register only (it is the list the link opens); none standing → nothing rendered.
+const TVA_LEVELS = [["critical", "Critical"], ["high", "High"], ["medium", "Medium"], ["low", "Low"]];
+function TvaShape({ level }) {
+  const f = level === "critical" ? "var(--critical-solid)" : level === "high" ? "var(--warning-mid)" : "var(--sc-alarm-lo)";
+  return (
+    <svg width="12" height="12" viewBox="-6 -6 12 12" aria-hidden="true">
+      {level === "critical" ? <path d="M0 -5.6 L5.8 4.6 L-5.8 4.6 Z" fill={f} />
+        : level === "high" ? <circle r="5" fill={f} />
+        : <rect x="-3.8" y="-3.8" width="7.6" height="7.6" transform="rotate(45)" fill={f} stroke="var(--sc-alarm-lo-edge)" strokeWidth="1" />}
+    </svg>
+  );
+}
+function TvSheetAlarms({ dept }) {
+  if (window.useAlarmHub) window.useAlarmHub();
+  const seen = new Set(), list = [];
+  dept.systems.forEach((s) => (window.njSystemAlarms ? njSystemAlarms(dept.id, s.label) : []).forEach((a) => { if (!seen.has(a.id)) { seen.add(a.id); list.push(a); } }));
+  if (!list.length) return null;
+  const parts = TVA_LEVELS.map(([k, l]) => ({ k, l, n: list.filter((a) => a.level === k).length })).filter((p) => p.n);
+  return (
+    <button className="linkbtn tva" onClick={() => njGoAlarmRows(list)}
+      title={"Open these " + list.length + " standing alarms in the alarm list"}>
+      {parts.map((p, i) => (
+        <span key={p.k} className="tva-part">{i > 0 && <span className="tva-sep" aria-hidden="true">·</span>}<TvaShape level={p.k} /><span className="data">{p.n}</span> {p.l}</span>
+      ))}
+      <Icon name="arrow-up-right" size={14} />
+    </button>
+  );
+}
+
 function TvSheet({ o, onClose }) {
   const { b: building, d: dept } = o;
   const detailed = dept.systems.some((s) => s.label === "Overview");
-  const worst = dept.systems.reduce((w, s) => (s.status === "critical" ? "critical" : s.status === "warning" && w !== "critical" ? "warning" : w), "ok");
   return (
     <div className="tv-sheet">
       <div className="tv-sheet-head">
         <Icon name="workflow" size={16} color="var(--slate-600)" />
         <span className="tv-sheet-t">{dept.name} · every process on one sheet</span>
         <span className="tv-sheet-sub">{building.name}{dept.sub ? " · " + dept.sub : ""}</span>
-        <Dot level={njSev(worst)} size={8} />
+        <TvSheetAlarms dept={dept} />
         {detailed && (
           <button className="linkbtn" style={{ marginLeft: "auto" }} onClick={() => doOpenStage(building, dept, "Overview")}
             title="Open this department's detailed combined diagram">Detailed diagram <Icon name="arrow-up-right" size={14} /></button>
@@ -306,4 +337,4 @@ function TvSheet({ o, onClose }) {
   );
 }
 
-Object.assign(window, { TankVitalsRail, DashTankVitals, TvSheet, njVitalTanks, njSumpVital, njGoTankScreen, tvDeptOpts });
+Object.assign(window, { TankVitalsRail, DashTankVitals, TvSheet, njVitalTanks, njSumpVital, njGoTankScreen, tvDeptOpts, tvO2State });

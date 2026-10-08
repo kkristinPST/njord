@@ -117,7 +117,7 @@ function DoUnits({ cx, y, units }) {
       {units.map((u, i) => (
         <circle key={i} cx={x0 + i * gap} cy={y} r="5.5"
           fill={u.run ? "var(--success-solid)" : u.duty ? "var(--warning-mid)" : "var(--sc-stop)"}
-          stroke="var(--sc-edge)" strokeWidth="1" />
+          stroke="var(--sc-edge)" strokeWidth="1">{u.label && <title>{u.label}</title>}</circle>
       ))}
     </g>
   );
@@ -143,7 +143,17 @@ function DoStage({ st, cx, cy, onOpen }) {
       <DoUnits cx={cx} y={cy + 56} units={st.units} />
       <Tag2 x={cx} y={cy + 84} tag={st.tag} desc={[st.name]} />
       {st.sub && <text className="do-sub" x={cx} y={cy + 118} textAnchor="middle">{st.sub}</text>}
-      {st.status !== "ok" && <circle cx={cx + half + 12} cy={cy - 42} r="6" fill={st.status === "critical" ? "var(--critical-solid)" : "var(--warning-mid)"} stroke="var(--sc-edge)" strokeWidth="1" />}
+      {/* standing-alarm marker = the SAME badge the process screens use (red triangle critical,
+          amber circle high, yellow diamond medium/low, with "!"), so it cannot be read as a
+          run-state dot. Status is live (register + tank O₂ state), never the seed. */}
+      {st.status !== "ok" && (
+        <g><title>{st.alarmTitle}</title>
+          {/* upper-right of the glyph, except the FIRST stage: the loop-flow readout sits on the run
+              between stages 0 and 1, so stage 0's badge goes upper-left, where its own run ends */}
+          <AbnormalRing at={[st.first ? cx - half - 14 : cx + half + 14, cy - 40]} level={st.status === "critical" ? "critical" : st.status === "warning" ? "high" : "medium"}
+            tone={st.status === "critical" ? "crit" : st.status === "warning" ? "warn" : "warn lo"} />
+        </g>
+      )}
     </g>
   );
 }
@@ -171,7 +181,10 @@ function doOpenStage(building, dept, label) {
 }
 
 function DeptOverviewMimic({ building, dept }) {
-  const nTanks = dept.systems.some((s) => s.label === "Fish Tank") ? njVitalTanks(building.id, dept.id).length : 0;
+  const vTanks = dept.systems.some((s) => s.label === "Fish Tank") ? njVitalTanks(building.id, dept.id) : [];
+  const nTanks = vTanks.length;
+  if (window.useAlarmHub) window.useAlarmHub();
+  const hubKey = ((window.alarmHub && window.alarmHub.rows) || []).map((a) => a.id + a.state).join("|");
   const stages = React.useMemo(() => {
     const r = doRand(doSeed(building.id + dept.id));
     return dept.systems
@@ -183,10 +196,27 @@ function DeptOverviewMimic({ building, dept }) {
         const nUnits = k.units || Math.max(1, Math.min(6, nTanks || 2));
         // duty = the unit is in service. In service and not running is the amber case;
         // out of service and not running is grey and expected.
-        const units = Array.from({ length: nUnits }, () => {
+        let units = Array.from({ length: nUnits }, () => {
           const duty = r() > 0.12;
           return { duty, run: duty && r() > (s.status === "critical" ? 0.55 : 0.14) };
         });
+        // Tanks and their feeders are KNOWN per tank — read the same data the rail above shows,
+        // so dot n is Tank n. Tank: green in operation / grey deactivated (a tank does not "stop").
+        // Feeder: green feeding / amber in service but not feeding / grey tank deactivated.
+        if (vTanks.length && s.label === "Fish Tank")
+          units = vTanks.map((t) => ({ duty: t.active, run: t.active, label: "Tank " + t.n + " · " + (t.active ? "in operation" : "deactivated") }));
+        if (vTanks.length && (s.label === "Feeding" || s.label === "HyFlow Feeding"))
+          units = vTanks.map((t) => ({ duty: t.active, run: t.active && t.feeding !== false, label: "Tank " + t.n + " feeder · " + (!t.active ? "tank deactivated" : t.feeding !== false ? "feeding" : "idle") }));
+        // live status: standing alarms for the system; for tanks also the O₂ state the rail shows
+        let status = window.njLiveSystemStatus ? njLiveSystemStatus(dept.id, s.label, s.status) : (s.status || "ok");
+        let alarmTitle = (window.njSystemAlarms ? njSystemAlarms(dept.id, s.label) : []).map((a) => a.alarm + " · " + a.level.toUpperCase()).join("\n");
+        if (s.label === "Fish Tank" && vTanks.length && window.tvO2State) {
+          const o2 = vTanks.map((t) => ({ t, st: tvO2State(t, t.o2) }));
+          const crit = o2.filter((x) => x.st === "critical"), high = o2.filter((x) => x.st === "high");
+          if (crit.length) status = "critical"; else if (high.length && status !== "critical") status = "warning";
+          const lines = crit.map((x) => "Tank " + x.t.n + " O₂ " + x.t.o2 + " % · CRITICAL").concat(high.map((x) => "Tank " + x.t.n + " O₂ " + x.t.o2 + " % · below setpoint"));
+          alarmTitle = lines.concat(alarmTitle ? [alarmTitle] : []).join("\n");
+        }
         let rd = null;
         if (k.rd) {
           const mid = (k.rd.lo + k.rd.hi) / 2;
@@ -202,10 +232,10 @@ function DeptOverviewMimic({ building, dept }) {
           const plan = 120 + Math.round(r() * 8) * 40;
           sub = Math.round(plan * (0.42 + r() * 0.5)) + " / " + plan + " kg today";
         }
-        return { label: s.label, name: k.name, glyph: k.glyph, units, rd, sub, tag, status: s.status || "ok",
+        return { label: s.label, name: k.name, glyph: k.glyph, units, rd, sub, tag, status, alarmTitle,
           mode: r() > 0.88 ? "M" : "A" };
       });
-  }, [building.id, dept.id, nTanks]);
+  }, [building.id, dept.id, nTanks, hubKey]);
   const loop = React.useMemo(() => {
     const r = doRand(doSeed(dept.id + "loop"));
     return { flow: String(Math.round(400 + r() * 2200)), temp: (9.8 + r() * 4.2).toFixed(1) };
@@ -265,7 +295,7 @@ function DeptOverviewMimic({ building, dept }) {
     <div className="do-wrap" ref={wrapRef}>
       <svg className="rasm" style={{ maxWidth: W }} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={dept.name + " department process overview"} preserveAspectRatio="xMidYMid meet">
         {pipes.map((p, i) => <path key={"p" + i} d={p.d} className={"rasm-pipe fl-" + p.k} />)}
-        {stages.map((s, i) => <DoStage key={s.label} st={s} cx={at(i)} cy={yOf(i)} onOpen={() => doOpenStage(building, dept, s.label)} />)}
+        {stages.map((s, i) => <DoStage key={s.label} st={i === 0 && n > 1 && perRow > 1 ? { ...s, first: true } : s} cx={at(i)} cy={yOf(i)} onOpen={() => doOpenStage(building, dept, s.label)} />)}
         {/* the two numbers that describe the loop itself, on the runs they belong to */}
         {n > 1 && perRow > 1 && <RD x={(at(0) + at(1)) / 2 - 33} y={chainY - 46} w={66} value={loop.flow} unit="m³/h" tag={code + "-FT0"} name="Loop flow" group={dept.name} />}
         {n > 1 && <RD x={W / 2 - 33} y={retY - 13} w={66} value={loop.temp} unit="°C" tag={code + "-TT0"} name="Return temperature" group={dept.name} />}

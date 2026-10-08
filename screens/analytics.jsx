@@ -236,7 +236,7 @@ function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
           <div className="an-pen-tag">{pen.group}{pen.accum ? <span className="an-pen-flag">Σ m³</span> : null}{pen.estimate ? <span className="an-pen-flag">est</span> : null}</div>
         </div>
         <div className="an-pen-val">
-          <span className="data" style={{ color: pen.hidden ? "var(--slate-400)" : "var(--fg)" }}>{current.toFixed(dec)}</span>
+          <span className="data" style={{ color: pen.hidden ? "var(--slate-400)" : "var(--fg)" }}>{num(current)}</span>
           <span className="an-pen-unit">{pen.accum ? "m³" : pen.unit}</span>
         </div>
         <div className="an-pen-actions">
@@ -249,6 +249,12 @@ function PenRow({ pen, current, stats, focused, onFocus, onToggle, onRemove }) {
         </div>
       </div>
       {/* min / max / average over the window in view — the legacy pen table's three stat columns */}
+      {!stats && njManualTag(pen) && (() => { const lt = njPenLastReadingTs(pen); return (
+        <div className="an-pen-nodata">{lt ? "No reading in this range · last " + fmtDayClock(lt) : "No readings recorded yet"}</div>
+      ); })()}
+      {stats && stats.gaps && stats.gaps.length > 0 && (
+        <div className="an-pen-nodata">{"No data " + stats.gaps.map((g) => fmtClock(g[0]) + "–" + fmtClock(g[1])).join(", ")}</div>
+      )}
       <div className="an-pen-stats">
         <span className="an-pen-stat"><i>Min</i><b className="data">{num(stats && stats.min)}</b></span>
         <span className="an-pen-stat"><i>Max</i><b className="data">{num(stats && stats.max)}</b></span>
@@ -438,9 +444,9 @@ function TrendsWorkspace({ tab, onTab }) {
   const range = store.range;
   const view = viewFromStore(store);
   const series = React.useMemo(() => pens.map((p) => ({ pen: p, pts: seriesForView(p, view) })),
-    [pens, view.mode, view.xMin, view.xMax, store.focusEvent]);
+    [pens, view.mode, view.xMin, view.xMax, view.n, store.focusEvent]);
   const markers = markersForView(pens, view);
-  const curOf = (id) => { const s = series.find((s) => s.pen.id === id); return s ? s.pts[s.pts.length - 1].v : 0; };
+  const curOf = (id) => { const s = series.find((s) => s.pen.id === id); return s ? njPenCurrent(s.pen, s.pts) : null; };
   // min / max / average over the window in view, per pen
   const statsOf = React.useMemo(() => {
     const m = {};
@@ -448,7 +454,7 @@ function TrendsWorkspace({ tab, onTab }) {
       if (!s.pts.length) { m[s.pen.id] = null; return; }
       let mn = Infinity, mx = -Infinity, sum = 0;
       s.pts.forEach((p) => { if (p.v < mn) mn = p.v; if (p.v > mx) mx = p.v; sum += p.v; });
-      m[s.pen.id] = { min: mn, max: mx, avg: sum / s.pts.length };
+      m[s.pen.id] = { min: mn, max: mx, avg: sum / s.pts.length, gaps: s.pts.gaps || [] };
     });
     return m;
   }, [series]);
@@ -525,7 +531,7 @@ function TrendsWorkspace({ tab, onTab }) {
       <div className="an-layout">
         <div className="card an-chart-card">
           <div className="card-head">
-            <div className="card-head-l"><Icon name="activity" size={16} color="var(--slate-600)" /><span className="card-title">{timelineAlarm ? "Event Timeline" : "Trend View"}</span></div>
+            <div className="card-head-l"><Icon name="activity" size={16} color="var(--slate-600)" /><span className="card-title">{timelineAlarm ? "Event Timeline" : "Trend View"}</span>{!timelineAlarm && <TrendGroupLabel />}</div>
             {!timelineAlarm && (
               <div className="an-chart-head-r">
                 <span className="an-axis-ctl">
@@ -535,7 +541,7 @@ function TrendsWorkspace({ tab, onTab }) {
                     <button className={"seg" + (store.axisMode === "separate" ? " active" : "")} onClick={() => store.setAxisMode("separate")} title="A separate colour-coded scale per signal">Separate</button>
                   </div>
                 </span>
-                <span className="an-live">{focused ? <span><Icon name="crosshair" size={12} /> focus · ±{store.windowMin < 60 ? store.windowMin + "m" : (store.windowMin / 60) + "h"}</span> : <span><span className="live-dot"></span> live · {visCount} {visCount === 1 ? "signal" : "signals"} · last {range}</span>}</span>
+                <span className="an-live">{focused ? <span><Icon name="crosshair" size={12} /> focus · ±{store.windowMin < 60 ? store.windowMin + "m" : (store.windowMin / 60) + "h"}</span> : view.zoomed ? <span><Icon name="zoom-in" size={12} /> zoomed · {visCount} {visCount === 1 ? "signal" : "signals"}</span> : <span><span className="live-dot"></span> live · {visCount} {visCount === 1 ? "signal" : "signals"} · last {range}</span>}</span>
               </div>
             )}
             <button className="an-cardic" onClick={() => openTrendWindow()} aria-label="Open in the floating Trend window"
@@ -547,8 +553,11 @@ function TrendsWorkspace({ tab, onTab }) {
               : visCount > 0
                 ? (loadingRange
                   ? <NjSkeleton variant="chart" height={280} note={`Sampling ${visCount} ${visCount === 1 ? "signal" : "signals"} over the last ${range}\u2026`} />
-                  : <MultiTrendChart series={series} view={view} focus={store.focus} markers={markers} showMarkers={store.showMarkers} axisMode={store.axisMode}
-                      onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} />)
+                  : <React.Fragment>
+                      <MultiTrendChart series={series} view={view} focus={store.focus} markers={markers} showMarkers={store.showMarkers} axisMode={store.axisMode}
+                        onOpenAlarm={njGoAlarm} onCenterAlarm={(a) => store.centerOn(a)} onZoom={(a, b) => store.zoomTo(a, b)} onZoomOut={() => store.zoomOut()} />
+                      <TrendZoomBar series={series} view={view} focus={store.focus} />
+                    </React.Fragment>)
                 : (
                   <NjEmpty title="No signals plotted" icon="line-chart"
                     body="Plot any process parameter and the alarms it raised appear on the same timeline. Investigating an alarm centers the chart on the event. Add a parameter below, or load a saved Trend Group to plot a set you analyse together."
@@ -632,4 +641,4 @@ function AnalyticsScreen() {
   return <TrendsWorkspace tab={tab} onTab={setTab} />;
 }
 
-Object.assign(window, { AnalyticsScreen, AnalyticsTabs, TrendsWorkspace });
+Object.assign(window, { AnalyticsScreen, AnalyticsTabs, TrendsWorkspace, PenRow, PenDetailsDialog, TrendRangeBar, AnAlarmRow, EventTimeline, openTrendSignalPicker });

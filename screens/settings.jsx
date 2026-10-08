@@ -11,25 +11,24 @@ function SetTabs({ active, onChange }) {
 
 // ---- Users ----
 const USERS = [
-  { u: "lum", first: "Lucy", last: "Martin", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", notif: "SMS · Email", uhf: true },
-  { u: "jro", first: "Jeanne", last: "Rousseau", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", notif: "SMS" },
-  { u: "kca", first: "Karen", last: "Carter", roles: ["Operator"], phone: "47 xxx xxx", notif: "SMS" },
-  { u: "elel", first: "Elliot", last: "Ellis", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", notif: "SMS · Email", uhf: true },
-  { u: "kgr", first: "Kevin", last: "Garrett", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", notif: "SMS", uhf: true },
-  { u: "csw", first: "Clemens", last: "Schwarz", roles: ["Operator", "Supervisor"], phone: "—", notif: "—" },
-  { u: "ov", first: "Olaf", last: "Vink", roles: ["Operator", "Supervisor", "Testmodul"], phone: "47 xxx xxx", notif: "SMS · Email", uhf: true },
-  { u: "sk", first: "Sam", last: "King", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", notif: "SMS", uhf: true },
-  { u: "jlo", first: "Joe", last: "Lawrence", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", notif: "Email" },
+  { u: "lum", first: "Lucy", last: "Martin", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", email: "lum@puresalmontech.com", contact: "sms", notif: "SMS" },
+  { u: "jro", first: "Jeanne", last: "Rousseau", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", contact: "sms", notif: "SMS" },
+  { u: "kca", first: "Karen", last: "Carter", roles: ["Operator"], phone: "47 xxx xxx", contact: "sms", notif: "SMS" },
+  { u: "elel", first: "Elliot", last: "Ellis", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", email: "elel@puresalmontech.com", contact: "voice", notif: "Voice call" },
+  { u: "kgr", first: "Kevin", last: "Garrett", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", contact: "sms", notif: "SMS" },
+  { u: "csw", first: "Clemens", last: "Schwarz", roles: ["Operator", "Supervisor"], phone: "—", contact: null, notif: "—" },
+  { u: "ov", first: "Olaf", last: "Vink", roles: ["Operator", "Supervisor", "Testmodul"], phone: "47 xxx xxx", email: "ov@puresalmontech.com", contact: "sms", notif: "SMS" },
+  { u: "sk", first: "Sam", last: "King", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", contact: "voice", notif: "Voice call" },
+  { u: "jlo", first: "Joe", last: "Lawrence", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", email: "jlo@puresalmontech.com", contact: "email", notif: "Email" },
 ];
 
 function UserDialog({ user, existing, onSave }) {
   const editing = !!user;
-  const notifSet = new Set((user && user.notif ? user.notif : "").split("·").map((s) => s.trim()).filter(Boolean));
   const [f, setF] = React.useState(() => ({
     u: user ? user.u : "", first: user ? user.first : "", last: user ? user.last : "",
     roles: new Set(user ? user.roles : ["Operator"]), phone: user && user.phone !== "—" ? user.phone : "",
     email: user && user.email ? user.email : "",
-    sms: notifSet.has("SMS"), email_notif: notifSet.has("Email"), uhf: !!(user && user.uhf),
+    contact: user ? ocUserVia(user) || "" : "sms",
   }));
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const toggleRole = (r) => setF((s) => { const n = new Set(s.roles); n.has(r) ? n.delete(r) : n.add(r); return { ...s, roles: n }; });
@@ -37,11 +36,19 @@ function UserDialog({ user, existing, onSave }) {
   const dupU = !editing && existing.some((x) => x.u.toLowerCase() === uTrim);
   const emailTrim = f.email.trim();
   const emailOk = !emailTrim || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailTrim);
-  const valid = uTrim && f.first.trim() && f.last.trim() && f.roles.size > 0 && !dupU && emailOk && !(f.email_notif && !emailTrim);
+  // ONE preferred contact per person. It needs the matching detail: SMS / voice need a phone,
+  // email needs an address. No contact = not listed in any on-call picker.
+  const needPhone = (f.contact === "sms" || f.contact === "voice") && !f.phone.trim();
+  const needEmail = f.contact === "email" && !emailTrim;
+  const valid = uTrim && f.first.trim() && f.last.trim() && f.roles.size > 0 && !dupU && emailOk && !needPhone && !needEmail;
   const roleOptions = ["Operator", "Supervisor", "Testmodul", "StatusViewer"];
+  // the one way an assigned person could end up with no contact: taken off every list on save
+  const paged = editing && window.njPagedFor ? window.njPagedFor(user.u) : [];
+  const dropsOff = editing && !f.contact && paged.length > 0;
   const save = () => {
-    const notif = [f.sms && "SMS", f.email_notif && "Email"].filter(Boolean).join(" · ") || "—";
-    onSave({ u: uTrim, first: f.first.trim(), last: f.last.trim(), roles: [...f.roles], phone: f.phone.trim() || "—", email: emailTrim, notif, uhf: f.uhf }, editing);
+    const meta = ocContactMeta(f.contact);
+    onSave({ u: uTrim, first: f.first.trim(), last: f.last.trim(), roles: [...f.roles], phone: f.phone.trim() || "—", email: emailTrim, contact: f.contact || null, notif: meta ? meta.label : "—" }, editing);
+    if (dropsOff && window.oncallStore) { window.oncallStore.purgeMember(user.u); if (window.njOcLog) window.njOcLog.add(user.first + " " + user.last + " taken off on-call", "No contact on the account"); }
     closeDialog();
   };
   return (
@@ -65,21 +72,19 @@ function UserDialog({ user, existing, onSave }) {
             ))}
           </div>
         </DeField>
-        <DeField label="Email" hint={f.email_notif && !emailTrim ? undefined : "For email alarm notifications and account recovery"}>
+        <DeField label="Email" hint="For email alarms and account recovery">
           <input className="de-input" type="email" placeholder="name@puresalmontech.com" value={f.email} onChange={(e) => set("email", e.target.value)} />
         </DeField>
         {emailTrim && !emailOk && <div className="de-field-hint" style={{ color: "var(--warning-text)" }}>Enter a valid email address.</div>}
-        <div className="de-form-2col">
-          <DeField label="Phone"><input className="de-input" placeholder="47 xxx xxx" value={f.phone} onChange={(e) => set("phone", e.target.value)} /></DeField>
-          <DeField label="Notifications" hint="What this account can RECEIVE — an on-call tier that dispatches on a channel listed here reaches them; one that does not, does not.">
-            <div className="usr-notif">
-              <label className="usr-check" {...njCheckable(() => set("sms", !f.sms), { on: f.sms, label: "SMS notifications" })}><Check on={f.sms} /> SMS</label>
-              <label className="usr-check" {...njCheckable(() => set("email_notif", !f.email_notif), { on: f.email_notif, label: "Email notifications" })}><Check on={f.email_notif} /> Email</label>
-              <label className="usr-check" {...njCheckable(() => set("uhf", !f.uhf), { on: f.uhf, label: "Carries a UHF radio" })}><Check on={f.uhf} /> UHF radio</label>
-            </div>
-          </DeField>
-        </div>
-        {f.email_notif && !emailTrim && <div className="de-field-hint" style={{ color: "var(--warning-text)" }}>Add an email address to enable email notifications.</div>}
+        <DeField label="Phone"><input className="de-input" placeholder="47 xxx xxx" value={f.phone} onChange={(e) => set("phone", e.target.value)} /></DeField>
+        <DeField label="On-call contact" hint="How alarms reach this person on every on-call list. Without one they are not listed for on-call.">
+          <div className="segmented">
+            {OC_CONTACTS.concat([{ id: "", label: "None", icon: "minus" }]).map((c) => <button key={c.id || "none"} type="button" className={"seg" + (f.contact === c.id ? " active" : "")} aria-pressed={f.contact === c.id} onClick={() => set("contact", c.id)}><Icon name={c.icon} size={14} /> {c.label}</button>)}
+          </div>
+        </DeField>
+        {needPhone && <div className="de-field-hint" style={{ color: "var(--warning-text)" }}>Add a phone number for {ocContactMeta(f.contact).label.toLowerCase()}.</div>}
+        {needEmail && <div className="de-field-hint" style={{ color: "var(--warning-text)" }}>Add an email address for email alarms.</div>}
+        {dropsOff && <div className="de-field-hint" style={{ color: "var(--warning-text)" }}>On {paged.length} on-call {paged.length === 1 ? "list" : "lists"} ({paged.map((x) => x.g.name).join(", ")}). Without a contact they come off {paged.length === 1 ? "it" : "them"} when you save.</div>}
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
@@ -115,7 +120,7 @@ function UsersTab() {
       if (window.oncallStore) window.oncallStore.purgeMember(u.u);
       if (window.shiftStore) window.shiftStore.assign(u.u, null);
     }
-    if (window.njOcLog) window.njOcLog.add((active ? "Reactivated " : "Deactivated ") + u.first + " " + u.last, active ? "" : "Removed from every on-call group and the duty roster");
+    if (window.njOcLog) window.njOcLog.add((active ? "Reactivated " : "Deactivated ") + u.first + " " + u.last, active ? "" : "Removed from every on-call group and shift");
     njToast(u.first + " " + u.last + (active ? " reactivated." : " deactivated."));
   };
   const openAdd = () => openDialog(<UserDialog existing={users} onSave={saveUser} />);
@@ -134,7 +139,7 @@ function UsersTab() {
       </div>
       <table className="tbl">
         <thead>
-          <tr><th>Username</th><th>Name</th><th>Roles</th><th>Phone</th><th>Notifications</th><th>On-call</th><th style={{ width: 80 }}></th></tr>
+          <tr><th>Username</th><th>Name</th><th>Roles</th><th>Phone</th><th>On-call contact</th><th>On-call</th><th style={{ width: 80 }}></th></tr>
         </thead>
         <tbody>
           {rows.map((u) => (
@@ -147,7 +152,7 @@ function UsersTab() {
                 </span>
               </td>
               <td><span className="data">{u.phone}</span></td>
-              <td><span className="small">{u.notif}{u.uhf ? " · UHF" : ""}</span></td>
+              <td>{(() => { const c = ocUserContact(u), m = c && ocContactMeta(c.via); return m ? <span className="small usr-contact"><Icon name={m.icon} size={14} color="var(--slate-400)" /> {m.label}</span> : <span className="usr-oncall-none">None · not listed</span>; })()}</td>
               {/* Users owned the contact details and On-call owned who gets paged, and neither
                   showed the other — so an admin could edit a person with no idea they were the
                   only one a critical group would reach. Derived, never a second model. */}
@@ -199,7 +204,28 @@ const PERM_MODULES = {
   "Fish Feeding": ["Adjust Feed Rate", "Edit Feed Curves", "Pause / Resume Feeding", "Manage Feeders", "Edit Feed Settings"],
   "Fish Biology": ["Register Welfare Scoring", "Register Mortality", "Manage Batches", "Generate Welfare Reports"],
   "Analytics": ["View Trends", "Create & Save Trend Views", "Export Trend Data", "Configure Dashboards"],
+  // the two permissions the on-call screens actually enforce. Default: Supervisor only.
+  "On-call": ["Change Priority 3", "Pause & Resume Groups"],
 };
+// Role permissions, persisted. Everything defaults to Allow except the On-call module, which is
+// Supervisor-only until a role is set otherwise.
+// SESSION ROLE (demo): the app has no login yet. A role's "Use for my session" switch makes the
+// current user act as that role everywhere, so both permission levels can be shown. Off = the
+// user's own roles (USERS[0]).
+const PERM_LS = "nj_role_perms_v1", SESS_LS = "nj_session_role_v1";
+const njPerms = {
+  data: (function () { try { return JSON.parse(localStorage.getItem(PERM_LS)) || {}; } catch (e) { return {}; } })(),
+  session: (function () { try { return localStorage.getItem(SESS_LS) || null; } catch (e) { return null; } })(),
+  subs: new Set(),
+  sub(fn) { this.subs.add(fn); return () => this.subs.delete(fn); },
+  emit() { try { localStorage.setItem(PERM_LS, JSON.stringify(this.data)); if (this.session) localStorage.setItem(SESS_LS, this.session); else localStorage.removeItem(SESS_LS); } catch (e) {} this.subs.forEach((f) => f()); if (window.oncallStore) window.oncallStore.subs.forEach((f) => f()); },
+  get(role, m, p) { const k = role + "|" + m + "|" + p; if (k in this.data) return this.data[k]; return m === "On-call" && role !== "Supervisor" ? "deny" : "allow"; },
+  set(role, m, p, v) { this.data = Object.assign({}, this.data, { [role + "|" + m + "|" + p]: v }); this.emit(); },
+  copy(from, to) { const n = Object.assign({}, this.data); Object.keys(PERM_MODULES).forEach((m) => PERM_MODULES[m].forEach((p) => { n[to + "|" + m + "|" + p] = this.get(from, m, p); })); this.data = n; this.emit(); },
+  setSession(role) { this.session = role || null; if (window.njOcLog) window.njOcLog.add(role ? "Session role set to " + role : "Session role reset", "Demo: permissions follow " + (role || "the account's own roles")); this.emit(); },
+};
+function usePerms() { const [, f] = React.useReducer((x) => x + 1, 0); React.useEffect(() => njPerms.sub(f), []); return njPerms; }
+function njCan(m, p) { return njSessionRoles().some((r) => njPerms.get(r, m, p) === "allow"); }
 
 function PermToggle({ value, onChange }) {
   return (
@@ -246,14 +272,14 @@ function RolesTab() {
   const [roles, setRoles] = React.useState(ROLES);
   const [role, setRole] = React.useState("Supervisor");
   const [mod, setMod] = React.useState("NJORD");
-  const [perms, setPerms] = React.useState({});
-  const key = (m, p) => `${role}|${m}|${p}`;
-  const get = (m, p) => perms[key(m, p)] || "allow";
-  const set = (m, p, v) => setPerms((s) => ({ ...s, [key(m, p)]: v }));
+  const perms = usePerms();
+  const get = (m, p) => perms.get(role, m, p);
+  const set = (m, p, v) => perms.set(role, m, p, v);
   const mods = Object.keys(PERM_MODULES);
+  const sessOn = perms.session === role;
   const createRole = (nm, base, desc) => {
     setRoles((rs) => [...rs, { name: nm, users: 0, desc: desc || (base ? "Based on " + base : "Custom role") }]);
-    if (base) setPerms((s) => { const next = { ...s }; Object.keys(s).forEach((k) => { if (k.startsWith(base + "|")) next[nm + k.slice(base.length)] = s[k]; }); return next; });
+    if (base) perms.copy(base, nm);
     setRole(nm); setMod("NJORD");
   };
   const activeRole = roles.find((r) => r.name === role);
@@ -286,8 +312,15 @@ function RolesTab() {
               {activeRole && activeRole.desc && <span className="role-edit-desc">{activeRole.desc}</span>}
             </div>
           </div>
-          <button className="btn btn-primary" style={{ padding: "6px 14px" }} onClick={() => njToast(role + " role permissions saved.")}><Icon name="check" size={16} /> Save</button>
+          <div className="role-head-r">
+            <span className="role-sess" title="Demo only. The app has no login yet: this makes you act as this role on every screen, so both permission levels can be shown.">
+              <button className={"oc-switch" + (sessOn ? " on" : "")} role="switch" aria-checked={sessOn} aria-label="Use this role for my session" onClick={() => { perms.setSession(sessOn ? null : role); njToast(sessOn ? "Session role reset. You act with your own roles." : "You now act as " + role + " on every screen."); }}><span className="oc-switch-knob" /></button>
+              Use for my session
+            </span>
+            <button className="btn btn-primary" style={{ padding: "6px 14px" }} onClick={() => njToast(role + " role permissions saved.")}><Icon name="check" size={16} /> Save</button>
+          </div>
         </div>
+        {perms.session && <div className="role-sess-bar"><Icon name="user-cog" size={14} /> Demo session: you act as <b>{perms.session}</b> on every screen.<button className="linkbtn" onClick={() => perms.setSession(null)}>Reset</button></div>}
         <div style={{ padding: "14px 20px 0" }}>
           <div className="segmented">
             {mods.map((m) => <button key={m} className={"seg" + (m === mod ? " active" : "")} onClick={() => setMod(m)}>{m}</button>)}
@@ -307,19 +340,47 @@ function RolesTab() {
 }
 
 // ---- On-call ----
-// notification targets: duty phones + facility users
-// A duty phone is assumed provisioned for every channel (see NJ_OC_ASSUMPTIONS.perDeviceChannels);
-// give an entry a `chans` array to say otherwise and coverage honours it with no other change.
-const OC_PHONES = [
-  { id: "vt1", name: "Duty phone 1", kind: "phone" },
-  { id: "vt2", name: "Duty phone 2", kind: "phone" },
+// CONTACT is per recipient, not per escalation level: each person (and each duty phone) has ONE
+// preferred way to be reached. UHF is not a person's channel at all — it is the site's sender,
+// configured once for the whole system (Site channels). A recipient with no usable contact is
+// simply not listed in any picker, so there is no "unreachable" state to show on a list.
+const OC_CONTACTS = [
+  { id: "sms", label: "SMS", icon: "message-square" },
+  { id: "voice", label: "Voice call", icon: "phone" },
+  { id: "email", label: "Email", icon: "mail" },
 ];
+function ocContactMeta(id) { return OC_CONTACTS.find((c) => c.id === id) || null; }
+// accounts saved before `contact` existed still carry the old notif string
+function ocUserVia(u) { if (!u) return null; if (u.contact !== undefined) return u.contact; return /SMS/.test(u.notif || "") ? "sms" : /Email/.test(u.notif || "") ? "email" : null; }
+function ocUserContact(u) {
+  const via = ocUserVia(u); if (!via) return null;
+  const phone = u.phone && u.phone !== "—" ? u.phone : "";
+  if ((via === "sms" || via === "voice") && phone) return { via: via, to: phone };
+  if (via === "email" && u.email) return { via: via, to: u.email };
+  return null;
+}
+// duty phones are SITE configuration: some sites have one, some two. A phone without a number
+// is not listed. Read live from the store so Site channels edits show up everywhere.
+const OC_PHONE_SEED = [
+  { id: "vt1", name: "Duty phone 1", number: "+47 900 10 001", via: "sms" },
+  { id: "vt2", name: "Duty phone 2", number: "+47 900 10 002", via: "sms" },
+];
+function ocSite() { return (window.oncallStore && window.oncallStore.site) || ocSiteDefault(); }
+function ocSiteDefault() { return { phones: OC_PHONE_SEED.map((p) => Object.assign({}, p)), uhf: { on: true, minPriority: "critical" }, rule247: true }; }
+function ocContactOfId(id) {
+  const p = ocSite().phones.find((x) => x.id === id);
+  if (p) return p.number ? { via: p.via || "sms", to: p.number } : null;
+  return ocUserContact(USERS.find((u) => u.u === id));
+}
 // A DEACTIVATED user keeps their name resolvable everywhere it was already written (the alarm
 // log, maneuver history, this change log) but stops being assignable and stops being paged.
 // That is why there are two lists: pickers read ocRoster(), lookups read ocRosterAll().
-function ocRosterAll() { return OC_PHONES.concat(USERS.map((u) => ({ id: u.u, name: u.first + " " + u.last, kind: "person", role: u.roles[0], notif: u.notif, inactive: u.status === "inactive" }))); }
-function ocRoster() { return ocRosterAll().filter((m) => !m.inactive); }
-function ocMember(id) { return ocRosterAll().find((m) => m.id === id) || { id, name: id, kind: "person" }; }
+// Duty phones first (a different kind of recipient, one or two of them), then people A–Z by the
+// name as displayed. Every picker reads this, so the order is the same everywhere.
+function ocRosterAll() { return ocSite().phones.map((p) => ({ id: p.id, name: p.name, kind: "phone", contact: ocContactOfId(p.id) })).concat(USERS.map((u) => ({ id: u.u, name: u.first + " " + u.last, kind: "person", role: u.roles[0], contact: ocUserContact(u), inactive: u.status === "inactive" })).sort((a, b) => a.name.localeCompare(b.name, "nb"))); }
+// pickers: active AND reachable. Someone with no contact is left out, not shown with a warning.
+function ocRoster() { return ocRosterAll().filter((m) => !m.inactive && m.contact); }
+function ocMember(id) { return ocRosterAll().find((m) => m.id === id) || { id, name: /^vt\d/.test(id) ? "Removed duty phone" : id, kind: /^vt\d/.test(id) ? "phone" : "person" }; }
 
 // coverage: the minimum alarm severity a group is paged for
 const OC_PRIOS = [
@@ -346,13 +407,28 @@ const OC_WIN_PRESETS = [
   { id: "evening", label: "Evening", summary: "15:00–23:00 · Mon–Fri", win: () => ocWin("15:00-23:00", "") },
   { id: "night", label: "Night", summary: "23:00–07:00 · every day", win: () => ocWin("23:00-07:00") },
   { id: "weekend", label: "Weekend", summary: "00:00–24:00 · Sat–Sun", win: () => ({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "00:00-24:00", sun: "00:00-24:00" }) },
+  // the customer's duty list: one window Mon–Fri, another Sat–Sun (Evening 14:50–20:30 / 07:00–19:00)
+  { id: "split", label: "Weekdays + weekend", summary: "Own hours Mon–Fri and Sat–Sun", win: () => ocWin("07:00-15:00", "") },
   { id: "custom", label: "Custom", summary: "Per-day windows", win: () => ocWin("00:00-24:00") },
 ];
+// a window value is free text: "07:00-15:00" or "00:00-07:00, 15:00-24:00"; blank = not paged
+function ocIvOk(iv) { const m = /^([01]?\d|2[0-3]):([0-5]\d)\s*-\s*([01]?\d|2[0-4]):([0-5]\d)$/.exec(String(iv).trim()); return !!m && !(+m[3] === 24 && +m[4] > 0); }
+function ocWinBad(g) { return OC_DAYS.filter((d) => g.win && g.win[d] && String(g.win[d]).split(",").some((x) => !ocIvOk(x))); }
 function ocWinPreset(id) { return OC_WIN_PRESETS.find((s) => s.id === id) || OC_WIN_PRESETS[0]; }
 // `g.winPreset` replaced `g.shift`; groups saved before the rename still carry the old key.
 function ocPresetOf(g) { return g.winPreset || g.shift; }
+function ocFmtWin(w) { return String(w).split(",").map((s) => s.trim().replace("-", "–")).join(", "); }
+// one line per distinct window, so a weekday/weekend group reads as two lines in the duty list
+function ocSchedLines(g) {
+  if (ocPresetOf(g) !== "split") return [ocSchedSummary(g)];
+  const out = [];
+  if (g.win && g.win.mon) out.push(ocFmtWin(g.win.mon) + " Mon–Fri");
+  if (g.win && g.win.sat) out.push(ocFmtWin(g.win.sat) + " Sat–Sun");
+  return out.length ? out : ["No active window"];
+}
 function ocSchedSummary(g) {
   const p = ocPresetOf(g);
+  if (p === "split") return ocSchedLines(g).join(" · ");
   if (p && p !== "custom") return ocWinPreset(p).summary;
   const on = OC_DAYS.filter((d) => g.win && g.win[d]);
   if (!on.length) return "No active window";
@@ -385,6 +461,7 @@ const OC_SEED = [
 // phone was to lean on priority. Coverage is now an explicit set of departments; empty means
 // the whole facility, which is what every existing group loads as.
 const OC_AREAS = FACILITY.reduce((out, b) => out.concat(b.depts.map((d) => ({ id: d.id, b: b.name, d: d.name, label: b.name + " · " + d.name }))), []);
+window.OC_AREAS = OC_AREAS;
 function ocArea(id) { return OC_AREAS.find((a) => a.id === id) || null; }
 function ocAreaSummary(g) {
   const ids = (g.areas || []).filter((id) => ocArea(id));
@@ -394,11 +471,38 @@ function ocAreaSummary(g) {
 }
 
 function ocNormalize(g) {
-  const c = Object.assign({ p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"] }, g.chan || {});
-  return Object.assign({}, g, { chan: c, areas: g.areas || [] });
+  const c = Object.assign({ p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"], b247: ["sms", "voice"] }, g.chan || {});
+  const t = Object.assign({ p1: [], p2: [], p3: [], b247: [] }, g.tiers || {});
+  return Object.assign({}, g, { chan: c, tiers: t, areas: g.areas || [], alarmAdd: g.alarmAdd || [], alarmDel: g.alarmDel || [], required: Object.assign({ p1: true }, g.required || {}) });
 }
+
+// ── the rules the customer's duty list carries ──
+// REQUIRED (their yellow cells): a level that may never stand empty. The last name on it has no
+// remove — a swap is add the new name, then remove the old one. Admin setting, per group/level.
+function ocRequired(g, tier) { return !!(g.required && g.required[tier]); }
+// Priority 3 is changed by a Supervisor (their superbruker) only. The one screen that checks a
+// role; the app has no session yet, so the role is read from the same account oclWho uses.
+function njSessionRoles() { try { return window.NJ_SESSION_ROLES || (njPerms.session ? [njPerms.session] : (USERS[0] && USERS[0].roles)) || []; } catch (e) { return []; } }
+function ocCanEdit(tier) { return tier !== "p3" || njCan("On-call", "Change Priority 3"); }
+// pausing a group takes its whole window offline, so it is a permission, not an everyday act
+function ocCanPause() { return njCan("On-call", "Pause & Resume Groups"); }
+// The last name on a required level is NOT locked any more: edits are a draft, so a level may
+// be empty in between, and Save is what refuses a required level left empty.
+function ocLockReason(g, tier) { return ocCanEdit(tier) ? null : "Only a Supervisor can change Priority 3"; }
+// a person sits on ONE escalation level of a group, so the picker leaves out anyone already on
+// Priority 1–3 of it. Two Priority 1 duties in DIFFERENT groups is allowed and common.
+function ocEscIds(g) { return ["p1", "p2", "p3"].reduce((o, t) => o.concat((g.tiers && g.tiers[t]) || []), []); }
+// Personal duty shifts are OPTIONAL. Off (default): a name on a group is reachable for the whole
+// of that group's paging window, which is how the customer's duty list works. On: the Duty
+// roster narrows it further per person (lunch breaks, sites that plan shifts separately).
+function njOcShiftsOn() { return !!(oncallStore.policy && oncallStore.policy.personalShifts); }
 function ocClone(g) { return JSON.parse(JSON.stringify(g)); }
-function ocLoad() { const r = njOcPersist.read(OC_LS, null); if (r && Array.isArray(r.groups)) return Object.assign({}, r, { groups: r.groups.map(ocNormalize) }); return { groups: OC_SEED.map((g) => ocNormalize(ocClone(g))), policy: { resendMin: 5, upscaleAfter: 3 } }; }
+function ocLoad() {
+  const r = njOcPersist.read(OC_LS, null);
+  const d = r && Array.isArray(r.groups) ? Object.assign({}, r, { groups: r.groups.map(ocNormalize) }) : { groups: OC_SEED.map((g) => ocNormalize(ocClone(g))), policy: { resendMin: 5, upscaleAfter: 3, personalShifts: false }, pending: [] };
+  d.site = Object.assign(ocSiteDefault(), d.site || {});
+  return d;
+}
 
 const oncallStore = {
   data: ocLoad(), subs: new Set(),
@@ -406,10 +510,67 @@ const oncallStore = {
   emit() { this.subs.forEach((f) => f()); njOcPersist.write(OC_LS, this.data); },
   get groups() { return this.data.groups; },
   get policy() { return this.data.policy; },
+  get site() { return this.data.site; },
+  // rev / savedBy / savedAt: lets an open draft see that someone else saved the list meanwhile
+  _stamp() { this.data.rev = (this.data.rev || 0) + 1; this.data.savedBy = window.NJ_SESSION_USER || (USERS[0] ? USERS[0].first + " " + USERS[0].last : "Operator"); this.data.savedAt = window.oclNow ? window.oclNow() : Date.now(); },
+  setSite(s) {
+    const keep = new Set(s.phones.filter((p) => p.number).map((p) => p.id));
+    const gone = this.data.site.phones.filter((p) => !keep.has(p.id)).map((p) => p.id);
+    gone.forEach((id) => { this.data.pending = this.pending.filter((x) => x.mid !== id); this.data.groups = this.data.groups.map((g) => { const t = Object.assign({}, g.tiers); Object.keys(t).forEach((k) => { t[k] = (t[k] || []).filter((x) => x !== id); }); return Object.assign({}, g, { tiers: t }); }); });
+    this.data.site = s;
+    if (window.njOcLog) window.njOcLog.add("Site channels changed", s.phones.filter((p) => p.number).length + " duty phone(s) · UHF " + (s.uhf.on ? "on, " + ocPrio(s.uhf.minPriority).covers.toLowerCase() : "off"));
+    this._stamp(); this.emit();
+  },
+  // ONE batch from the draft. Re-checked against the LATEST list, so a colleague's save in
+  // between is built on, not overwritten: a change that is already true, or no longer possible,
+  // is skipped and reported. `at` = planned batch (queued) instead of now.
+  commit(changes, at) {
+    const applied = [], skipped = [];
+    const gs = this.data.groups;
+    changes.forEach((c) => {
+      const g = gs.find((x) => x.id === c.gid);
+      if (!g) { skipped.push({ c: c, why: "the group was deleted" }); return; }
+      const has = ((g.tiers && g.tiers[c.tier]) || []).includes(c.mid);
+      if (c.op === "add" && has) { skipped.push({ c: c, why: "already on it" }); return; }
+      if (c.op === "remove" && !has) { skipped.push({ c: c, why: "already removed" }); return; }
+      if (c.op === "add" && !ocContactOfId(c.mid)) { skipped.push({ c: c, why: "no contact on the account" }); return; }
+      applied.push(c);
+    });
+    const nm = (id) => ocMember(id).name;
+    const gname = (id) => (gs.find((x) => x.id === id) || {}).name || "";
+    // a remove + add of the same name in one group is a MOVE, and is logged as one
+    const lines = [];
+    applied.forEach((c) => {
+      if (c.op !== "add") return;
+      const out = applied.find((r) => r.op === "remove" && r.gid === c.gid && r.mid === c.mid);
+      lines.push(out ? nm(c.mid) + " moved to " + ocTierLabel(c.tier) + " · " + gname(c.gid) + " (from " + ocTierLabel(out.tier) + ")" : nm(c.mid) + " added to " + gname(c.gid) + " · " + ocTierLabel(c.tier));
+    });
+    applied.forEach((c) => { if (c.op === "remove" && !applied.some((a) => a.op === "add" && a.gid === c.gid && a.mid === c.mid)) lines.push(nm(c.mid) + " removed from " + gname(c.gid) + " · " + ocTierLabel(c.tier)); });
+    if (at) {
+      this.data.pending = this.pending.concat(applied.map((c, i) => ({ id: "pc" + Date.now() + i + Math.random().toString(36).slice(2, 5), gid: c.gid, tier: c.tier, mid: c.mid, op: c.op, at: at })));
+      if (window.njOcLog) lines.forEach((l) => window.njOcLog.add("Planned: " + l, "from " + njOcFmtAt(at)));
+    } else {
+      // removes first, then adds: the batch lands at one instant, a level is never half-done
+      applied.filter((c) => c.op === "remove").forEach((c) => this._removeMember(c.gid, c.tier, c.mid, true));
+      applied.filter((c) => c.op === "add").forEach((c) => {
+        // one escalation level per person: if a colleague moved them meanwhile, this add wins
+        if (c.tier !== "b247") ["p1", "p2", "p3"].forEach((t) => { if (t !== c.tier) this._removeMember(c.gid, t, c.mid, true); });
+        this._addMember(c.gid, c.tier, c.mid, true);
+      });
+      if (window.njOcLog) lines.forEach((l) => window.njOcLog.add(l, ""));
+    }
+    this._stamp(); this.emit();
+    return { applied: applied, skipped: skipped };
+  },
   upsert(g) { const gs = this.data.groups; const i = gs.findIndex((x) => x.id === g.id); this.data.groups = i >= 0 ? gs.map((x) => (x.id === g.id ? g : x)) : gs.concat([g]); this.emit(); },
   remove(id) { this.data.groups = this.data.groups.filter((x) => x.id !== id); this.emit(); },
   duplicate(id) { const g = this.data.groups.find((x) => x.id === id); if (!g) return; const c = ocClone(g); c.id = "g" + Date.now(); c.name = g.name + " (copy)"; this.data.groups = this.data.groups.concat([c]); this.emit(); },
-  toggle(id) { this.data.groups = this.data.groups.map((x) => (x.id === id ? Object.assign({}, x, { enabled: !x.enabled }) : x)); this.emit(); },
+  toggle(id) {
+    if (!ocCanPause()) return;
+    const g0 = this.data.groups.find((x) => x.id === id);
+    if (window.njOcLog && g0) window.njOcLog.add((g0.enabled ? "Paused " : "Resumed ") + g0.name, g0.enabled ? "No notifications sent for this group" : "");
+    this.data.groups = this.data.groups.map((x) => (x.id === id ? Object.assign({}, x, { enabled: !x.enabled }) : x)); this.emit();
+  },
   // "Disable all" takes the WHOLE facility's paging offline. Enabling all is NOT its inverse:
   // a group someone deliberately paused must not come back on because of a mis-click, so the
   // pre-pause state is snapshotted and restored. Without this, the obvious correction to a
@@ -432,108 +593,90 @@ const oncallStore = {
   pausedByAll() { return !!this.data.prevEnabled; },
   setAll(enabled) { return enabled ? this.restoreAll() : this.pauseAll(); },
   addMember(id, tier, mid) { const g0 = this.data.groups.find((x) => x.id === id); if (window.njOcLog && g0) window.njOcLog.add((window.ocMember ? window.ocMember(mid).name : mid) + " added to " + g0.name, "Priority " + tier.slice(1)); return this._addMember(id, tier, mid); },
-  _addMember(id, tier, mid) { this.data.groups = this.data.groups.map((g) => { if (g.id !== id) return g; const t = Object.assign({}, g.tiers); t[tier] = (t[tier] || []).includes(mid) ? t[tier] : t[tier].concat([mid]); return Object.assign({}, g, { tiers: t }); }); this.emit(); },
+  _addMember(id, tier, mid, quiet) { this.data.groups = this.data.groups.map((g) => { if (g.id !== id) return g; const t = Object.assign({}, g.tiers); t[tier] = (t[tier] || []).includes(mid) ? t[tier] : (t[tier] || []).concat([mid]); return Object.assign({}, g, { tiers: t }); }); if (!quiet) this.emit(); },
+  // ── planned changes ── a Monday swap planned on Friday. Stored as a queue of single adds and
+  // removes, applied when their time comes (screens/oncall-dutylist.jsx runs the clock).
+  get pending() { return this.data.pending || (this.data.pending = []); },
+  plan(c) {
+    const g0 = this.data.groups.find((x) => x.id === c.gid);
+    if (window.njOcLog && g0) window.njOcLog.add("Planned: " + ocMember(c.mid).name + (c.op === "add" ? " added to " : " removed from ") + g0.name, ocTierLabel(c.tier) + " · from " + njOcFmtAt(c.at));
+    this.data.pending = this.pending.concat([Object.assign({ id: "pc" + Date.now() + Math.random().toString(36).slice(2, 6) }, c)]); this.emit();
+  },
+  // planned removals on a REQUIRED level that only pass because this planned add lands first:
+  // cancel the add alone and those removals are skipped when their time comes
+  dependents(id) {
+    const c = this.pending.find((x) => x.id === id);
+    if (!c || c.op !== "add") return [];
+    const g = this.data.groups.find((x) => x.id === c.gid);
+    if (!g || !ocRequired(g, c.tier)) return [];
+    const rest = this.pending.filter((x) => x.id !== id && x.gid === c.gid && x.tier === c.tier);
+    const n0 = ((g.tiers && g.tiers[c.tier]) || []).length;
+    return rest.filter((r) => r.op === "remove" && r.at >= c.at && n0 - rest.filter((x) => x.op === "remove" && x.at <= r.at).length + rest.filter((x) => x.op === "add" && x.at <= r.at).length < 1);
+  },
+  cancelPlan(id) { const c0 = this.pending.find((x) => x.id === id); if (c0 && !ocCanEdit(c0.tier)) return; const c = c0; if (c && window.njOcLog) window.njOcLog.add("Cancelled planned change", ocMember(c.mid).name + " · " + ocTierLabel(c.tier) + " · " + njOcFmtAt(c.at)); this.data.pending = this.pending.filter((x) => x.id !== id); this.emit(); },
+  applyDue(now) {
+    const due = this.pending.filter((x) => x.at <= now).sort((a, b) => a.at - b.at || (a.op === "add" ? -1 : 1));
+    if (!due.length) return;
+    this.data.pending = this.pending.filter((x) => x.at > now);
+    due.forEach((c) => {
+      const g = this.data.groups.find((x) => x.id === c.gid); if (!g) return;
+      const nm = ocMember(c.mid).name;
+      if (c.op === "add") { this._addMember(c.gid, c.tier, c.mid); if (window.njOcLog) window.njOcLog.add("Planned change applied: " + nm + " added to " + g.name, ocTierLabel(c.tier)); return; }
+      // a planned removal never empties a required level: it is skipped and says so
+      const n = ((g.tiers && g.tiers[c.tier]) || []).length;
+      if (ocRequired(g, c.tier) && n <= 1) { if (window.njOcLog) window.njOcLog.add("Planned removal skipped: " + nm + " on " + g.name, ocTierLabel(c.tier) + " is required and would be empty"); return; }
+      this._removeMember(c.gid, c.tier, c.mid); if (window.njOcLog) window.njOcLog.add("Planned change applied: " + nm + " removed from " + g.name, ocTierLabel(c.tier));
+    });
+    this.emit();
+  },
   removeMember(id, tier, mid) { const g0 = this.data.groups.find((x) => x.id === id); if (window.njOcLog && g0) window.njOcLog.add((window.ocMember ? window.ocMember(mid).name : mid) + " removed from " + g0.name, "Priority " + tier.slice(1)); return this._removeMember(id, tier, mid); },
-  _removeMember(id, tier, mid) { this.data.groups = this.data.groups.map((g) => { if (g.id !== id) return g; const t = Object.assign({}, g.tiers); t[tier] = (t[tier] || []).filter((x) => x !== mid); return Object.assign({}, g, { tiers: t }); }); this.emit(); },
+  _removeMember(id, tier, mid, quiet) { this.data.groups = this.data.groups.map((g) => { if (g.id !== id) return g; const t = Object.assign({}, g.tiers); t[tier] = (t[tier] || []).filter((x) => x !== mid); return Object.assign({}, g, { tiers: t }); }); if (!quiet) this.emit(); },
   // A removed user must not survive as a dangling id on a tier: ocMember falls back to the raw
   // id, so the chip would have read "sk" and the group would still look staffed.
-  purgeMember(mid) { this.data.groups = this.data.groups.map((g) => { const t = Object.assign({}, g.tiers); ["p1", "p2", "p3"].forEach((k) => { t[k] = (t[k] || []).filter((x) => x !== mid); }); return Object.assign({}, g, { tiers: t }); }); this.emit(); },
+  purgeMember(mid) { this.data.pending = this.pending.filter((x) => x.mid !== mid); this.data.groups = this.data.groups.map((g) => { const t = Object.assign({}, g.tiers); ["p1", "p2", "p3", "b247"].forEach((k) => { t[k] = (t[k] || []).filter((x) => x !== mid); }); return Object.assign({}, g, { tiers: t }); }); this.emit(); },
   setPolicy(patch) { this.data.policy = Object.assign({}, this.data.policy, patch); this.emit(); },
 };
 function useOncall() { const [, force] = React.useReducer((x) => x + 1, 0); React.useEffect(() => oncallStore.sub(force), []); return oncallStore; }
+// Lists saved before contact became per-person can still hold a name with no contact. The rule
+// is that nobody on a list is unreachable, so they are taken off once, on load, and logged.
+function ocPurgeNoContact() {
+  const d = oncallStore.data, gone = [];
+  d.groups = d.groups.map((g) => {
+    const t = Object.assign({}, g.tiers);
+    Object.keys(t).forEach((k) => { t[k] = (t[k] || []).filter((id) => { if (ocContactOfId(id)) return true; gone.push({ g: g.name, tier: k, id: id }); return false; }); });
+    return Object.assign({}, g, { tiers: t });
+  });
+  const p0 = oncallStore.pending.length;
+  d.pending = oncallStore.pending.filter((x) => x.op !== "add" || ocContactOfId(x.mid));
+  if (!gone.length && d.pending.length === p0) return;
+  if (window.njOcLog) gone.forEach((x) => window.njOcLog.add(ocMember(x.id).name + " taken off " + x.g + " · " + ocTierLabel(x.tier), "No contact on the account"));
+  oncallStore.emit();
+}
+setTimeout(ocPurgeNoContact, 0);
+// another operator (another tab / workstation) saved the list: pick it up live, never write back
+window.addEventListener("storage", (e) => { if (e.key !== OC_LS) return; oncallStore.data = ocLoad(); oncallStore.subs.forEach((f) => f()); });
+window.addEventListener("storage", (e) => { if (e.key === OC_LS) setTimeout(ocPurgeNoContact, 0); });
+function ocTierLabel(t) { return t === "b247" ? "24/7" : "Priority " + t.slice(1); }
+function njOcFmtAt(ms) { const d = new Date(ms); return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 // delivery verification (screens/oncall-delivery.jsx) reads the same groups/channels — never fork them
-Object.assign(window, { oncallStore, OC_CHANNELS, ocRoster, ocMember });
+Object.assign(window, { OC_PRIOS, OC_CONTACTS, ocContactMeta, ocContactOfId, ocUserContact, ocSite, ocRosterAll, njPerms, usePerms, njCan, ocCanPause, oncallStore, useOncall, OC_CHANNELS, ocRoster, ocMember, njOcShiftsOn, ocRequired, ocCanEdit, ocLockReason, ocEscIds, ocTierLabel, njOcFmtAt, ocSchedLines, ocAreaSummary, ocPrio, ocPrioColor });
 
 // severity dot color
 function ocPrioColor(id) { const s = (window.SEV && window.SEV[id]) || {}; return s.dot || s.color || "var(--slate-400)"; }
 
-// ── member chip ──
-function OcMemberChip({ m, onRemove }) {
-  return (
-    <span className="oc-chip">
-      <Icon name={m.kind === "phone" ? "smartphone" : "user"} size={14} color="var(--slate-400)" />
-      <span className="oc-chip-name">{m.name}</span>
-      <button className="oc-chip-x" title="Remove" onClick={onRemove}><Icon name="x" size={14} /></button>
-      {/* a name alone cannot say whether this person is reachable tonight — the legacy sites
-          print the shift beside every assignment for exactly this reason. It comes AFTER the
-          remove button in source so the full-width second line is the badge, not the button. */}
-      {window.ShiftBadge && <window.ShiftBadge id={m.id} />}
-    </span>
-  );
-}
-
-// ── add-member popover ──
-function OcAddMenu({ used, onPick, onClose }) {
-  const [q, setQ] = React.useState("");
-  const [up, setUp] = React.useState(false);
-  const ref = React.useRef(null);
-  // flip above the Assign button when the column sits low in the viewport, so the list is
-  // never half off-screen (the group card no longer clips it, so it can genuinely hang out)
-  React.useLayoutEffect(() => {
-    const r = ref.current && ref.current.getBoundingClientRect();
-    if (r) setUp(r.top + 300 > window.innerHeight && r.top > 320);
-  }, []);
-  React.useEffect(() => {
-    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("mousedown", onDoc); document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
-  }, []);
-  const ql = q.trim().toLowerCase();
-  const avail = ocRoster().filter((m) => !used.includes(m.id) && (!ql || m.name.toLowerCase().includes(ql)));
-  const phones = avail.filter((m) => m.kind === "phone");
-  const people = avail.filter((m) => m.kind === "person");
-  return (
-    <div className={"oc-menu" + (up ? " up" : "")} ref={ref}>
-      <div className="oc-menu-search"><Icon name="search" size={16} color="var(--slate-400)" /><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search recipients…" />
-        {q && <button className="ocr-search-x" title="Clear" aria-label="Clear search" onClick={() => setQ("")}><Icon name="x" size={14} /></button>}</div>
-      <div className="oc-menu-list">
-        {phones.length > 0 && <div className="oc-menu-grp">Duty phones</div>}
-        {phones.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="smartphone" size={14} color="var(--slate-400)" /> <span className="oc-menu-name">{m.name}</span></button>)}
-        {people.length > 0 && <div className="oc-menu-grp">People</div>}
-        {people.map((m) => <button key={m.id} className="oc-menu-item" onClick={() => onPick(m.id)}><Icon name="user" size={14} color="var(--slate-400)" /> <span className="oc-menu-name">{m.name}</span> <span className="oc-menu-role">{m.role}</span></button>)}
-        {!avail.length && <NjInline>Everyone is already assigned.</NjInline>}
-      </div>
-    </div>
-  );
-}
-
-// ── escalation tier column ──
+// ── escalation tier column ── chips, level dropdown and Add are the draft list (oncall-draft.jsx)
 function OcTier({ group, tier, n }) {
-  const [open, setOpen] = React.useState(false);
-  const ids = group.tiers[tier] || [];
-  const need = (group.minUsers && group.minUsers[tier]) || 0;
-  const short = ids.length < need;
-  const chans = ocChan(group, tier);
-  const chanOk = ocTierOk(group, tier);
+  const req = ocRequired(group, tier);
+  const editable = ocCanEdit(tier);
   return (
     <div className="oncall-col">
       <div className="oc-tier-h">
         <span className="oc-tier-n">{n}</span>
         <span className="oncall-col-h">Priority {n}</span>
-        {need > 0 && <span className={"oc-tier-min" + (short ? " short" : "")}>min {need}</span>}
+        {!editable && <span className="oc-tier-sup" title="Only a Supervisor can change Priority 3"><Icon name="lock" size={12} /></span>}
+        {req && <span className="oc-tier-req" title="Required: Save is refused while this level is empty">Required</span>}
       </div>
-      <div className={"oc-chans" + (chanOk ? "" : " bad")} title={tier === "p1" ? "NS 9416: critical alarms must go out on two independent paths (GSM and UHF)" : "Channels used at this escalation step"}>
-        {chans.length
-          ? chans.map((c) => { const m = OC_CHANNELS.find((x) => x.id === c); return m ? <span key={c} className="oc-chan"><Icon name={m.icon} size={12} /> {m.label}</span> : null; })
-          : <span className="oc-tier-empty">No channel</span>}
-        {!chanOk && <span className="oc-chan-warn" title="Single path · NS 9416 requires two independent remote-alarm systems"><Icon name="alert-triangle" size={12} /> one path</span>}
-        {(() => {
-          /* the tier declares channels, the account declares what it can receive — both existed,
-             nothing compared them, so a UHF-only tier could hold people with no radio. It belongs
-             on the CHANNEL line, right-aligned: it is a statement about those channels. */
-          const bad = window.njUnreachable ? window.njUnreachable(group, tier) : [];
-          return bad.length ? <span className="oc-unreach" title={bad.map((id) => ocMember(id).name).join(", ") + ". No contact detail matching this tier's channels."}><Icon name="alert-triangle" size={11} /> {bad.length} unreachable</span> : null;
-        })()}
-      </div>
-      <div className="oc-tier-body">
-        {ids.map((id) => <OcMemberChip key={id} m={ocMember(id)} onRemove={() => oncallStore.removeMember(group.id, tier, id)} />)}
-        {!ids.length && <span className="oc-tier-empty">No one assigned</span>}
-      </div>
-      <div className="oc-add-wrap">
-        <button className="member-add" onClick={() => setOpen((o) => !o)}><Icon name="plus" size={14} /> Assign</button>
-        {open && <OcAddMenu used={ids} onPick={(mid) => { oncallStore.addMember(group.id, tier, mid); setOpen(false); }} onClose={() => setOpen(false)} />}
-      </div>
+      {window.OcLevelList && <window.OcLevelList g={group} tier={tier} />}
     </div>
   );
 }
@@ -544,7 +687,7 @@ function OcGroupCard({ g, flash }) {
   return (
     <div className={"oncall-group" + (g.enabled ? "" : " oc-off") + (flash ? " oc-flash" : "")} data-oc-id={g.id}>
       <div className="oncall-head">
-        <button className={"oc-switch" + (g.enabled ? " on" : "")} role="switch" aria-checked={g.enabled} title={g.enabled ? "On-call active" : "Paused"} onClick={() => oncallStore.toggle(g.id)}><span className="oc-switch-knob" /></button>
+        <button className={"oc-switch" + (g.enabled ? " on" : "")} role="switch" aria-checked={g.enabled} disabled={!ocCanPause()} title={!ocCanPause() ? "Pausing a group needs the Pause & Resume Groups permission" : g.enabled ? "On-call active" : "Paused"} onClick={() => { const gap = g.enabled && window.njOcGapDelta ? window.njOcGapDelta(oncallStore.groups.map((x) => (x.id === g.id ? Object.assign({}, x, { enabled: false }) : x))) : []; oncallStore.toggle(g.id); if (gap.length) njToast(g.name + " paused. All alarms now uncovered: " + window.njOcGapText(gap) + "."); }}><span className="oc-switch-knob" /></button>
         <div className="oc-head-main">
           <span className="name">{g.name}</span>
           <span className="caption">{g.desc}</span>
@@ -556,7 +699,7 @@ function OcGroupCard({ g, flash }) {
           <button className="icon-btn" title="Send a test alarm to this group and see who receives it" onClick={() => window.njOpenTestDispatch && window.njOpenTestDispatch(g.id)}><Icon name="send" size={16} /></button>
           <button className="icon-btn" title="Edit group" onClick={() => openOnCallEditor(g)}><Icon name="pencil" size={16} /></button>
           <button className="icon-btn" title="Duplicate" onClick={() => oncallStore.duplicate(g.id)}><Icon name="copy" size={16} /></button>
-          <button className="icon-btn" title="Delete" onClick={() => openDialog(<ConfirmDialog title="Delete on-call group" message={"Delete “" + g.name + "”?"} detail="Assigned recipients will no longer be paged for this coverage." confirmLabel="Delete" tone="danger" onConfirm={() => { oncallStore.remove(g.id); njToast(g.name + " deleted."); }} />)}><Icon name="trash-2" size={16} /></button>
+          <button className="icon-btn" title="Delete" onClick={() => openDialog(<ConfirmDialog title="Delete on-call group" message={"Delete “" + g.name + "”?"} detail={(() => { const gap = window.njOcGapDelta ? window.njOcGapDelta(oncallStore.groups.filter((x) => x.id !== g.id)) : []; return gap.length ? "All alarms will be uncovered " + window.njOcGapText(gap) + ". The Coverage panel will flag it until another group holds those hours." : "Assigned recipients will no longer be paged for this coverage."; })()} confirmLabel="Delete" tone="danger" onConfirm={() => { oncallStore.remove(g.id); njToast(g.name + " deleted."); }} />)}><Icon name="trash-2" size={16} /></button>
         </div>
       </div>
       <div className="oncall-cols">
@@ -564,32 +707,38 @@ function OcGroupCard({ g, flash }) {
         <OcTier group={g} tier="p2" n={2} />
         <OcTier group={g} tier="p3" n={3} />
       </div>
+      <OcBackstop g={g} />
       {!g.enabled && <div className="oc-paused-bar"><Icon name="pause" size={12} /> Paused, no notifications sent for this group</div>}
     </div>
   );
 }
 
+// ── around the clock ── the duty list's "Alle alarmer 24/7" column, read as a backstop on each
+// group: reached for this group's alarms at every hour, whatever its paging window. It is not
+// an escalation level, so it does not count toward the round-the-clock Priority 1 check.
+function OcBackstop({ g }) {
+  const req = ocRequired(g, "b247");
+  return (
+    <div className="oc-backstop">
+      <span className="oc-backstop-l" title="Receives this group's alarms at every hour, whatever the paging window"><Icon name="clock-4" size={12} /> 24/7{req && <span className="oc-tier-req">Required</span>}</span>
+      {window.OcLevelList && <window.OcLevelList g={g} tier="b247" row />}
+    </div>
+  );
+}
+
 // ── group editor dialog ──
-function OnCallEditorDialog({ group }) {
-  const editing = !!group;
-  const [g, setG] = React.useState(() => group ? ocClone(ocNormalize(group)) : { id: "g" + Date.now(), name: "", desc: "", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "critical", areas: [], tiers: { p1: [], p2: [], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"] } });
+// the group's own settings (covers, area, window, required levels). Rendered by the group
+// drawer (screens/oncall-page.jsx) and by the dialog fallback below; it owns no Save.
+function OcGroupFields({ g, setG }) {
+  const setReq = (tier, v) => setG((s) => Object.assign({}, s, { required: Object.assign({}, s.required, { [tier]: v }) }));
+  const setSplit = (part, v) => setG((s) => Object.assign({}, s, { win: part === "wd" ? Object.assign({}, s.win, { mon: v, tue: v, wed: v, thu: v, fri: v }) : Object.assign({}, s.win, { sat: v, sun: v }) }));
+  const winBad = ocWinBad(g);
   const toggleArea = (id) => setG((s) => { const cur = s.areas || []; return Object.assign({}, s, { areas: cur.includes(id) ? cur.filter((x) => x !== id) : cur.concat([id]) }); });
   const set = (patch) => setG((s) => Object.assign({}, s, patch));
   const setWin = (day, val) => setG((s) => Object.assign({}, s, { win: Object.assign({}, s.win, { [day]: val }) }));
-  const pickPreset = (id) => { const p = ocWinPreset(id); set({ winPreset: id, shift: undefined, win: id === "custom" ? (g.win || ocWin("00:00-24:00")) : p.win() }); };
-  const setMin = (tier, v) => setG((s) => Object.assign({}, s, { minUsers: Object.assign({}, s.minUsers, { [tier]: Math.max(tier === "p1" ? 1 : 0, v) }) }));
-  const toggleChan = (tier, id) => setG((s) => {
-    const cur = (s.chan && s.chan[tier]) || [];
-    const next = cur.includes(id) ? cur.filter((x) => x !== id) : cur.concat([id]);
-    return Object.assign({}, s, { chan: Object.assign({}, s.chan, { [tier]: next }) });
-  });
-  const chanOk = ocTierOk(g, "p1");
-  const canSave = g.name.trim().length > 0 && chanOk;
-  const save = () => { if (!canSave) return; oncallStore.upsert(g); closeDialog(); njToast((editing ? "Updated " : "Created ") + g.name + "."); };
+  const pickPreset = (id) => { const p = ocWinPreset(id); set({ winPreset: id, shift: undefined, win: id === "custom" ? (g.win || ocWin("00:00-24:00")) : id === "split" ? ocWin((g.win && g.win.mon) || "07:00-15:00", (g.win && g.win.sat) || "") : p.win() }); };
   return (
-    <Dialog width={640}>
-      <DlgHeader icon={editing ? "pencil" : "plus"} name={editing ? "Edit on-call group" : "New on-call group"} onClose={closeDialog} />
-      <div className="dlg-body oc-editor">
+      <div className="oc-editor">
         <div className="oc-ed-row">
           <label className="oc-field oc-grow"><span className="oc-field-l">Name</span>
             <input className="oos-input" autoFocus value={g.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. Night shift" /></label>
@@ -617,13 +766,23 @@ function OnCallEditorDialog({ group }) {
           </div>
         </div>
 
+        {window.OcAlarmsSection && <window.OcAlarmsSection g={g} setG={setG} />}
+
         <div className="oc-ed-sec">
           <span className="oc-field-l">Paging window</span>
-          <p className="oc-mininfo">When an alarm reaches this group. This is the <b>group's</b> window: assigning someone to a tier below makes them reachable in it, it does not set their working hours.</p>
+          <p className="oc-mininfo">When an alarm reaches this group. This is the <b>group's</b> window: assigning someone to it on Paging groups makes them reachable in it, it does not set their working hours.</p>
           <div className="oc-shift-row">
             {OC_WIN_PRESETS.map((s) => <button key={s.id} type="button" className={"oc-shift" + (ocPresetOf(g) === s.id ? " sel" : "")} onClick={() => pickPreset(s.id)}>{s.label}</button>)}
           </div>
-          {ocPresetOf(g) === "custom"
+          {ocPresetOf(g) === "split" && (
+            <div className="oc-split">
+              <label className="oc-field"><span className="oc-min-l">Monday–Friday</span><input className="oos-input oc-day-in" value={g.win.mon} onChange={(e) => setSplit("wd", e.target.value)} placeholder="not paged" /></label>
+              <label className="oc-field"><span className="oc-min-l">Saturday–Sunday</span><input className="oos-input oc-day-in" value={g.win.sat} onChange={(e) => setSplit("we", e.target.value)} placeholder="not paged" /></label>
+              <p className="oc-days-hint">Format <code>HH:MM-HH:MM</code>. An end earlier than the start runs past midnight into the next day. Leave blank where the group is not paged.</p>
+            </div>
+          )}
+          {winBad.length > 0 && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> Not a valid window on {winBad.map((d) => OC_DAY_LABEL[d].slice(0, 3)).join(", ")}. Use HH:MM-HH:MM.</p>}
+          {ocPresetOf(g) === "split" ? null : ocPresetOf(g) === "custom"
             ? <div className="oc-days">{OC_DAYS.map((d) => (
                 <div className="oc-day" key={d}><span className="oc-day-l">{OC_DAY_LABEL[d]}</span>
                   <input className="oos-input oc-day-in" value={g.win[d]} onChange={(e) => setWin(d, e.target.value)} placeholder="off" /></div>
@@ -632,54 +791,44 @@ function OnCallEditorDialog({ group }) {
         </div>
 
         <div className="oc-ed-sec">
-          <span className="oc-field-l">Minimum recipients</span>
-          <p className="oc-mininfo">Warn if an escalation tier has fewer recipients than required. Priority 1 always needs at least one.</p>
+          <span className="oc-field-l">Required levels</span>
+          <p className="oc-mininfo">A <b>required</b> level can never be saved empty. Leave a level off when this site does not use it.</p>
           <div className="oc-min-row">
-            {["p1", "p2", "p3"].map((t, i) => (
+            {["p1", "p2", "p3", "b247"].map((t) => (
               <div className="oc-min" key={t}>
-                <span className="oc-min-l">Priority {i + 1}</span>
-                <Stepper value={g.minUsers[t]} step={1} min={t === "p1" ? 1 : 0} max={9} onChange={(v) => setMin(t, v)} />
+                <label className="oc-leg" {...njCheckable(() => setReq(t, !ocRequired(g, t)), { on: ocRequired(g, t), label: ocTierLabel(t) + " required" })}><Check on={ocRequired(g, t)} /> {ocTierLabel(t)}</label>
               </div>
             ))}
           </div>
         </div>
-        <div className="oc-ed-sec">
-          <span className="oc-field-l">Notification channels</span>
-          <p className="oc-mininfo">NS 9416 requires <b>two independent remote-alarm systems</b> where the facility is not staffed around the clock. SMS and voice both ride the GSM dispatcher, so they count as one path; pair either with UHF.</p>
-          <div className="oc-chan-grid">
-            {["p1", "p2", "p3"].map((t, i) => {
-              const list = ocChan(g, t);
-              const paths = ocPaths(list).size;
-              return (
-                <div className="oc-chan-row" key={t}>
-                  <span className="oc-min-l">Priority {i + 1}</span>
-                  <div className="oc-chan-btns">
-                    {OC_CHANNELS.map((c) => (
-                      <button key={c.id} type="button" className={"oc-chan-btn" + (list.includes(c.id) ? " on" : "")}
-                        aria-pressed={list.includes(c.id)} onClick={() => toggleChan(t, c.id)}>
-                        <Icon name={c.icon} size={14} /> {c.label}
-                      </button>
-                    ))}
-                  </div>
-                  <span className={"oc-chan-paths" + (t === "p1" && paths < 2 ? " bad" : "")}>{paths} path{paths === 1 ? "" : "s"}</span>
-                </div>
-              );
-            })}
-          </div>
-          {!chanOk && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--critical-text)" /> Priority 1 carries the critical alarms and needs two independent paths. Add UHF, or a GSM channel alongside it, before saving.</p>}
-        </div>
+        <p className="oc-sched-note"><Icon name="message-square" size={14} color="var(--slate-400)" /> Each recipient is paged on their own contact (SMS, voice call or email, set on the user). UHF is one sender for the whole site, under More · On-call settings.</p>
       </div>
-      <div className="dlg-foot dlg-foot-split">
-        <span className="dlg-foot-meta"><Icon name="users" size={14} /> Assign recipients on the group card after saving</span>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-          <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Create"}</button>
-        </div>
+  );
+}
+// a blank group: Priority 1 required, whole facility, around the clock
+function ocNewGroup() { return { id: "g" + Date.now(), name: "", desc: "", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "critical", areas: [], tiers: { p1: [], p2: [], p3: [], b247: [] }, required: { p1: true }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: {} }; }
+// what saving this group does to all-alarms cover — shown, never blocked (Coverage flags it after)
+function ocGapFor(g, editing) { if (ocWinBad(g).length || !window.njOcGapDelta) return []; return window.njOcGapDelta(editing ? oncallStore.groups.map((x) => (x.id === g.id ? g : x)) : oncallStore.groups.concat([g])); }
+function OcGapNote({ gap }) { return gap.length ? <p className="oc-gap-note"><Icon name="alert-triangle" size={14} /> <span>Saving leaves all alarms uncovered <b className="data">{window.njOcGapText(gap)}</b>. The Coverage panel will flag it until another group holds those hours.</span></p> : null; }
+// fallback only: pages that load the group drawer (screens/oncall-page.jsx) open that instead
+function OnCallEditorDialog({ group }) {
+  const editing = !!group;
+  const [g, setG] = React.useState(() => group ? ocClone(ocNormalize(group)) : ocNewGroup());
+  const canSave = g.name.trim().length > 0 && !ocWinBad(g).length;
+  const save = () => { if (!canSave) return; oncallStore.upsert(g); closeDialog(); njToast((editing ? "Updated " : "Created ") + g.name + "."); };
+  return (
+    <Dialog width={640}>
+      <DlgHeader icon={editing ? "pencil" : "plus"} name={editing ? "Edit on-call group" : "New on-call group"} onClose={closeDialog} />
+      <div className="dlg-body"><OcGroupFields g={g} setG={setG} /><OcGapNote gap={ocGapFor(g, editing)} />{!editing && <p className="oc-sched-note"><Icon name="users" size={14} color="var(--slate-400)" /> Recipients are added on the duty list after the group is created.</p>}</div>
+      <div className="dlg-foot">
+        <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
+        <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="check" size={16} /> {editing ? "Save changes" : "Create group"}</button>
       </div>
     </Dialog>
   );
 }
-function openOnCallEditor(group) { openDialog(<OnCallEditorDialog group={group} />); }
+function openOnCallEditor(group) { if (group && window.openOcGroup) { window.openOcGroup(group); return; } openDialog(<OnCallEditorDialog group={group} />); }
+Object.assign(window, { OcGroupFields, ocNewGroup, ocGapFor, OcGapNote, ocNormalize, ocClone, openOnCallEditor });
 
 // ── alarm dispatch (GSM modem) status ──
 function ocModemSeries(dayOffset) {
@@ -741,6 +890,12 @@ function ModemStatusDialog() {
   );
 }
 function openModemStatus() { openDialog(<ModemStatusDialog />); }
+// njOcReveal is exported DIRECTLY, not as `njOcReveal: (sel) => njOcReveal(sel)`. The bundle is
+// a plain concatenation of classic scripts, so `function njOcReveal` IS window.njOcReveal —
+// the lazy-arrow alias overwrote that binding with itself and every call recursed until the
+// stack blew, blanking the page from the Coverage card. The declaration below is hoisted, so
+// naming it here needs no indirection.
+Object.assign(window, { openModemStatus, ocModemSeries, njOcReveal });
 
 // Scroll the content container by computed offset — scrollIntoView is banned in this app
 // because it can move the whole shell.
@@ -774,129 +929,7 @@ function njOcReveal(sel) {
   return () => { cancelAnimationFrame(raf); clearTimeout(t1); clearTimeout(t2); };
 }
 
-function OnCallTab() {
-  const store = useOncall();
-  const groups = store.groups;
-  const policy = store.policy;
-  const allOff = groups.every((g) => !g.enabled);
-  // Three views over ONE model, not three models: Groups is the admin act (who is paged, in
-  // what order, on which channel), Duty roster is the shift act (who is reachable tonight),
-  // By person answers "what am I on call for". The legacy sites split the first two across a
-  // wizard; here they are peers, because neither is a step of the other.
-  const [view, setView] = React.useState("groups");
-  const [flash, setFlash] = React.useState(null);
-  const [reveal, setReveal] = React.useState(null);
-  // runs AFTER the new view has committed; njOcReveal then owns the waiting and the retrying
-  React.useLayoutEffect(() => {
-    if (!reveal) return;
-    return njOcReveal(reveal.sel);
-  }, [view, reveal]);
-  // Coverage findings are clickable and must be able to move this tab. One handler owns the
-  // routing so a finding never has to know how the views are switched.
-  React.useEffect(() => {
-    window.njOcGo = (go) => {
-      if (!go) return;
-      if (go.person) { window.njOcPersonQ = go.person; setView("person"); window.dispatchEvent(new CustomEvent("nj-oc-personq")); setReveal({ sel: ".ocr-person-card", n: Date.now() }); return; }
-      if (go.roster) { setView("roster"); setReveal({ sel: ".ocr-board", n: Date.now() }); return; }
-      // NOT the editor dialog: recipients are assigned on the group CARD, and the editor has
-      // no member controls at all, so a "no one third in line" finding opened a dialog that
-      // could not fix it. Take them to the card, scroll it into view, and leave it marked
-      // until the next click — a 2.2 s highlight expires before anyone can reach it.
-      if (go.g) { setView("groups"); setFlash(go.gs ? go.gs.map((x) => x.id) : [go.g.id]); setReveal({ sel: '[data-oc-id="' + go.g.id + '"]', n: Date.now() }); }
-    };
-    return () => { delete window.njOcGo; };
-  }, []);
-  // the mark stays until the next click — a 2.2 s highlight expired before the smooth scroll
-  // had even arrived at the card
-  React.useEffect(() => {
-    if (!flash) return;
-    const clear = () => setFlash(null);
-    const t = setTimeout(() => document.addEventListener("click", clear, { once: true }), 600);
-    return () => { clearTimeout(t); document.removeEventListener("click", clear); };
-  }, [flash]);
-  const VIEWS = [{ id: "groups", label: "Groups" }, { id: "roster", label: "Duty roster" }, { id: "person", label: "By person" }];
-  return (
-    <div className="oc-stack">
-      <div className="oc-toolbar">
-        <div className="oc-policy">
-          <div className="segmented oc-viewseg">
-            {VIEWS.map((v) => <button key={v.id} className={"seg" + (view === v.id ? " active" : "")} onClick={() => setView(v.id)}>{v.label}</button>)}
-          </div>
-          <button className="oc-policy-item" onClick={() => njEditParam({ tag: "OC-RESEND", label: "Resend every", value: policy.resendMin, unit: "min", min: 1, max: 60, step: 1, group: "On-call", onApply: (v) => oncallStore.setPolicy({ resendMin: v }) })}>
-            <Icon name="repeat" size={16} color="var(--slate-500)" />
-            <span className="oc-policy-l">Resend every</span>
-            <span className="oc-policy-v data">{policy.resendMin} <span className="u">min</span></span>
-          </button>
-          <button className="oc-policy-item" onClick={() => njEditParam({ tag: "OC-UPSCALE", label: "Upscale priority after", value: policy.upscaleAfter, unit: "tries", min: 1, max: 10, step: 1, group: "On-call", onApply: (v) => oncallStore.setPolicy({ upscaleAfter: v }) })}>
-            <Icon name="chevrons-up" size={16} color="var(--slate-500)" />
-            <span className="oc-policy-l">Upscale after</span>
-            <span className="oc-policy-v data">{policy.upscaleAfter} <span className="u">tries</span></span>
-          </button>
-        </div>
-        <div className="oc-toolbar-r">
-          <button className="modem-pill oc-modem-btn" onClick={openModemStatus} title="Alarm dispatch (GSM modem) status">
-            <span className="statusdot" style={{ background: "var(--success)" }} /> Dispatch online
-            <Icon name="chevron-right" size={14} color="var(--success-text)" />
-          </button>
-          {/* the change log is an incident-review surface: reachable in one click, competing
-              with nothing. It borrows the top bar's search-trigger shape so it reads as a
-              utility affordance rather than another action in the button row. */}
-          <button className="tb-search oc-logbtn" title="On-call change log" aria-label="On-call change log" onClick={() => window.openOcLog && window.openOcLog()}>
-            <Icon name="history" size={16} color="var(--slate-500)" />
-          </button>
-          {/* Pausing every group is the largest destructive action on this screen and was the
-              only one with no gate — while acknowledging ONE alarm offers Undo. Restore is not
-              "enable all": it puts back exactly what was on before. */}
-          <button className="btn btn-secondary" onClick={() => {
-            if (allOff) { const r = oncallStore.pausedByAll(); oncallStore.restoreAll(); njToast(r ? "On-call restored to how it was." : "All on-call groups enabled."); return; }
-            openDialog(<ConfirmDialog title="Pause all on-call groups" danger icon="bell-off"
-              message={"Pause all " + groups.length + " on-call groups?"}
-              detail="No alarm will leave the facility to anyone, on any channel, whatever the duty roster says. Groups that are already paused stay paused when you restore."
-              confirmLabel="Pause all" onConfirm={() => { oncallStore.pauseAll(); njToast("All on-call groups paused. No alarm leaves the facility."); }} />);
-          }}><Icon name={allOff ? "bell-ring" : "bell-off"} size={16} /> {allOff ? (oncallStore.pausedByAll() ? "Restore" : "Enable all") : "Disable all"}</button>
-          {view === "roster"
-            ? <button className="btn btn-primary" onClick={() => window.openShiftEditor(null)}><Icon name="calendar-plus" size={16} /> New shift</button>
-            : <button className="btn btn-primary" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={16} /> New group</button>}
-        </div>
-      </div>
-
-      {window.OcCoverageCard && <window.OcCoverageCard />}
-
-      {view === "roster" && (
-        <React.Fragment>
-          <div className="card">
-            <div className="oncall-legend">
-              <span className="oncall-legend-l">Who is on duty</span>
-              <span className="oncall-legend-cols">A shift makes a recipient reachable inside its hours · an alarm lands when the group's paging window and the recipient's shift both allow it</span>
-            </div>
-            <div className="card-body">{window.OcRosterBoard && <window.OcRosterBoard />}</div>
-          </div>
-          {window.OcShiftList && <window.OcShiftList />}
-        </React.Fragment>
-      )}
-
-      {view === "person" && window.OcPersonView && <window.OcPersonView />}
-
-      {view === "groups" && (
-      <div className="card">
-        <div className="oncall-legend">
-          <span className="oncall-legend-l">Alarm Group</span>
-          <span className="oncall-legend-cols">Escalation: Priority 1 → 2 → 3 (paged in order until acknowledged) · two independent paths on Priority 1</span>
-        </div>
-        <div className="card-body oc-groups">
-          {groups.length
-            ? groups.map((g) => <OcGroupCard key={g.id} g={g} flash={!!flash && flash.indexOf(g.id) >= 0} />)
-            : <NjEmpty size="card" icon="phone-off" title="No on-call groups yet"
-                body="A group defines who is alerted, in what order, and on which channel when an alarm escalates."
-                action={<button className="btn btn-primary btn-sm" onClick={() => openOnCallEditor(null)}><Icon name="plus" size={14} /> New group</button>} />}
-        </div>
-      </div>
-      )}
-
-      {window.DeliveryVerificationCard && <window.DeliveryVerificationCard />}
-    </div>
-  );
-}
+// OnCallTab moved to screens/oncall-page.jsx (simplified On-call page).
 
 // ---- General + Project ----
 
@@ -1094,7 +1127,7 @@ function SettingsScreen() {
       </div>
       {tab === "Users" && <UsersTab />}
       {tab === "Roles" && <RolesTab />}
-      {tab === "On-call" && <OnCallTab />}
+      {tab === "On-call" && window.OnCallTab && <window.OnCallTab />}
       {tab === "General" && <GeneralTab />}
     </AppShell>
   );
