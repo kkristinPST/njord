@@ -98,10 +98,13 @@ const ctxStore = {
   subscribe(f) { ctxStore.subs.add(f); return () => ctxStore.subs.delete(f); },
   snapshot() { return ctxStore.state; },
 };
+const NJ_NO_DEPT = { id: "", name: "No departments", sub: "", systems: [], none: true };
+const NJ_NO_BUILDING = { id: "", name: "No buildings", depts: [], none: true };
 function useCtx() {
   const s = React.useSyncExternalStore(ctxStore.subscribe, ctxStore.snapshot);
-  const building = FACILITY.find((b) => b.id === s.b) || FACILITY[0];
-  const dept = building.depts.find((d) => d.id === s.d) || building.depts[0];
+  // NJ_NO_BUILDING / NJ_NO_DEPT: a site with no buildings yet (empty-site demo, fresh install)
+  const building = FACILITY.find((b) => b.id === s.b) || FACILITY[0] || NJ_NO_BUILDING;
+  const dept = building.depts.find((d) => d.id === s.d) || building.depts[0] || NJ_NO_DEPT;
   return { building, dept };
 }
 function setCtx(b, d) { ctxStore.set({ b, d }); }
@@ -476,7 +479,7 @@ function Sidebar({ active }) {
           const badge = n.id === "alarms" ? (ac.unack || null) : n.badge;
           return (
             <button key={n.id} className={"sb-item" + (isActive ? " active" : "")} title={collapsed ? n.label : undefined}
-              onClick={() => { if (n.id === "navigation" && window.__njGoPlan) { window.__njGoPlan(); } else if (window.__njNavigate) { window.__njNavigate(n.id); } }}>
+              onClick={() => { if (n.id === "navigation" && window.__njGoPlan) { window.__njGoPlan(); } else if (n.id === window.__njRoute && window.__njResetRoute) { window.__njResetRoute(); } else if (window.__njNavigate) { window.__njNavigate(n.id); } }}>
               <span className="sb-item-l">
                 <Icon name={n.icon} size={20} />
                 {!collapsed && <span className="sb-label">{n.label}</span>}
@@ -622,7 +625,7 @@ function AlarmAnnunciator() {
     return (
       <div className="annun annun-clear" role="status" aria-live="polite">
         <Icon name="check-circle-2" size={16} color="var(--success)" />
-        <span className="annun-clear-t">All active alarms acknowledged</span>
+        <span className="annun-clear-t">{hub.rows.some((a) => a.supp === "none" && a.state === "ack") ? "All active alarms acknowledged" : "No active alarms"}</span>
       </div>
     );
   }
@@ -693,8 +696,19 @@ function AppShell({ active, title, crumbs, statusLevel, children, collapsed, sco
    usePaged(rows) owns page + rows-per-page and clamps the page when the
    filtered set shrinks. <NjPager> renders the control; <RowsSelect> the
    rows-per-page picker; <PageFoot> the honest "Showing x–y of n" count. */
-function usePaged(rows, initialPer) {
-  const [per, setPer] = React.useState(initialPer || 25);
+// opt.key persists the choice; per may be "fit" (rows that fit the screen, opt.fit from useFitRows)
+function usePaged(rows, initialPer, opt) {
+  const o = opt || {};
+  const [per, setPerRaw] = React.useState(() => {
+    if (o.key) { try { const v = localStorage.getItem(o.key); if (v === "fit") return "fit"; const n = parseInt(v, 10); if (n > 0) return n; } catch (e) {} }
+    return initialPer || 25;
+  });
+  const setPer = (v) => { setPerRaw(v); if (o.key) { try { localStorage.setItem(o.key, String(v)); } catch (e) {} } };
+  const eff = per === "fit" ? Math.max(1, o.fit || 15) : per;
+  return usePagedEff(rows, eff, per, setPer);
+}
+function usePagedEff(rows, eff, perSel, setPer) {
+  const per = eff;
   const [page, setPage] = React.useState(1);
   const total = rows.length;
   const totalPages = Math.max(1, Math.ceil(total / per));
@@ -702,7 +716,60 @@ function usePaged(rows, initialPer) {
   const p = Math.min(page, totalPages);
   const from = total === 0 ? 0 : (p - 1) * per + 1;
   const to = Math.min(total, p * per);
-  return { rows: rows.slice((p - 1) * per, p * per), page: p, setPage, per, setPer, total, totalPages, from, to };
+  return { rows: rows.slice((p - 1) * per, p * per), page: p, setPage, per, perSel, setPer, total, totalPages, from, to };
+}
+
+/* Fit to screen: how many rows fit between the table's top and the bottom of the window, with
+   the header and the pager foot on screen. The table then needs no vertical scroll, so its
+   header and its horizontal scrollbar are always visible together while scanning a row. */
+// the element the PAGE scrolls in (.content in the app shell, below the top bar and the alarm
+// banner). Overflow alone decides it, not current scrollHeight, so a short page still finds it.
+function njScrollParent(el) {
+  for (let p = el && el.parentElement; p && p !== document.body; p = p.parentElement) { const oy = getComputedStyle(p).overflowY; if (oy === "auto" || oy === "scroll") return p; }
+  return null;
+}
+// visible band of the page scroller in window coordinates: [top, height]
+function njViewBand(sp) {
+  if (sp) { const r = sp.getBoundingClientRect(); return { top: r.top, h: sp.clientHeight }; }
+  return { top: 0, h: window.innerHeight };
+}
+function useFitRows(ref, enabled, deps) {
+  const [n, setN] = React.useState(15);
+  React.useLayoutEffect(() => {
+    const FOOT = 64, GAP = 16;
+    const calc = () => {
+      const el = ref.current; if (!el || !el.offsetParent) return;
+      const sp = njScrollParent(el), band = njViewBand(sp);
+      // scrolled 20/50/100 pages: the box + its pager must fit inside the page scroller, or its
+      // sticky header leaves the scroller's top edge (under the banner) once the page scrolls
+      el.style.setProperty("--nj-fit-h", Math.max(240, band.h - FOOT - GAP) + "px");
+      if (!el.__njWheel) {
+        // scrolling the rows while the box's top is above the scroller's top: bring it into view first
+        el.__njWheel = (e) => {
+          if (Math.abs(e.deltaY) < Math.abs(e.deltaX) || el.scrollHeight <= el.clientHeight) return;
+          const s2 = njScrollParent(el), b2 = njViewBand(s2), top = el.getBoundingClientRect().top;
+          if (top >= b2.top - 1) return;
+          if (s2) s2.scrollTop += top - b2.top - 8; else window.scrollBy(0, top - 8);
+        };
+        el.addEventListener("wheel", el.__njWheel, { passive: true });
+      }
+      if (!enabled) return;
+      const t = el.querySelector("table"); if (!t) return;
+      const th = t.tHead ? t.tHead.offsetHeight : 40;
+      const body = t.tBodies[0];
+      const rh = body && body.rows.length ? Math.max(28, Math.round(body.offsetHeight / body.rows.length)) : 44;
+      // the table's top measured inside the scroller's content, as if scrolled to the top
+      const topIn = el.getBoundingClientRect().top - band.top + (sp ? sp.scrollTop : window.scrollY);
+      const SB = el.scrollWidth > el.clientWidth ? 16 : 0;
+      const k = Math.max(5, Math.floor((band.h - topIn - th - SB - FOOT) / rh));
+      setN((prev) => (prev === k ? prev : k));
+    };
+    calc();
+    const t1 = setTimeout(calc, 120);
+    window.addEventListener("resize", calc);
+    return () => { clearTimeout(t1); window.removeEventListener("resize", calc); };
+  }, [enabled].concat(deps || []));
+  return n;
 }
 
 function NjPager({ page, totalPages, onGo }) {
@@ -724,21 +791,22 @@ function NjPager({ page, totalPages, onGo }) {
   );
 }
 
+const NJ_FIT_ROWS = ["fit", 20, 50, 100];
 function RowsSelect({ per, onPick, options }) {
   const opts = options || [25, 50, 100, 200];
   return (
     <span className="rows-select">Show
-      <select className="select rows-select-input" value={per} onChange={(e) => onPick(Number(e.target.value))} aria-label="Rows per page">
-        {opts.map((n) => <option key={n} value={n}>{n} rows</option>)}
+      <select className="nj-select rows-select-input" value={per} onChange={(e) => onPick(e.target.value === "fit" ? "fit" : Number(e.target.value))} aria-label="Rows per page">
+        {opts.map((n) => <option key={n} value={n}>{n === "fit" ? "Fit to screen" : n + " rows"}</option>)}
       </select>
     </span>
   );
 }
 
-function PageFoot({ pg, noun, extra }) {
+function PageFoot({ pg, noun, extra, options }) {
   return (
     <div className="tbl-foot">
-      <RowsSelect per={pg.per} onPick={(n) => { pg.setPer(n); pg.setPage(1); }} />
+      <RowsSelect per={pg.perSel != null ? pg.perSel : pg.per} options={options} onPick={(n) => { pg.setPer(n); pg.setPage(1); }} />
       <span className="small">
         {pg.total === 0 ? "No " + noun : "Showing " + pg.from + "–" + pg.to + " of " + pg.total.toLocaleString("nb-NO") + " " + noun}
         {extra ? " · " + extra : ""}
@@ -760,4 +828,4 @@ function njActivate(fn) {
   };
 }
 
-Object.assign(window, { njFlag, NJ_FLAG_DEFAULTS, njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, NjPager, RowsSelect, PageFoot });
+Object.assign(window, { njFlag, NJ_FLAG_DEFAULTS, njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, useFitRows, NJ_FIT_ROWS, NjPager, RowsSelect, PageFoot });

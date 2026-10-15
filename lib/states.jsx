@@ -145,4 +145,22 @@ function useNjLoading(deps, ms = NJ_FAKE_LATENCY) {
   return loading;
 }
 
+// ── no site yet (fresh install / Settings · Empty site demo) ──
+// A screen that only shows facility data has nothing to show without buildings: it renders ONE
+// page-level empty state instead of its cards, so no fixture number or stale log survives.
+// Call as the FIRST line of the screen (before hooks): the facility does not change in a session.
+function njNoSite() { return !(window.FACILITY && window.FACILITY.length); }
+const NJ_NO_SITE_BODY = "Buildings, departments and systems appear here once the site is commissioned.";
+function NjNoSitePage({ active, title, icon, what, body, crumbs, head }) {
+  return (
+    <AppShell active={active} title={title} crumbs={crumbs} statusLevel="ok" scope="facility">
+      {head && <div className="pagehead"><div className="pagehead-row"><div></div><div className="pagehead-right">{head}</div></div></div>}
+      <div className="card nj-nosite">
+        <NjEmpty icon={icon} title={what} body={body || NJ_NO_SITE_BODY} />
+      </div>
+    </AppShell>
+  );
+}
+
+Object.assign(window, { njNoSite, NjNoSitePage });
 Object.assign(window, { NjEmpty, NjEmptyRow, NjInline, NjSpinner, NjSkeleton, NjProgress, njChunkRun, useNjLoading, NJ_EMPTY_PRESET });

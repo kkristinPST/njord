@@ -725,6 +725,7 @@
 .oc-shift:hover { border-color: var(--primary); }
 .oc-shift.sel { background: var(--ink); color: #fff; border-color: var(--ink); }
 .oc-sched-note { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-family: var(--font-mono); font-size: 14px; color: var(--slate-600); background: var(--slate-50); border-radius: var(--r-md); padding: 10px 12px; }
+.oos-input.oc-hhmm{width:88px;align-self:flex-start}.oc-esc-row .oc-days-hint{margin:0;align-self:flex-end;padding-bottom:8px}.oc-sched-note.txt{display:flex;font-family:var(--font-sans);font-size:12px;line-height:16px}.oc-editor+.oc-gap-note,.oc-editor+.oc-sched-note,.oc-gap-note+.oc-sched-note{margin-top:16px}
 .oc-days { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
 .oc-day { display: flex; align-items: center; gap: 10px; }
 .oc-day-l { font-size: 14px; color: var(--slate-600); min-width: 78px; }
@@ -3144,14 +3145,22 @@ select.select { padding-right: 28px; }
 .mb-est-missed{color:var(--warning-text)}
 .mb-groups{margin-left:auto;display:flex;gap:6px}
 .mb-gchip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px;border:1px solid var(--slate-300);border-radius:999px;background:var(--surface);font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer}
+.mb-gchip{white-space:nowrap;flex:none}
 .mb-gchip:hover{background:var(--slate-100)}
 .mb-gchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 /* the full legacy sheet is wider than any screen: scroll it, but freeze the date */
 .tbl.mb-log th.cm-th-d,.tbl.mb-log td.cm-td-d{position:sticky;left:0;z-index:2;background:var(--surface);box-shadow:1px 0 0 var(--slate-100)}
 .tbl.mb-log thead th.cm-th-d{z-index:4;background:var(--surface-2)}
 .tbl.mb-log tbody tr:hover td.cm-td-d{background:var(--slate-50)}
-.cm-tblwrap{overflow-x:auto;overflow-y:visible}
-/* commissioning: same read-only plant-tag treatment as the maturation sheet */
+/* Fill-the-viewport sheets: the table scrolls INSIDE its card, so the header row and the
+   horizontal scrollbar are both on screen at once. Viewport minus top bar + card chrome, with a floor. */
+/* paged sheets: "Fit to screen" (default) needs no vertical scroll; 20/50/100 scroll inside with the
+   header pinned, so header and horizontal scrollbar stay on screen together either way */
+.cm-tblwrap,.ratn-scroll,.mvr-scroll{overflow:auto;max-height:var(--nj-fit-h,max(240px,calc(100vh - 300px)));overscroll-behavior-y:contain}
+.tbl.cm-log thead{position:sticky;top:0;z-index:5}
+.tbl.cm-log thead th{background:var(--surface-2)}
+.tbl.mvr-tbl thead th{position:sticky;top:0;z-index:2;background:var(--surface-2)}
+/* trial period: same read-only plant-tag treatment as the maturation sheet */
 .tbl.cm-log th.cm-th-d,.tbl.cm-log td.cm-td-d{position:sticky;left:0;z-index:2;background:var(--surface);box-shadow:1px 0 0 var(--slate-100)}
 /* the frozen DATE cell must take the HEADER fill in the header row, or it reads as a white square */
 .tbl.cm-log thead th.cm-th-d{z-index:4;background:var(--surface-2)}
@@ -3167,14 +3176,19 @@ select.select { padding-right: 28px; }
 .cm-tagpick-l{font-size:14px;color:var(--fg)}
 .cm-tagpick-t{margin-left:auto;font-size:12px;color:var(--slate-400)}
 /* period + row controls */
-.cm-stat-act{margin-left:6px;border:none;background:none;padding:0;font:inherit;font-weight:600;color:var(--primary-text);cursor:pointer}
-.cm-stat-act:hover{text-decoration:underline}
 .cm-chipdiv{width:1px;align-self:stretch;margin:0 2px;background:var(--slate-200)}
 /* calculated columns: read-only like a plant tag, but derived here */
 .tbl.cm-log td.cm-td-calc{color:var(--fg);font-weight:600}
 .cm-fx{color:var(--slate-500)}
 /* in-module plot */
 .cm-chartcard{padding:0;margin-bottom:16px;overflow:hidden}
+/* chart view sits INSIDE the toolbar card: plots are flat sections divided by hairlines, never
+   cards in a card (double border + a 16px well around each one) */
+.cm-chartview{padding:0}
+.cm-chartsec{border-bottom:1px solid var(--slate-200);padding-bottom:8px}
+.cm-chartsec + .cm-chartsec{padding-top:8px}
+.cm-chartsec:last-child{border-bottom:0}
+.cm-chartview .cm-morecharts{margin:0;border-top:0}
 .cm-chart-head{display:flex;align-items:flex-start;gap:20px;padding:16px 20px 12px;flex-wrap:wrap}
 /* which series the maturation plot shows — chips, in the CHART's head */
 .mb-chartpick{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -3230,7 +3244,43 @@ select.select { padding-right: 28px; }
 .cm-lg-sw{width:8px;height:8px;border-radius:999px;flex:none}
 .cm-chart{padding:0 8px 4px}
 .cm-chart-empty{margin:0;padding:48px 12px;text-align:center;font-size:14px;color:var(--slate-500)}
-.cm-chart-foot{margin:0;padding:0 20px 14px;font-size:12px;color:var(--slate-500)}
+.cm-chart-foot{margin:0;padding:0 20px 14px;font-size:12px;color:var(--slate-500);display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px}
+.cm-key{display:inline-flex;align-items:center;gap:6px;color:var(--slate-600)}
+.cm-lg-sw.sensor{width:12px;height:3px;border-radius:2px}
+.cmc-man{stroke-dasharray:2 4;stroke-width:1.25}
+.nj-select.cm-ptsel{height:28px;padding-top:0;padding-bottom:0;line-height:26px;font-size:12px;min-width:170px}
+
+.cm-dpick{position:relative}
+.cm-dpick-btn{min-width:220px;text-align:left;cursor:pointer}
+.cm-dpick-pop{position:absolute;top:calc(100% + 4px);left:0;z-index:60;min-width:300px;max-height:380px;overflow-y:auto;padding:10px;background:var(--surface);border:1px solid var(--slate-200);border-radius:var(--r-md);box-shadow:0 8px 24px rgba(15,24,43,.14);display:flex;flex-direction:column;gap:10px}
+.cm-th-b,.cm-th-dept{text-align:left}
+.cm-td-b{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);white-space:nowrap}
+.cm-td-dept{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+.cm-via-s{color:var(--slate-500)}
+.tbl td.cm-td-auto.cm-oor,.tbl td.cm-td-v.cm-oor{color:var(--critical-text);font-weight:700}
+.cm-td-sensor{background:var(--slate-50)}
+.cm-inp-ro{height:34px;display:flex;align-items:center;justify-content:flex-end;padding:0 12px;border:1px solid var(--slate-200);border-radius:var(--r-sm);background:var(--slate-50);color:var(--slate-600);font-size:14px}
+.cm-addpt{align-self:end;height:34px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px dashed var(--slate-300);border-radius:var(--r-sm);background:none;color:var(--slate-600);font-size:12px;font-weight:600;cursor:pointer}
+.cm-addpt:hover{background:var(--slate-50);color:var(--fg)}
+.cm-addf{margin-top:12px;padding-top:12px;border-top:1px solid var(--slate-100);display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px}
+.cm-addf .de-field{min-width:160px}
+.cm-addf-act{margin-left:auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.cm-addparam{border-style:dashed;display:flex;flex-direction:column;gap:12px}
+.cm-addparam .cm-reg-h{margin-bottom:0}
+.cm-addp-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 140px;gap:12px;align-items:end}
+.cm-addp-grid .de-field-l{white-space:nowrap}
+.cm-addp-grid .nj-select,.cm-addp-grid .de-input,.cm-addf .nj-select,.cm-addf .de-input{height:38px;box-sizing:border-box}
+.cm-addp-grid .de-viewseg,.cm-addf .de-viewseg{height:38px;box-sizing:border-box;align-items:stretch;display:flex;width:100%;min-width:132px}
+.cm-addp-grid .de-viewseg .de-viewbtn,.cm-addf .de-viewseg .de-viewbtn{flex:1;justify-content:center}
+.cm-addparam-btn{align-self:flex-start}
+.cm-addp-foot{display:flex;align-items:center;gap:16px;padding-top:12px;border-top:1px solid var(--slate-100)}
+.cm-addp-foot>span{flex:1;min-width:0;text-wrap:pretty}
+.cm-addp-btns{display:flex;gap:8px;flex:none;margin-left:auto}
+.cm-tok-new{align-items:center;gap:6px;border-style:dashed;color:var(--slate-600)}
+.cm-newpt{display:inline-flex;align-items:center;gap:6px}
+.cm-newpt .de-input{height:30px;width:180px}
+.cm-newtag{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--primary-text);background:var(--primary-bg);border-radius:var(--r-sm);padding:2px 6px}
+.cm-addrow-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 .cmc-band{fill:var(--slate-100)}
 .cmc-grid{stroke:var(--slate-200);stroke-width:1}
 .cmc-lbl{font-family:var(--font-mono);font-size:10px;fill:var(--slate-500)}
@@ -3255,7 +3305,8 @@ select.select { padding-right: 28px; }
 .cm-calc-status{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 0;font-size:12px}
 .cm-calc-err{display:inline-flex;align-items:center;gap:6px;color:var(--critical-text)}
 .cm-calc-ok{display:inline-flex;align-items:center;gap:6px;color:var(--success-text)}
-.cm-calc-fns{margin-left:auto}
+.cm-calc-ok .data{color:var(--fg);font-weight:600}
+.cm-calc-fns{margin-left:auto;color:var(--slate-500)}
 .cm-calc-sect{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0 8px}
 .cm-calc-search{margin-left:auto;max-width:260px}
 .cm-calc-tokens{display:flex;flex-direction:column;gap:12px;max-height:230px;overflow-y:auto}
@@ -3406,6 +3457,16 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .oc-switch:disabled{opacity:.45;cursor:not-allowed}
 /* alarm performance targets in Settings */
 .at-ctrl { display: inline-flex; align-items: center; gap: 10px; }
+/* whole-row setting that opens the Apply dialog (changes restart the app) */
+.set-row-btn{width:100%;background:none;border:none;border-bottom:1px solid var(--slate-100);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.set-row-btn:last-child{border-bottom:none}
+.set-row-btn:hover{background:var(--slate-50)}
+.set-row-btn:disabled{cursor:not-allowed;background:none}
+.set-row-btn:disabled .set-row-val{color:var(--slate-500)}
+.set-restart{position:fixed;inset:0;z-index:3500;display:flex;align-items:center;justify-content:center;gap:12px;background:var(--bg);color:var(--fg);font-size:14px;font-weight:600}
+.set-row-btn:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+.set-row-val{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:14px;color:var(--fg)}
+.set-row-val .u{color:var(--slate-500);font-size:12px}
 .at-val { font-size: 14px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); color: var(--fg); cursor: pointer; }
 .at-val:hover { border-color: var(--primary); }
 .at-val.unset { color: var(--slate-400); border-style: dashed; }
@@ -3784,6 +3845,7 @@ button.ratn-kpi.on { background: var(--warning-bg); }
 .dl-row-idle>td{background:var(--slate-50)}
 .dl-row-miss>td{opacity:.35}
 .dl-row-flash>td{background:var(--primary-bg)}
+.ocr-g-cyc{display:block;font:500 10px/14px var(--font-sans);letter-spacing:0;text-transform:none;color:var(--slate-500)}.ocr-g-cell{transition:background-color .4s ease}.ocr-g-cell.flash{background:var(--primary-bg)}.ocr-person{transition:background-color .4s ease,border-color .4s ease}.ocr-person.flash{background:var(--primary-bg)}
 .oc-pc.find-hit{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary)}
 .modem-pill.warn{background:var(--warning-bg);color:var(--warning-text)}
 .ocd-scrim{z-index:2840}

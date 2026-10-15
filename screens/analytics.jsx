@@ -216,7 +216,7 @@ function PenDetailsDialog({ penId }) {
         </div>
       </div>
       <div className="dlg-foot">
-        <button className="btn btn-primary" onClick={closeDialog}><Icon name="check" size={16} /> Done</button>
+        <button className="btn btn-secondary" onClick={closeDialog}>Close</button>
       </div>
     </Dialog>
   );
@@ -427,7 +427,7 @@ function TrendRangeBar() {
 }
 
 function AnalyticsTabs({ active, onChange }) {
-  const tabs = ["Trends", "Data Entry", "Commissioning", "Biofilter Maturation"];
+  const tabs = ["Trends", "Data Entry", "Trial Period", "Biofilter Maturation"];
   return (
     <div className="segmented">
       {tabs.map((t) => <button key={t} className={"seg" + (t === active ? " active" : "")} onClick={() => onChange(t)}>{t}</button>)}
@@ -636,7 +636,7 @@ function TrendsWorkspace({ tab, onTab }) {
 function AnalyticsScreen() {
   const [tab, setTab] = React.useState("Trends");
   if (tab === "Data Entry" && window.DataEntryScreen) return <window.DataEntryScreen tab={tab} onTab={setTab} />;
-  if (tab === "Commissioning" && window.CommissioningScreen) return <window.CommissioningScreen tab={tab} onTab={setTab} />;
+  if (tab === "Trial Period" && window.CommissioningScreen) return <window.CommissioningScreen tab={tab} onTab={setTab} />;
   if (tab === "Biofilter Maturation" && window.MbbrStartupScreen) return <window.MbbrStartupScreen tab={tab} onTab={setTab} />;
   return <TrendsWorkspace tab={tab} onTab={setTab} />;
 }
