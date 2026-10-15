@@ -4,8 +4,7 @@
 // It is a VIEW over oncallStore, never a second model. It is the ONLY place names are edited
 // (the Groups cards are gone): the group name opens the group drawer (oncall-page.jsx) for
 // covers, area, window, pause, test, duplicate, delete. Rules carried from the customer's sheet:
-//  · required levels never stand empty — the last name has a lock, not a remove
-//  · Priority 3 is changed by a Supervisor only
+//  · each level has a minimum number of recipients; Save refuses fewer
 //  · a person sits on one escalation level per group (the picker leaves the others out)
 //  · every add and every remove asks WHEN in the same popover: Now, or from a date and time
 //    (the Monday swap). There is no separate plan mode — one spot, one decision per change.
@@ -131,7 +130,7 @@ function OclCell({ g, tier }) {
   return (
     <td className={"dl-td" + (req && empty ? " dl-td-req" : "")}>
       <div className="dl-cell">
-        {req && !empty && <span className="dl-req-tag" title="Save is refused while this level is empty">Required</span>}
+        {req && !empty && <span className="dl-req-tag" title={"Save is refused with fewer than " + ocMinRec(g, tier) + " here"}>Min {ocMinRec(g, tier)}</span>}
         {window.OcLevelList && <window.OcLevelList g={g} tier={tier} dense />}
       </div>
     </td>
@@ -169,7 +168,7 @@ function OcDutyList({ find = "", flash, page }) {
           <tr>
             <th>DUTY</th><th>ALARM GROUP</th><th>PAGING WINDOW</th>
             <th title="Paged first. Unacknowledged alarms escalate to Priority 2, then 3">PRIORITY 1</th><th title="Paged when Priority 1 has not acknowledged">PRIORITY 2</th>
-            <th title="Only a Supervisor can change Priority 3"><span className="dl-th-i">PRIORITY 3 <Icon name="lock" size={12} /></span></th>
+            <th title="Paged when Priority 2 has not acknowledged">PRIORITY 3</th>
             <th title="Reached for this group's alarms at every hour, whatever the paging window">24/7</th>
           </tr>
         </thead>
@@ -228,7 +227,7 @@ function OclToolbar({ className, noStatus, popout }) {
   const [pendEl, setPendEl] = React.useState(null);
   if (window.useOcDraft) window.useOcDraft();
   const view = window.ocView ? window.ocView() : store.groups;
-  const rule = window.ocSite ? window.ocSite().rule247 : true;
+  const rule = true; // the site switch was removed; the check always runs
   const aa = window.njAllAlarmsCover ? window.njAllAlarmsCover(view) : { groups: [], gaps: [] };
   const aaOk = aa.groups.length && !aa.gaps.length;
   const nPend = store.pending.length;

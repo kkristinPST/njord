@@ -80,10 +80,9 @@ function shDayName(key) { const d = shDayFrom(key); return SH_DAYS[(d.getDay() +
 function shDayLabel(key) { const d = shDayFrom(key); return SH_DAY_L[shDayName(key)] + " " + d.getDate(); }
 function shDayLong(key) { return shDayFrom(key).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }); }
 function shMonday(key) { const d = shDayFrom(key); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return shDayKey(d); }
-function shWeekL(w) { return "ABCD"[w] || String(w + 1); }
-// the week's display name: the site's own name if set ("Team Nord"), else "Week A"
-function shWeekName(w) { const nm = shiftStore.data.rot && shiftStore.data.rot.names && shiftStore.data.rot.names[w]; return (nm && nm.trim()) || "Week " + shWeekL(w); }
 function shAddDays(key, n) { const d = shDayFrom(key); d.setDate(d.getDate() + n); return shDayKey(d); }
+function shDiffDays(a, b) { return Math.round((shDayFrom(b) - shDayFrom(a)) / 864e5); }
+function shRange(a, b) { return a === b ? "Day " + (a + 1) : "Days " + (a + 1) + "–" + (b + 1); }
 
 function shClone(x) { return JSON.parse(JSON.stringify(x)); }
 const shTo = (t) => (t === "24:00" ? "00:00" : t);                // 24:00 is shown as 00:00
@@ -98,8 +97,17 @@ function shMigrate(r) {
   const conv = (tp) => { const out = {}; Object.keys(tp || {}).forEach((m) => { const v = tp[m]; if (!v) return; if (typeof v === "object") { out[m] = v; return; } const s = old[v]; const c = {}; SH_DAYS.forEach((d) => { c[d] = s && ((s.win || {})[d] || []).length ? v : null; }); out[m] = c; }); return out; };
   return Object.assign({}, r, { v: 2, shifts: shifts, roster: conv(r.roster), weeks: (r.weeks || []).map(conv) });
 }
+// v3 (user): rotation is a CYCLE OF DAYS (any length, any start date), not 1–4 Monday weeks.
+// rot = { days, start }, cells in cyc[member][dayIndex]. An old n-week rotation becomes an
+// n×7-day cycle from its Monday, Week B's Monday = Day 8, and so on.
+function shToCycle(r) {
+  if (!r.rot || r.rot.days || !(r.rot.n > 1)) return r;
+  const cyc = {}; const tpls = [r.roster || {}].concat(r.weeks || []);
+  tpls.slice(0, r.rot.n).forEach((tp, w) => Object.keys(tp || {}).forEach((m) => SH_DAYS.forEach((d, i) => { const v = (tp[m] || {})[d]; if (v) (cyc[m] = cyc[m] || {})[w * 7 + i] = v; })));
+  return Object.assign({}, r, { rot: { days: r.rot.n * 7, start: r.rot.start }, cyc: cyc, weeks: [] });
+}
 function shLoad() {
-  const r = njOcPersist.read(SH_LS, null); if (r && Array.isArray(r.shifts)) return shMigrate(r);
+  const r = njOcPersist.read(SH_LS, null); if (r && Array.isArray(r.shifts)) return shToCycle(shMigrate(r));
   return shClone(SH_SEED);
 }
 const SH_FOLLOW = { id: "sh_follow", name: "Follows group", desc: "Reachable for the whole of the group's paging window", builtin: true, win: shWin(["00:00-24:00"], ["00:00-24:00"]) };
@@ -111,45 +119,58 @@ const shiftStore = {
   get roster() { return this.data.roster; },
   get plan() { return this.data.plan || (this.data.plan = {}); },
   byId(id) { return id ? this.shifts.find((s) => s.id === id) || null : null; },
-  // ── rotation ── 1–4 template weeks (Week A = roster, B… = weeks) taking turns from a Monday
-  get rotN() { return (this.data.rot && this.data.rot.n) || 1; },
-  get rotStart() { return (this.data.rot && this.data.rot.start) || shMonday(shToday()); },
-  weekOf(day) { const n = this.rotN; if (n <= 1 || !day) return 0; const w = Math.floor((shDayFrom(shMonday(day)) - shDayFrom(this.rotStart)) / (7 * 864e5) + 0.5); return ((w % n) + n) % n; },
-  tpl(w) { return !w ? this.data.roster : ((this.data.weeks || [])[w - 1] || {}); },
-  setRotation(n, start, names) {
-    const weeks = (this.data.weeks || []).slice(0, Math.max(0, n - 1));
-    while (weeks.length < n - 1) weeks.push(shClone(weeks[weeks.length - 1] || this.data.roster)); // a new week starts as a copy
-    this.data.weeks = weeks;
-    this.data.rot = { n: n, start: shMonday(start || this.rotStart), names: (names || (this.data.rot && this.data.rot.names) || []).slice(0, n) };
-    njOcLog.add(n > 1 ? "Rotation set to " + n + " weeks" : "Rotation turned off", n > 1 ? shWeekName(0) + " from " + shDayLong(this.data.rot.start) + " · shift change on Monday" : "One usual week");
+  // ── rotation ── off: one usual week keyed by weekday. On: a cycle of N days from a start date;
+  // template columns are Day 1…N, a date reads the cycle day it falls on.
+  get cycN() { const n = this.data.rot && this.data.rot.days; return n >= 2 ? n : 0; },
+  get rotStart() { return (this.data.rot && this.data.rot.start) || shToday(); },
+  cycDay(day) { const n = this.cycN; if (!n || !day) return 0; const k = shDiffDays(this.rotStart, day); return ((k % n) + n) % n; },
+  colOf(day) { return this.cycN ? String(this.cycDay(day)) : shDayName(day); },
+  colLabel(c) { return this.cycN ? "Day " + (+c + 1) : SH_DAY_L[c]; },
+  get blocks() { return this.cycN ? Math.ceil(this.cycN / 7) : 1; },
+  cols(b) { const n = this.cycN; if (!n) return SH_DAYS.slice(); const out = []; for (let i = b * 7; i < Math.min(n, b * 7 + 7); i++) out.push(String(i)); return out; },
+  blockLabel(b) { const n = this.cycN; return !n ? "Usual week" : n <= 7 ? shRange(0, n - 1) : shRange(b * 7, Math.min(n, b * 7 + 7) - 1); },
+  setRotation(days, start) {
+    const n0 = this.cycN, n = days >= 2 ? Math.round(days) : 0;
+    if (n) {
+      const old = this.data.cyc || {}, cyc = {};
+      const st = start || this.rotStart;
+      ocRosterIds(this).forEach((m) => { const o = {}; for (let i = 0; i < n; i++) { const v = n0 ? (old[m] || {})[i < n0 ? i : i % n0] : ((this.data.roster[m] || {})[shDayName(shAddDays(st, i))]); if (v) o[i] = v; } if (Object.keys(o).length) cyc[m] = o; });
+      this.data.cyc = cyc; this.data.rot = { days: n, start: st };
+      njOcLog.add("Rotation set to " + n + " days", "Day 1 on " + shDayLong(st) + ", repeating with no end date");
+    } else {
+      if (n0) { const cyc = this.data.cyc || {}, ro = {}; Object.keys(cyc).forEach((m) => { const o = {}; for (let i = 0; i < 7; i++) { const day = shAddDays(this.rotStart, i); const v = cyc[m][i % n0]; if (v) o[shDayName(day)] = v; } if (Object.keys(o).length) ro[m] = o; }); this.data.roster = ro; }
+      this.data.rot = null; this.data.cyc = {};
+      njOcLog.add("Rotation turned off", "One usual week");
+    }
     this.emit();
   },
-  nextStartOf(w) { const m = shMonday(shToday()); for (let i = 0; i < this.rotN; i++) { const k = shAddDays(m, i * 7); if (this.weekOf(k) === w) return k; } return m; },
-  // ── cells ── template cell: week w, member, weekday. Dated cell: the template cell for the
-  // week that date falls in, unless the date has its own change (null = off that day).
-  cellTpl(w, m, d) { return ((this.tpl(w) || {})[m] || {})[d] || null; },
+  // ── cells ── template cell: column c (weekday, or cycle-day index). Dated cell: the template cell
+  // for the column that date falls on, unless the date has its own change (null = off that day).
+  cellTpl(c, m) { return this.cycN ? (((this.data.cyc || {})[m] || {})[c] || null) : ((this.data.roster[m] || {})[c] || null); },
+  baseOn(day, m) { return this.cellTpl(this.colOf(day), m); },
   hasChange(day, m) { return !!this.plan[day] && Object.prototype.hasOwnProperty.call(this.plan[day], m); },
-  cellOn(day, m) { return this.hasChange(day, m) ? this.plan[day][m] : this.cellTpl(this.weekOf(day), m, shDayName(day)); },
-  setCell(w, m, d, sid) {
-    const tp = shClone(this.tpl(w)); tp[m] = Object.assign({}, tp[m] || {}, { [d]: sid || null });
-    if (!SH_DAYS.some((x) => tp[m][x])) delete tp[m];
-    if (!w) this.data.roster = tp; else { const ws = (this.data.weeks || []).slice(); ws[w - 1] = tp; this.data.weeks = ws; }
-    njOcLog.add(this._nm(m) + " · " + SH_DAY_L[d] + " → " + (this.byId(sid) ? this.byId(sid).name : "Off"), "Shifts · " + (this.rotN > 1 ? shWeekName(w) : "usual week"));
+  cellOn(day, m) { return this.hasChange(day, m) ? this.plan[day][m] : this.baseOn(day, m); },
+  setCell(c, m, sid) {
+    const key = this.cycN ? "cyc" : "roster"; const tp = shClone(this.data[key] || {});
+    tp[m] = Object.assign({}, tp[m] || {}, { [c]: sid || null });
+    if (!Object.keys(tp[m]).some((x) => tp[m][x])) delete tp[m];
+    this.data[key] = tp;
+    njOcLog.add(this._nm(m) + " · " + this.colLabel(c) + " → " + (this.byId(sid) ? this.byId(sid).name : "Off"), "Shifts · " + (this.cycN ? this.cycN + "-day cycle" : "usual week"));
     this.emit();
   },
   setDate(day, m, sid) {
     const p = Object.assign({}, this.plan); const d = Object.assign({}, p[day] || {});
-    if ((this.cellTpl(this.weekOf(day), m, shDayName(day)) || null) === (sid || null)) delete d[m]; else d[m] = sid || null;
+    if ((this.baseOn(day, m) || null) === (sid || null)) delete d[m]; else d[m] = sid || null;
     if (Object.keys(d).length) p[day] = d; else delete p[day];
     this.data.plan = p;
     njOcLog.add(this._nm(m) + " → " + (this.byId(sid) ? this.byId(sid).name : "Off"), "Shifts · " + shDayLong(day));
     this.emit();
   },
-  resetOne(day, m) { const p = Object.assign({}, this.plan); const d = Object.assign({}, p[day] || {}); delete d[m]; if (Object.keys(d).length) p[day] = d; else delete p[day]; this.data.plan = p; njOcLog.add(this._nm(m) + " back to " + (this.rotN > 1 ? shWeekName(this.weekOf(day)) : "the usual week"), "Shifts · " + shDayLong(day)); this.emit(); },
+  resetOne(day, m) { const p = Object.assign({}, this.plan); const d = Object.assign({}, p[day] || {}); delete d[m]; if (Object.keys(d).length) p[day] = d; else delete p[day]; this.data.plan = p; njOcLog.add(this._nm(m) + " back to " + (this.cycN ? "Day " + (this.cycDay(day) + 1) : "the usual week"), "Shifts · " + shDayLong(day)); this.emit(); },
   _nm(m) { return window.ocMember ? window.ocMember(m).name : m; },
   // the member's week as one synthetic shift (the shape coverage reads): the week holding `day`
   weekWin(m, day) { const mon = shMonday(day); const w = {}; SH_DAYS.forEach((d, i) => { const s = this.byId(this.cellOn(shAddDays(mon, i), m)); w[d] = s ? [shIv(s.f, s.t)] : []; }); return w; },
-  tplWin(w, m) { const o = {}; SH_DAYS.forEach((d) => { const s = this.byId(this.cellTpl(w, m, d)); o[d] = s ? [shIv(s.f, s.t)] : []; }); return o; },
+  hoursOf(sids) { let mm = 0; sids.forEach((id) => { const s = this.byId(id); if (s) shSegs(shIv(s.f, s.t)).forEach((x) => { mm += x[1] - x[0]; }); }); return Math.round(mm / 60); },
   shiftOf(m, day) {
     // Personal shifts OFF: everyone follows the group's paging window
     if (window.njOcShiftsOn && !window.njOcShiftsOn()) return SH_FOLLOW;
@@ -159,32 +180,33 @@ const shiftStore = {
     const today = this.byId(this.cellOn(k, m));
     return { id: "m:" + m, name: today ? today.name : "Off today", win: win, today: today };
   },
-  members(sid, day) { const k = day === undefined ? shToday() : day; const ids = new Set(Object.keys(this.tpl(this.weekOf(k))).concat(Object.keys(this.plan[k] || {}))); return [...ids].filter((m) => this.cellOn(k, m) === sid); },
+  members(sid, day) { const k = day === undefined ? shToday() : day; const ids = new Set(ocRosterIds(this).concat(Object.keys(this.plan[k] || {}))); return [...ids].filter((m) => this.cellOn(k, m) === sid); },
   // kept for callers outside this file: a date → that date only; no date + no shift → off everywhere
   assign(m, sid, day) {
     if (day) return this.setDate(day, m, sid);
     if (sid) return;
     const strip = (tp) => { const o = Object.assign({}, tp); delete o[m]; return o; };
-    this.data.roster = strip(this.data.roster); this.data.weeks = (this.data.weeks || []).map(strip);
+    this.data.roster = strip(this.data.roster); this.data.cyc = strip(this.data.cyc || {});
     const p = {}; Object.keys(this.plan).forEach((d) => { const o = Object.assign({}, this.plan[d]); delete o[m]; if (Object.keys(o).length) p[d] = o; }); this.data.plan = p;
     this.emit();
   },
   overrides(day) { return Object.keys(this.plan[day] || {}).length; },
   prunePast() { const t = shToday(); const p = {}; let n = 0; Object.keys(this.plan).forEach((d) => { if (d >= t) p[d] = this.plan[d]; else n++; }); if (n) { this.data.plan = p; this.emit(); } },
-  clearDay(day) { const p = Object.assign({}, this.plan); delete p[day]; this.data.plan = p; njOcLog.add(this.rotN > 1 ? "Reset to " + shWeekName(this.weekOf(day)) : "Reset to the usual week", "Shifts · " + shDayLong(day)); this.emit(); },
+  clearDay(day) { const p = Object.assign({}, this.plan); delete p[day]; this.data.plan = p; njOcLog.add(this.cycN ? "Reset to Day " + (this.cycDay(day) + 1) : "Reset to the usual week", "Shifts · " + shDayLong(day)); this.emit(); },
   upsert(s) { const i = this.shifts.findIndex((x) => x.id === s.id); njOcLog.add((i >= 0 ? "Edited shift " : "Created shift ") + s.name, shTimeL(s)); this.data.shifts = i >= 0 ? this.shifts.map((x) => (x.id === s.id ? s : x)) : this.shifts.concat([s]); this.emit(); },
   // deleting a shift empties every cell that held it: those days become Off, visibly
   remove(id) {
     const sx = this.byId(id); njOcLog.add("Deleted shift " + (sx ? sx.name : id), "Days on it are now Off");
     this.data.shifts = this.shifts.filter((x) => x.id !== id);
-    const strip = (tp) => { const o = {}; Object.keys(tp || {}).forEach((m) => { const c = {}; SH_DAYS.forEach((d) => { c[d] = tp[m][d] === id ? null : tp[m][d] || null; }); if (SH_DAYS.some((d) => c[d])) o[m] = c; }); return o; };
-    this.data.roster = strip(this.data.roster); this.data.weeks = (this.data.weeks || []).map(strip);
+    const strip = (tp) => { const o = {}; Object.keys(tp || {}).forEach((m) => { const c = {}; Object.keys(tp[m]).forEach((d) => { if (tp[m][d] && tp[m][d] !== id) c[d] = tp[m][d]; }); if (Object.keys(c).length) o[m] = c; }); return o; };
+    this.data.roster = strip(this.data.roster); this.data.cyc = strip(this.data.cyc || {});
     const p = {}; Object.keys(this.plan).forEach((d) => { const o = {}; Object.keys(this.plan[d]).forEach((k) => { o[k] = this.plan[d][k] === id ? null : this.plan[d][k]; }); p[d] = o; }); this.data.plan = p;
     this.emit();
   },
   // how many cells (any week, any date) use a shift
-  uses(id) { let n = 0; [this.data.roster].concat(this.data.weeks || []).forEach((tp) => Object.keys(tp || {}).forEach((m) => SH_DAYS.forEach((d) => { if (tp[m][d] === id) n++; }))); return n; },
+  uses(id) { let n = 0; const tp = this.cycN ? this.data.cyc || {} : this.data.roster; Object.keys(tp).forEach((m) => Object.keys(tp[m]).forEach((d) => { if (tp[m][d] === id) n++; })); return n; },
 };
+function ocRosterIds(st) { return Object.keys(st.cycN ? st.data.cyc || {} : st.data.roster || {}); }
 function useShifts() { const [, force] = React.useReducer((x) => x + 1, 0); React.useEffect(() => shiftStore.sub(force), []); return shiftStore; }
 // keys are zero-padded, so a plain string compare is a date compare
 shiftStore.prunePast();
@@ -303,7 +325,7 @@ function shGroupGaps(g, day) {
 function shPlannedAhead() {
   const t = shToday();
   const groups = ((window.oncallStore && window.oncallStore.groups) || []).filter((g) => g.enabled);
-  const cyc = shiftStore.rotN > 1 ? Array.from({ length: shiftStore.rotN * 7 }, (x, i) => shAddDays(t, i + 1)) : [];
+  const cyc = shiftStore.cycN ? Array.from({ length: Math.min(shiftStore.cycN, 120) }, (x, i) => shAddDays(t, i + 1)) : [];
   const days = Array.from(new Set(Object.keys(shiftStore.plan).filter((d) => d > t).concat(cyc))).sort();
   const out = [];
   days.forEach((day) => {
@@ -381,7 +403,7 @@ function njOcAlsoOn(mid, g, tier) {
 function shCoverage(list) {
   const groups = (list || (window.oncallStore && window.oncallStore.groups) || []).filter((g) => g.enabled);
   const out = { noFirst: [], allOff: [], noThird: [], gaps: [], idle: [], unreachable: [], reqEmpty: [] };
-  groups.forEach((g) => ["p2", "p3", "b247"].forEach((t) => { if (window.ocRequired && window.ocRequired(g, t) && !((g.tiers && g.tiers[t]) || []).length) out.reqEmpty.push({ g: g, tier: t }); }));
+  groups.forEach((g) => ["p1", "p2", "p3"].forEach((t) => { const min = window.ocMinRec ? window.ocMinRec(g, t) : 0, n = ((g.tiers && g.tiers[t]) || []).length; if (n < min && !(t === "p1" && !n)) out.reqEmpty.push({ g: g, tier: t, n: n, min: min }); }));
   groups.forEach((g) => {
     const p1 = (g.tiers && g.tiers.p1) || [];
     if (!p1.length) { out.noFirst.push(g); return; }
@@ -435,19 +457,21 @@ function OcrPick({ used, onPick, onClose }) {
     </div>
   );
 }
-function OcrCards({ store, dated, days, wTpl, di, setDi, today, n }) {
+// cols: the columns on screen — weekdays (a dated week, or the usual week) or cycle-day indices
+function OcrCards({ store, dated, days, cols, di, setDi, today, fl, flCell, clearFl }) {
   const [open, setOpen] = React.useState(null);
-  const d = SH_DAYS[di], k = days[di];
+  const i0 = Math.min(di, cols.length - 1);
+  const c = cols[i0], k = days[i0];
   const past = dated && k < today;
-  const valOf = (m) => (dated ? store.cellOn(k, m) : store.cellTpl(wTpl, m, d));
-  const put = (m, sid) => (dated ? store.setDate(k, m, sid) : store.setCell(wTpl, m, d, sid));
+  const valOf = (m) => (dated ? store.cellOn(k, m) : store.cellTpl(c, m));
+  const put = (m, sid) => (dated ? store.setDate(k, m, sid) : store.setCell(c, m, sid));
   const people = ocRoster();
   const off = people.filter((m) => !valOf(m.id));
-  const asW = n > 1 ? shWeekName(wTpl) : "the usual week";
+  const asW = dated && store.cycN ? "Day " + (store.cycDay(k) + 1) : "the usual week";
   const chip = (m, sid) => {
     const chg = dated && store.hasChange(k, m.id);
     return (
-      <span key={m.id} className={"ocr-person" + (sid ? "" : " off") + (chg ? " chg" : "")}>
+      <span key={m.id} className={"ocr-person" + (sid ? "" : " off") + (chg ? " chg" : "") + (dated && flCell && flCell(m.id, c) ? " flash" : "")} onPointerDown={clearFl}>
         <Icon name={m.kind === "phone" ? "smartphone" : "user"} size={14} color="var(--slate-400)" />
         <span className="ocr-person-n">{m.name}</span>
         {chg && !past && <button className="oc-chip-x" title={"Changed for this date · put back as in " + asW} aria-label={"Reset " + m.name} onClick={() => store.resetOne(k, m.id)}><Icon name="rotate-ccw" size={13} /></button>}
@@ -458,10 +482,10 @@ function OcrCards({ store, dated, days, wTpl, di, setDi, today, n }) {
   return (
     <React.Fragment>
       <div className="ocr-days-row" role="tablist" aria-label="Day">
-        {SH_DAYS.map((x, i) => (
-          <button key={x} role="tab" aria-selected={di === i} disabled={dated && days[i] < today}
-            className={"ocr-daychip" + (di === i ? " on" : "") + (dated && days[i] === today ? " today" : "") + (dated && store.overrides(days[i]) ? " has" : "")}
-            onClick={() => setDi(i)}>{dated ? (days[i] === today ? "Today" : shDayLabel(days[i])) : SH_DAY_L[x]}</button>
+        {cols.map((x, i) => (
+          <button key={x} role="tab" aria-selected={i0 === i} disabled={dated && days[i] < today}
+            className={"ocr-daychip" + (i0 === i ? " on" : "") + (dated && days[i] === today ? " today" : "") + (dated && store.overrides(days[i]) ? " has" : "")}
+            onClick={() => setDi(i)}>{dated ? (days[i] === today ? "Today" : shDayLabel(days[i])) : store.colLabel(x)}</button>
         ))}
       </div>
       <div className="ocr-board">
@@ -495,28 +519,38 @@ function OcrCards({ store, dated, days, wTpl, di, setDi, today, n }) {
   );
 }
 
+// Coverage → Personal shifts hand-off: a short-lived marker, the same idea as the duty list's
+// row flash. Shown only after a Coverage click, gone after a few seconds or the first edit.
+function ocrTakeFlash() { const f = window.__ocrFlash; if (!f || Date.now() - f.at > 3000) return null; window.__ocrFlash = null; return f; }
 function OcRosterBoard({ layout }) {
   const store = useShifts();
-  const [di, setDi] = React.useState(() => SH_DAYS.indexOf(shDayName(shToday())));
+  const [fl, setFl] = React.useState(() => ocrTakeFlash());
+  const [di, setDi] = React.useState(() => { const d0 = fl && Object.keys(fl.days)[0]; return SH_DAYS.indexOf(d0 || shDayName(shToday())); });
   const today = shToday();
-  const n = store.rotN;
-  const [view, setView] = React.useState({ kind: "week", start: shMonday(today), w: 0 });
+  const n = store.cycN;
+  const [view, setView] = React.useState({ kind: "week", start: shMonday(today), b: 0 });
+  React.useEffect(() => {
+    const on = () => { const f = ocrTakeFlash(); if (!f) return; setFl(f); setView({ kind: "week", start: shMonday(shToday()), b: 0 }); const d0 = Object.keys(f.days)[0]; if (d0) setDi(SH_DAYS.indexOf(d0)); };
+    window.addEventListener("ocr-flash", on); return () => window.removeEventListener("ocr-flash", on);
+  }, []);
+  React.useEffect(() => { if (!fl) return; const t = setTimeout(() => setFl(null), 5000); return () => clearTimeout(t); }, [fl]);
+  const flCell = (mid, d) => !!(fl && fl.days[d] && fl.ids.indexOf(mid) >= 0);
   const dated = view.kind === "week";
-  const days = SH_DAYS.map((d, i) => (dated ? shAddDays(view.start, i) : null));
-  const wTpl = dated ? store.weekOf(view.start) : Math.min(view.w, n - 1);
+  const b = Math.min(view.b || 0, store.blocks - 1);
+  const cols = dated ? SH_DAYS : store.cols(b);
+  const days = cols.map((d, i) => (dated ? shAddDays(view.start, i) : null));
   const people = ocRoster();
-  const usual = n > 1 ? shWeekName(wTpl) : "the usual week";
   const thisWeek = shMonday(today);
-  const go = (k) => setView({ kind: "week", start: k, w: 0 });
+  const go = (k) => setView({ kind: "week", start: k, b: 0 });
   const fmt = (k) => shDayFrom(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const hrs = (win) => shHours({ win: win });
   const nChg = dated ? days.reduce((a, k) => a + store.overrides(k), 0) : 0;
+  const asLbl = (k) => (n ? "Day " + (store.cycDay(k) + 1) : "usual");
   return (
     <React.Fragment>
       <div className="ocr-strip">
-        {Array.from({ length: n }, (x, i) => (
-          <button key={i} className={"ocr-daychip" + (!dated && wTpl === i ? " on" : "")} onClick={() => setView({ kind: "tpl", w: i })}
-            title={n > 1 ? shWeekName(i) + " · next runs from " + shDayLong(store.nextStartOf(i)) : "The week that repeats until someone changes it"}>{n > 1 ? shWeekName(i) : "Usual week"}</button>
+        {Array.from({ length: store.blocks }, (x, i) => (
+          <button key={i} className={"ocr-daychip" + (!dated && b === i ? " on" : "")} onClick={() => setView({ kind: "tpl", b: i })}
+            title={n ? "The " + n + "-day cycle from " + shDayLong(store.rotStart) : "The week that repeats until someone changes it"}>{store.blockLabel(i)}</button>
         ))}
         <span className="ocr-strip-div" />
         <button className="icon-btn" title="Previous week" aria-label="Previous week" disabled={dated && view.start <= thisWeek} onClick={() => go(dated ? shAddDays(view.start, -7) : thisWeek)}><Icon name="chevron-left" size={16} /></button>
@@ -526,39 +560,39 @@ function OcRosterBoard({ layout }) {
       </div>
       <div className="ocr-strip-note">
         {dated
-          ? <span>{n > 1 ? <React.Fragment>This week follows <b>{shWeekName(wTpl)}</b>. </React.Fragment> : null}A change here applies to that date only{nChg ? <React.Fragment> · <b>{nChg} changed</b></React.Fragment> : null}. {layout === "cards" ? <React.Fragment>To undo one, use the <Icon name="rotate-ccw" size={12} /> on the name.</React.Fragment> : <React.Fragment>To undo one, pick <b>As {n > 1 ? shWeekName(wTpl) : "usual week"}</b> in the cell.</React.Fragment>}</span>
-          : <span>Editing <b>{n > 1 ? shWeekName(wTpl) : "the usual week"}</b>. It repeats {n > 1 ? "every " + n + " weeks, changing over on Monday" : "every week"} unless a date is changed.</span>}
+          ? <span>{n ? <React.Fragment>Each date follows its day in the <b>{n}-day cycle</b>. </React.Fragment> : null}A change here applies to that date only{nChg ? <React.Fragment> · <b>{nChg} changed</b></React.Fragment> : null}. {layout === "cards" ? <React.Fragment>To undo one, use the <Icon name="rotate-ccw" size={12} /> on the name.</React.Fragment> : <React.Fragment>To undo one, pick <b>As {n ? "its cycle day" : "usual"}</b> in the cell.</React.Fragment>}</span>
+          : <span>Editing {n ? <React.Fragment><b>{store.blockLabel(b)}</b> of the {n}-day cycle. Day 1 was {shDayLong(store.rotStart)}; it repeats with no end date</React.Fragment> : <React.Fragment><b>the usual week</b>. It repeats every week</React.Fragment>} unless a date is changed.</span>}
       </div>
-      {layout === "cards" ? <OcrCards store={store} dated={dated} days={days} wTpl={wTpl} di={di} setDi={setDi} today={today} n={n} /> : <React.Fragment>
+      {layout === "cards" ? <OcrCards store={store} dated={dated} days={days} cols={cols} di={di} setDi={setDi} today={today} fl={fl} flCell={flCell} clearFl={() => fl && setFl(null)} /> : <React.Fragment>
       <div className="tbl-scroll">
         <table className="tbl ocr-grid">
           <thead>
             <tr>
               <th className="ocr-g-name">RECIPIENT</th>
-              {SH_DAYS.map((d, i) => <th key={d} className={dated && days[i] === today ? "ocr-g-today" : ""}>{SH_DAY_L[d].toUpperCase()}{dated ? <span className="ocr-g-date">{shDayFrom(days[i]).getDate()}</span> : null}</th>)}
-              <th className="ocr-g-h">H / WK</th>
+              {cols.map((d, i) => <th key={d} className={dated && days[i] === today ? "ocr-g-today" : ""}>{dated ? SH_DAY_L[d].toUpperCase() : store.colLabel(d).toUpperCase()}{dated ? <span className="ocr-g-date">{shDayFrom(days[i]).getDate()}</span> : null}{dated && n ? <span className="ocr-g-cyc">Day {store.cycDay(days[i]) + 1}</span> : null}</th>)}
+              <th className="ocr-g-h">{dated || !n ? "H / WK" : "H"}</th>
             </tr>
           </thead>
           <tbody>
             {people.map((m) => {
-              const win = dated ? store.weekWin(m.id, view.start) : store.tplWin(wTpl, m.id);
+              const sids = cols.map((d, i) => (dated ? store.cellOn(days[i], m.id) : store.cellTpl(d, m.id)));
               return (
                 <tr key={m.id}>
                   <td className="ocr-g-name"><span className="ocr-g-who"><Icon name={m.kind === "phone" ? "smartphone" : "user"} size={14} color="var(--slate-400)" />{m.name}</span></td>
-                  {SH_DAYS.map((d, i) => {
+                  {cols.map((d, i) => {
                     const k = days[i];
-                    const base = store.cellTpl(wTpl, m.id, d);
+                    const base = dated ? store.baseOn(k, m.id) : store.cellTpl(d, m.id);
                     const chg = dated && store.hasChange(k, m.id);
-                    const sid = dated ? store.cellOn(k, m.id) : base;
+                    const sid = sids[i];
                     const past = dated && k < today;
                     const s = store.byId(sid);
                     const val = dated ? (chg ? sid || "off" : "") : sid || "off";
                     return (
-                      <td key={d} className={"ocr-g-cell" + (s ? " on" : "") + (chg ? " chg" : "")}>
-                        <select className="ocr-g-sel" value={val} disabled={past} aria-label={m.name + " · " + (dated ? shDayLong(k) : SH_DAY_L[d])}
+                      <td key={d} className={"ocr-g-cell" + (s ? " on" : "") + (chg ? " chg" : "") + (dated && flCell(m.id, d) ? " flash" : "")}>
+                        <select className="ocr-g-sel" value={val} disabled={past} aria-label={m.name + " · " + (dated ? shDayLong(k) : store.colLabel(d))} onFocus={() => fl && setFl(null)}
                           title={s ? s.name + " " + shTimeL(s) + (chg ? " · changed for this date" : "") : chg ? "Off · changed for this date" : "Off"}
-                          onChange={(e) => { const v = e.target.value; if (!dated) store.setCell(wTpl, m.id, d, v === "off" ? null : v); else if (v === "") store.resetOne(k, m.id); else store.setDate(k, m.id, v === "off" ? null : v); }}>
-                          {dated && <option value="">{"As " + (n > 1 ? shWeekName(wTpl) : "usual") + ": " + (store.byId(base) ? store.byId(base).name : "Off")}</option>}
+                          onChange={(e) => { const v = e.target.value; if (!dated) store.setCell(d, m.id, v === "off" ? null : v); else if (v === "") store.resetOne(k, m.id); else store.setDate(k, m.id, v === "off" ? null : v); }}>
+                          {dated && <option value="">{"As " + asLbl(k) + ": " + (store.byId(base) ? store.byId(base).name : "Off")}</option>}
                           {store.shifts.map((x) => <option key={x.id} value={x.id}>{x.name + " · " + shTimeL(x)}</option>)}
                           <option value="off">Off</option>
                         </select>
@@ -566,7 +600,7 @@ function OcRosterBoard({ layout }) {
                       </td>
                     );
                   })}
-                  <td className="ocr-g-h data">{hrs(win)}</td>
+                  <td className="ocr-g-h data">{store.hoursOf(sids)}</td>
                 </tr>
               );
             })}
@@ -587,76 +621,75 @@ function OcRosterBoard({ layout }) {
   );
 }
 
+// Rotation (user): a cycle of ANY number of days from ANY start date — "10 days on/off" is not a
+// whole number of weeks. Off = one usual week by weekday.
 function ShiftRotationDialog() {
   const st = shiftStore;
-  const [n, setN] = React.useState(st.rotN);
-  const [start, setStart] = React.useState(st.rotStart);
-  const [names, setNames] = React.useState(() => Array.from({ length: 4 }, (x, i) => ((st.data.rot && st.data.rot.names) || [])[i] || ""));
-  const mon = shMonday(start || shToday());
-  const nameOf = (i) => (names[i] || "").trim() || "Week " + shWeekL(i);
-  const wOf = (k) => { const w = Math.floor((shDayFrom(k) - shDayFrom(mon)) / (7 * 864e5) + 0.5); return ((w % n) + n) % n; };
-  const first = shMonday(shToday());
-  // one full cycle from this week, then a line saying it starts over: no end date, it simply repeats
-  const prev = Array.from({ length: n }, (x, i) => shAddDays(first, i * 7));
-  const again = shAddDays(first, n * 7);
-  const fmt = (k) => shDayFrom(k).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  const lost = n < st.rotN ? Array.from({ length: st.rotN - n }, (x, i) => shWeekName(n + i)) : [];
+  const n0 = st.cycN;
+  const [on, setOn] = React.useState(n0 > 0);
+  const [len, setLen] = React.useState(String(n0 || 14));
+  const [start, setStart] = React.useState(n0 ? st.rotStart : shToday());
+  const n = parseInt(len, 10);
+  const lenBad = on && !(Number.isInteger(n) && n >= 2 && n <= 366);
+  const startBad = on && !start;
+  const fmt = (k) => shDayFrom(k).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const today = shToday();
+  const dayOf = (k) => { const x = shDiffDays(start, k); return ((x % n) + n) % n; };
+  // the current cycle, in 7-day blocks with their real dates
+  const c0 = !lenBad && start ? shAddDays(today, -dayOf(today)) : null;
+  const blocks = c0 ? Array.from({ length: Math.ceil(n / 7) }, (x, i) => { const a = i * 7, e = Math.min(n, a + 7) - 1; return { a: a, e: e, from: shAddDays(c0, a), to: shAddDays(c0, e) }; }) : [];
+  const again = c0 ? shAddDays(c0, n) : null;
+  const lostFrom = !on ? (n0 > 7 ? 7 : null) : n0 && n < n0 ? n : null;
   const save = () => {
-    const go = () => { st.setRotation(n, mon, names.map((x) => x.trim())); closeDialog(); njToast(n > 1 ? "Rotation saved · " + n + " weeks, changing over on Monday." : "Rotation off · one usual week."); };
-    if (lost.length) openDialog(<ConfirmDialog title="Shorten the rotation" danger message={"Delete " + lost.join(", ") + "?"}
-      detail="Who is on those weeks will be deleted. Dates you changed by hand stay as they are." confirmLabel="Delete and save" onConfirm={go} />);
+    if (lenBad || startBad) return;
+    const go = () => { st.setRotation(on ? n : 0, start); closeDialog(); njToast(on ? "Rotation saved · " + n + "-day cycle from " + fmt(start) + "." : "Rotation off · one usual week."); };
+    if (n0 && lostFrom != null) openDialog(<ConfirmDialog title={on ? "Shorten the rotation" : "Turn rotation off"} danger message={"Delete " + shRange(lostFrom, n0 - 1) + "?"}
+      detail={on ? "Who is on those days will be deleted. Dates you changed by hand stay as they are." : "The usual week takes Day 1–7 by the weekday each fell on. Dates you changed by hand stay as they are."} confirmLabel="Delete and save" onConfirm={go} />);
     else go();
   };
   return (
     <Dialog width={560}>
       <DlgHeader icon="repeat" name="Shift rotation" onClose={closeDialog} />
       <div className="dlg-body oc-editor">
-        <p className="oc-mininfo">For sites where the duty changes over on a fixed cycle. Each week has its own people on each shift, and the weeks take turns from the start date. Single dates can still be changed on the board.</p>
+        <p className="oc-mininfo">For sites where the duty changes over on a fixed cycle. The cycle can be any number of days and start on any date. Single dates can still be changed on the board.</p>
         <div className="oc-ed-sec">
-          <span className="oc-field-l">Repeats every</span>
+          <span className="oc-field-l">Repeats</span>
           <div className="segmented">
-            {[1, 2, 3, 4].map((k) => <button key={k} type="button" className={"seg" + (n === k ? " active" : "")} aria-pressed={n === k} onClick={() => setN(k)}>{k === 1 ? "1 week" : k + " weeks"}</button>)}
+            <button type="button" className={"seg" + (!on ? " active" : "")} aria-pressed={!on} onClick={() => setOn(false)}>Every week</button>
+            <button type="button" className={"seg" + (on ? " active" : "")} aria-pressed={on} onClick={() => setOn(true)}>Cycle of days</button>
           </div>
-          {n === 1 && <p className="oc-mininfo">One usual week that repeats. No rotation.</p>}
+          {!on && <p className="oc-mininfo">One usual week that repeats. No rotation.</p>}
         </div>
-        {n > 1 && (
+        {on && (
           <React.Fragment>
-            <div className="oc-ed-sec">
-              <span className="oc-field-l">{nameOf(0)} starts</span>
-              <div className="ocrot-start">
-                <input className="de-input" type="date" value={start} onChange={(e) => setStart(e.target.value)} aria-label="Start date" />
-                {start && mon !== start && <span className="oc-mininfo">Moved to Monday {fmt(mon)}: the shift change is on Monday.</span>}
-              </div>
+            <div className="oc-ed-row">
+              <label className="oc-field"><span className="oc-field-l">Cycle length</span>
+                <span className="oc-num-w"><input type="number" className="oos-input data oc-num" min="2" max="366" value={len} onChange={(e) => setLen(e.target.value)} aria-label="Cycle length in days" /><span className="oc-min-l">days</span></span></label>
+              <label className="oc-field"><span className="oc-field-l">Day 1 is</span>
+                <input className="de-input" type="date" value={start} onChange={(e) => setStart(e.target.value)} aria-label="Date of Day 1" /></label>
             </div>
-            <div className="oc-ed-sec">
-              <span className="oc-field-l">Week names <span className="note-opt">(optional)</span></span>
-              <div className="ocrot-names">
-                {Array.from({ length: n }, (x, i) => (
-                  <label className="ocrot-name" key={i}><span className="ocrot-l">{shWeekL(i)}</span>
-                    <input className="de-input" value={names[i]} maxLength={24} placeholder={"Week " + shWeekL(i)} aria-label={"Name for week " + shWeekL(i)}
-                      onChange={(e) => setNames((a) => a.map((v, j) => (j === i ? e.target.value : v)))} /></label>
-                ))}
+            {lenBad && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> A cycle is 2–366 days.</p>}
+            {!lenBad && c0 && (
+              <div className="oc-ed-sec">
+                <span className="oc-field-l">The current cycle</span>
+                <div className="ocrot-prev">
+                  {blocks.map((x) => (
+                    <div className={"ocrot-row" + (today >= x.from && today <= x.to ? " now" : "")} key={x.a}>
+                      <span className="data">{fmt(x.from)}{x.to !== x.from ? " – " + fmt(x.to) : ""}</span>
+                      <span className="ocrot-w">{shRange(x.a, x.e)}</span>
+                      {today >= x.from && today <= x.to && <span className="ocr-badge">Today is Day {dayOf(today) + 1}</span>}
+                    </div>
+                  ))}
+                  <div className="ocrot-row ocrot-again"><Icon name="repeat" size={14} /> Then starts over: Day 1 again on {fmt(again)}, and so on with no end date.</div>
+                </div>
               </div>
-            </div>
-            <div className="oc-ed-sec">
-              <span className="oc-field-l">One cycle from this week</span>
-              <div className="ocrot-prev">
-                {prev.map((k) => (
-                  <div className={"ocrot-row" + (k === first ? " now" : "")} key={k}>
-                    <span className="data">{fmt(k)} – {fmt(shAddDays(k, 6))}</span>
-                    <span className="ocrot-w">{nameOf(wOf(k))}</span>
-                    {k === first && <span className="ocr-badge">This week</span>}
-                  </div>
-                ))}
-                <div className="ocrot-row ocrot-again"><Icon name="repeat" size={14} /> Then starts over: {nameOf(wOf(again))} again from {fmt(again)}, and so on with no end date.</div>
-              </div>
-            </div>
+            )}
           </React.Fragment>
         )}
       </div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
-        <button className="btn btn-primary" onClick={save}><Icon name="check" size={16} /> Save</button>
+        <button className="btn btn-primary" disabled={lenBad || startBad} onClick={save}><Icon name="check" size={16} /> Save</button>
       </div>
     </Dialog>
   );
@@ -721,7 +754,7 @@ function ShiftEditorDialog({ shift }) {
         {dup && <div className="de-field-hint" style={{ color: "var(--warning-text)" }}>A shift called “{s.name.trim()}” already exists.</div>}
       </div>
       <div className="dlg-foot dlg-foot-split">
-        <div>{editing && !s.builtin && <button className="btn btn-secondary" onClick={() => { closeDialog(); ocrDeleteShift(shift); }}><Icon name="trash-2" size={16} /> Delete</button>}</div>
+        <div>{editing && !s.builtin && <button className="icon-btn ocd-del" title="Delete shift" aria-label="Delete shift" onClick={() => { closeDialog(); ocrDeleteShift(shift); }}><Icon name="trash-2" size={16} /></button>}</div>
         <div className="dlg-foot-btns">
           <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
           <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="check" size={16} /> {editing ? "Save" : "Create"}</button>
@@ -844,18 +877,19 @@ function OcCoverageCard() {
   // around the clock, or one that pages only part of its alarms, turns it off instead of
   // living with a permanent red line or dismissing it.
   const aa = njAllAlarmsCover(all);
-  if (site.rule247) {
+  // the all-alarms round-the-clock check always runs: the per-site switch was removed (user)
+  {
     if (enabled.length && !aa.groups.length) rows.push({ sev: "crit", t: "No enabled group carries all alarms", d: "This site requires all alarms on Priority 1 around the clock. Create a group that covers All alarms for the whole facility, or turn the rule off under Site channels.", go: null });
     else if (aa.gaps.length) rows.push({ sev: "crit", t: "All alarms are not covered around the clock", d: aa.gaps.length + (aa.gaps.length === 1 ? " uncovered block" : " uncovered blocks") + " in the week. First: " + wkRange(aa.gaps[0]) + ". No one on Priority 1 of an all-alarms group in those hours.", go: { g: aa.groups[0], gs: aa.groups }, gaps: aa.gaps });
   }
-  c.reqEmpty.forEach((x) => rows.push({ sev: "crit", t: x.g.name + ": " + ocTierLabel(x.tier) + " is required and empty", d: "Assign someone to this level.", go: { g: x.g } }));
+  c.reqEmpty.forEach((x) => rows.push({ sev: "crit", t: x.g.name + ": " + ocTierLabel(x.tier) + " has " + x.n + " of " + x.min + " minimum", d: "Assign " + (x.min - x.n) + " more to this level.", go: { g: x.g } }));
   c.noFirst.forEach((g) => rows.push({ sev: "crit", t: g.name + " has no one on Priority 1", d: "An alarm in this group reaches nobody.", go: { g: g } }));
-  c.allOff.forEach((g) => rows.push({ sev: "crit", t: g.name + ": every first-line recipient is off duty", d: "Assigned, but not on the roster, so nothing will page.", go: { roster: true } }));
+  c.allOff.forEach((g) => rows.push({ sev: "crit", t: g.name + ": every first-line recipient is off duty", d: "Assigned, but not on the roster, so nothing will page.", go: { roster: true, ids: (g.tiers && g.tiers.p1) || [], days: { [shDayName(shToday())]: [] } } }));
   c.gaps.forEach((x) => {
+    const days = {}; x.gaps.forEach((q) => { (days[q.day] = days[q.day] || []).push(q.from + "–" + q.to); });
     const g0 = x.gaps[0];
-    rows.push({ sev: "warn", t: x.g.name + ": " + x.gaps.length + (x.gaps.length === 1 ? " uncovered hour block" : " uncovered hour blocks"), d: "First uncovered: " + SH_DAY_L[g0.day] + " " + g0.from + "–" + g0.to + ". Inside the paging window, with no first-line shift covering it.", go: { roster: true } });
+    rows.push({ sev: "warn", t: x.g.name + ": " + x.gaps.length + (x.gaps.length === 1 ? " uncovered hour block" : " uncovered hour blocks"), d: "First uncovered: " + SH_DAY_L[g0.day] + " " + g0.from + "–" + g0.to + ". Inside the paging window, with no first-line shift covering it.", go: { roster: true, ids: (x.g.tiers && x.g.tiers.p1) || [], days: days } });
   });
-  if (!site.uhf.on && enabled.length) rows.push({ sev: "warn", t: "UHF sender is off", d: "Alarms leave the site on one path only. NS 9416 asks for two independent paths where the site is not staffed around the clock.", go: { site: true } });
   if (c.idle.length && enabled.length > 0) rows.push({ sev: "info", t: c.idle.length + " rostered but paged by nothing", d: c.idle.map((id) => ocMember(id).name).join(" · "), go: { person: ocMember(c.idle[0]).name } });
   const ahead = shiftsOnC ? shPlannedAhead() : [];
   const anyCrit = rows.some((r) => r.sev === "crit") || (all.length > 0 && enabled.length === 0);
@@ -863,7 +897,7 @@ function OcCoverageCard() {
   // Not dismissible — a dismissed gap is how a site ends up paging nobody.
   const isOpen = open === null ? false : open;
   const sum = enabled.length === 0 ? (all.length ? "All groups paused" : "No groups yet") : rows.length ? rows.length + (rows.length === 1 ? " finding" : " findings") : "No gaps found";
-  const okText = shiftsOnC ? "Every enabled group has a first line, and every hour of each paging window is held by a rostered shift." : site.rule247 ? "Every enabled group has a first line, and all alarms are held on Priority 1 around the clock." : "Every enabled group has a first line. Round-the-clock check is off for this site.";
+  const okText = shiftsOnC ? "Every enabled group has a first line, and every hour of each paging window is held by a rostered shift." : true ? "Every enabled group has a first line, and all alarms are held on Priority 1 around the clock." : "Every enabled group has a first line. Round-the-clock check is off for this site.";
   return (
     <div className={"card ocr-cov" + (isOpen ? "" : " closed")}>
       <button className="card-head ocr-cov-head" aria-expanded={isOpen} onClick={() => setOpen(!isOpen)}>
@@ -897,4 +931,4 @@ function OcCoverageCard() {
   );
 }
 
-Object.assign(window, { njOcGapDelta, njOcGapText, njOcGapRange, njOcAlsoOn, shiftStore, useShifts, njShiftOf, shSummary, ShiftBadge, OcRosterBoard, OcShiftList, openShiftRotation, shWeekName, OcPersonView, OcCoverageCard, openShiftEditor, njPagedFor, njSoleFirstLine, njCanReceive, njUnreachable, njOcLog, openOcLog, njAllAlarmsCover, njAllAlarmGroups, wkRange, oclNow, shCoverage });
+Object.assign(window, { njOcGapDelta, njOcGapText, njOcGapRange, njOcAlsoOn, shiftStore, useShifts, njShiftOf, shSummary, ShiftBadge, OcRosterBoard, OcShiftList, openShiftRotation, OcPersonView, OcCoverageCard, openShiftEditor, njPagedFor, njSoleFirstLine, njCanReceive, njUnreachable, njOcLog, openOcLog, njAllAlarmsCover, njAllAlarmGroups, wkRange, oclNow, shCoverage });

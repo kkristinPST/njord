@@ -71,7 +71,7 @@ function OcAlarmsDialog({ g, onApply }) {
           return (
             <div className="oca-row oca-leaf" key={r.id} style={{ paddingLeft: 8 + (n.depth + 1) * 20 + 20 }}>
               <Check on={on} onClick={() => setLeaves([r], !on)} />
-              <span className="oca-alarm"><span className="oca-alarm-t">{r.alarm}</span><span className="tag">{r.tag}</span>{hand && <span className="oca-hand" title="Changed by hand, not by Covers or Area coverage">{on ? "added" : "removed"}</span>}</span>
+              <span className="oca-alarm"><span className="oca-alarm-t">{r.alarm}</span><span className="tag">{r.tag}</span>{hand && <span className="oca-hand" title="Changed by hand, not by Covers">{on ? "added" : "removed"}</span>}</span>
               <Badge level={r.priority} />
             </div>
           );
@@ -85,7 +85,7 @@ function OcAlarmsDialog({ g, onApply }) {
     <Dialog width={760}>
       <DlgHeader icon="list-checks" name={"Alarms in group · " + (g.name.trim() || "New group")} onClose={closeDialog} />
       <div className="dlg-body oca-body">
-        <p className="oc-mininfo">Covers and Area coverage set the starting list. Tick or untick a department, system, equipment or single alarm to add or remove it.</p>
+        <p className="oc-mininfo">Covers sets the starting list. Tick or untick a department, system, equipment or single alarm to add or remove it.</p>
         <div className="field oca-search">
           <Icon name="search" size={16} color="var(--slate-400)" />
           <input placeholder="Filter by alarm, tag or equipment…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -118,7 +118,7 @@ function OcAlarmsSection({ g, setG }) {
     <div className="oc-ed-sec">
       <span className="oc-field-l">Alarms in group</span>
       <div className="oca-sum">
-        <span><b className="data">{n}</b> of <span className="data">{total}</span> alarms{a || d ? " · " + a + " added, " + d + " removed by hand" : " · from Covers and Area coverage"}</span>
+        <span><b className="data">{n}</b> of <span className="data">{total}</span> alarms{a || d ? " · " + a + " added, " + d + " removed by hand" : " · from Covers"}</span>
         <button className="btn btn-secondary btn-sm" onClick={() => openOcAlarms(g, setG)}><Icon name="list-checks" size={14} /> Edit alarms</button>
       </div>
     </div>

@@ -117,10 +117,11 @@ function TestDispatchDialog({ groupId }) {
   const [rows, setRows] = React.useState(null);
   const g = dlGroup(gid);
   // around-the-clock recipients get every alarm of the group at any hour, so every test reaches them
-  const tiers = scope === "p1" ? ["p1", "b247"] : ["p1", "p2", "p3", "b247"];
+  // Priority 1 + 24/7 only: the Full escalation option was removed (user, v4 if needed)
+  const tiers = ["p1", "b247"];
   const targets = [];
   tiers.forEach((t) => {
-    ((g && g.tiers && g.tiers[t]) || []).forEach((mid) => { const c = window.ocContactOfId ? window.ocContactOfId(mid) : null; if (c) targets.push({ tier: t, name: dlMemberName(mid), type: dlViaType(c.via) }); });
+    ((g && g.tiers && g.tiers[t]) || []).forEach((mid) => { const c = window.ocContactOfId ? window.ocContactOfId(mid) : null; if (c) (c.all || [c]).forEach((x) => targets.push({ tier: t, name: dlMemberName(mid), type: dlViaType(x.via) })); });
   });
   if (g && window.ocSite && window.ocSite().uhf.on) targets.push({ tier: "site", name: "UHF sender · site channel", type: "UHF" });
   const msg = "TEST · Delivery test · " + (g ? g.name : "") + " · no action required";
@@ -147,13 +148,6 @@ function TestDispatchDialog({ groupId }) {
           <select className="nj-select" value={gid} onChange={(e) => { setGid(e.target.value); setRows(null); }} disabled={sending}>
             {groups.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
-        </div>
-        <div className="dv-test-row">
-          <span className="oc-field-l">Reach</span>
-          <div className="segmented dv-seg">
-            <button className={"seg" + (scope === "p1" ? " active" : "")} onClick={() => { setScope("p1"); setRows(null); }} disabled={sending}>Priority 1 only</button>
-            <button className={"seg" + (scope === "all" ? " active" : "")} onClick={() => { setScope("all"); setRows(null); }} disabled={sending}>Full escalation</button>
-          </div>
         </div>
         <div className="dv-msg">
           <span className="eyebrow">Message</span>

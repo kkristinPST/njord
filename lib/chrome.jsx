@@ -591,7 +591,7 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
 //   1. per-browser, no code change:  localStorage.setItem("nj_flag_annun_v2", "0"); location.reload()
 //   2. for everyone: flip the default to false below. The pre-flag code path is kept intact
 //      behind each flag — do not delete it until a flag is settled.
-const NJ_FLAG_DEFAULTS = { annun_v2: true, trend_custom_range: true };
+const NJ_FLAG_DEFAULTS = { annun_v2: true, trend_custom_range: true, oc_plan: false };
 function njFlag(k) {
   try { const v = localStorage.getItem("nj_flag_" + k); return v === null ? !!NJ_FLAG_DEFAULTS[k] : v === "1"; }
   catch (e) { return !!NJ_FLAG_DEFAULTS[k]; }

@@ -148,7 +148,7 @@ function OcGroupDrawerBody({ group }) {
         )}
         <OcGroupFields g={g} setG={setG} />
         <OcGapNote gap={ocGapFor(g, editing)} />
-        {!editing && <p className="oc-sched-note"><Icon name="users" size={14} color="var(--slate-400)" /> Recipients are added on Paging groups after the group is created.</p>}
+        {!editing && <p className="oc-sched-note txt"><Icon name="users" size={14} color="var(--slate-400)" /> <span>Recipients are added on Paging groups after the group is created.</span></p>}
       </div>
       <div className="ocd-foot">
         {editing && (
@@ -242,7 +242,7 @@ function OcDispatchBtn() {
   return (
     <button className={"modem-pill oc-modem-btn" + (bad ? " warn" : "")} onClick={openOcDispatch} title="Dispatch paths, delivery log and scheduled tests">
       <span className="statusdot" style={{ background: bad ? "var(--warning)" : "var(--success)" }} />
-      {fails ? fails + " undelivered · 24 h" : uhfOff ? "Dispatch · UHF off" : "Dispatch online"}
+      {uhfOff && fails ? "UHF off · " + fails + " undelivered" : fails ? fails + " undelivered · 24 h" : uhfOff ? "Dispatch · UHF off" : "Dispatch online"}
       <Icon name="chevron-right" size={14} />
     </button>
   );
@@ -283,7 +283,7 @@ function OnCallTab() {
     window.njOcGo = (go) => {
       if (!go) return;
       if (go.person) { setView("duty"); setQ(go.person); setReveal({ sel: ".dl-tab", n: Date.now() }); return; }
-      if (go.roster) { if (njOcShiftsOn()) { setView("roster"); setReveal({ sel: ".ocr-board", n: Date.now() }); } return; }
+      if (go.roster) { if (njOcShiftsOn()) { if (go.days) { window.__ocrFlash = { ids: go.ids || [], days: go.days, at: Date.now() }; setTimeout(() => window.dispatchEvent(new Event("ocr-flash")), 0); } setView("roster"); setReveal({ sel: ".ocr-grid, .ocr-board", n: Date.now() }); } return; }
       if (go.g) { setView("duty"); setQ(""); setFlash(go.gs ? go.gs.map((x) => x.id) : [go.g.id]); setReveal({ sel: '[data-oc-id="' + go.g.id + '"]', n: Date.now() }); }
     };
     return () => { delete window.njOcGo; };
@@ -327,8 +327,8 @@ function OnCallTab() {
               <span className="oncall-legend-l">When each person is reachable</span>
               <span className="oncall-legend-cols">Paging groups say who is paged and in what order · a shift says when that person can be reached · an alarm is sent only when both allow it</span>
               <div className="ocr-head-acts">
-              <button className="btn btn-secondary btn-sm ocr-rot-btn" onClick={() => window.openShiftRotation && window.openShiftRotation()} title="How many weeks the duty cycles through, from which Monday, and what the weeks are called">
-                <Icon name="repeat" size={14} /> Rotation{window.shiftStore && window.shiftStore.rotN > 1 ? " · " + window.shiftStore.rotN + " weeks" : ""}</button>
+              <button className="btn btn-secondary btn-sm ocr-rot-btn" onClick={() => window.openShiftRotation && window.openShiftRotation()} title="Repeat the duty on a cycle of days from a start date">
+                <Icon name="repeat" size={14} /> Rotation{window.shiftStore && window.shiftStore.cycN ? " · " + window.shiftStore.cycN + " days" : ""}</button>
               <div className="segmented ocr-layout" role="group" aria-label="Layout">
                 {[["table", "table-2", "Table: every person and every day"], ["cards", "layout-grid", "Cards: one day, a column per shift"]].map(([id, ic, t]) => (
                   <button key={id} className={"seg" + (shLayout === id ? " active" : "")} aria-pressed={shLayout === id} title={t} aria-label={t} onClick={() => setShLayoutP(id)}><Icon name={ic} size={14} /></button>

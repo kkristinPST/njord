@@ -205,7 +205,7 @@ const PERM_MODULES = {
   "Fish Biology": ["Register Welfare Scoring", "Register Mortality", "Manage Batches", "Generate Welfare Reports"],
   "Analytics": ["View Trends", "Create & Save Trend Views", "Export Trend Data", "Configure Dashboards"],
   // the two permissions the on-call screens actually enforce. Default: Supervisor only.
-  "On-call": ["Change Priority 3", "Pause & Resume Groups"],
+  "On-call": ["Pause & Resume Groups"],
 };
 // Role permissions, persisted. Everything defaults to Allow except the On-call module, which is
 // Supervisor-only until a role is set otherwise.
@@ -317,7 +317,7 @@ function RolesTab() {
               <button className={"oc-switch" + (sessOn ? " on" : "")} role="switch" aria-checked={sessOn} aria-label="Use this role for my session" onClick={() => { perms.setSession(sessOn ? null : role); njToast(sessOn ? "Session role reset. You act with your own roles." : "You now act as " + role + " on every screen."); }}><span className="oc-switch-knob" /></button>
               Use for my session
             </span>
-            <button className="btn btn-primary" style={{ padding: "6px 14px" }} onClick={() => njToast(role + " role permissions saved.")}><Icon name="check" size={16} /> Save</button>
+            <button className="btn btn-primary btn-sm" onClick={() => njToast(role + " role permissions saved.")}><Icon name="check" size={16} /> Save</button>
           </div>
         </div>
         {perms.session && <div className="role-sess-bar"><Icon name="user-cog" size={14} /> Demo session: you act as <b>{perms.session}</b> on every screen.<button className="linkbtn" onClick={() => perms.setSession(null)}>Reset</button></div>}
@@ -367,9 +367,18 @@ const OC_PHONE_SEED = [
 ];
 function ocSite() { return (window.oncallStore && window.oncallStore.site) || ocSiteDefault(); }
 function ocSiteDefault() { return { phones: OC_PHONE_SEED.map((p) => Object.assign({}, p)), uhf: { on: true, minPriority: "critical" }, rule247: true }; }
+// A duty phone may be paged on SEVERAL channels at once (user: some sites use email only on the
+// duty phone). vias = the ticked channels; SMS/voice need the number, email the address.
+// Old single-channel phones read their `via` as a one-item list.
+function ocPhoneVias(p) { return (Array.isArray(p.vias) ? p.vias : [p.via || "sms"]).filter((v) => ["sms", "voice", "email"].includes(v)); }
+function ocPhoneContacts(p) {
+  const email = (p.email || (p.via === "email" && /@/.test(p.number || "") ? p.number : "") || "").trim();
+  const num = /@/.test(p.number || "") ? "" : (p.number || "").trim();
+  return ocPhoneVias(p).map((v) => (v === "email" ? (email ? { via: v, to: email } : null) : (num ? { via: v, to: num } : null))).filter(Boolean);
+}
 function ocContactOfId(id) {
   const p = ocSite().phones.find((x) => x.id === id);
-  if (p) return p.number ? { via: p.via || "sms", to: p.number } : null;
+  if (p) { const cs = ocPhoneContacts(p); return cs.length ? Object.assign({}, cs[0], { all: cs }) : null; }
   return ocUserContact(USERS.find((u) => u.u === id));
 }
 // A DEACTIVATED user keeps their name resolvable everywhere it was already written (the alarm
@@ -401,22 +410,28 @@ function ocWin(all, we) { return { mon: all, tue: all, wed: all, thu: all, fri: 
 // person's duty window, oncall-roster.jsx) and one word for two unrelated things is how a
 // label or a dropdown eventually shows the wrong one. This is the GROUP's window: when an
 // alarm may leave. It says nothing about who is working.
+// Presets are DAY PATTERNS with editable hours (user): named presets (Daytime 07–15, Evening,
+// Night) claimed the site's own shift names for hours that rarely matched (07–15, 08–16, 09–17).
 const OC_WIN_PRESETS = [
-  { id: "247", label: "Around the clock", summary: "00:00–24:00 · every day", win: () => ocWin("00:00-24:00") },
-  { id: "day", label: "Daytime", summary: "07:00–15:00 · Mon–Fri", win: () => ocWin("07:00-15:00", "") },
-  { id: "evening", label: "Evening", summary: "15:00–23:00 · Mon–Fri", win: () => ocWin("15:00-23:00", "") },
-  { id: "night", label: "Night", summary: "23:00–07:00 · every day", win: () => ocWin("23:00-07:00") },
-  { id: "weekend", label: "Weekend", summary: "00:00–24:00 · Sat–Sun", win: () => ({ mon: "", tue: "", wed: "", thu: "", fri: "", sat: "00:00-24:00", sun: "00:00-24:00" }) },
+  { id: "247", label: "Around the clock", days: OC_DAYS },
+  { id: "daily", label: "Every day", days: OC_DAYS, hours: true },
+  { id: "wd", label: "Mon–Fri", days: ["mon", "tue", "wed", "thu", "fri"], hours: true },
+  { id: "we", label: "Sat–Sun", days: ["sat", "sun"], hours: true },
   // the customer's duty list: one window Mon–Fri, another Sat–Sun (Evening 14:50–20:30 / 07:00–19:00)
-  { id: "split", label: "Weekdays + weekend", summary: "Own hours Mon–Fri and Sat–Sun", win: () => ocWin("07:00-15:00", "") },
-  { id: "custom", label: "Custom", summary: "Per-day windows", win: () => ocWin("00:00-24:00") },
+  { id: "split", label: "Weekdays + weekend" },
+  { id: "custom", label: "Custom" },
 ];
+// old named presets keep the hours they were saved with, under the day pattern they used
+const OC_WIN_OLD = { day: "wd", evening: "wd", night: "daily", weekend: "we" };
+function ocWinOf(days, iv) { const o = {}; OC_DAYS.forEach((d) => { o[d] = days.includes(d) ? iv : ""; }); return o; }
 // a window value is free text: "07:00-15:00" or "00:00-07:00, 15:00-24:00"; blank = not paged
 function ocIvOk(iv) { const m = /^([01]?\d|2[0-3]):([0-5]\d)\s*-\s*([01]?\d|2[0-4]):([0-5]\d)$/.exec(String(iv).trim()); return !!m && !(+m[3] === 24 && +m[4] > 0); }
 function ocWinBad(g) { return OC_DAYS.filter((d) => g.win && g.win[d] && String(g.win[d]).split(",").some((x) => !ocIvOk(x))); }
 function ocWinPreset(id) { return OC_WIN_PRESETS.find((s) => s.id === id) || OC_WIN_PRESETS[0]; }
 // `g.winPreset` replaced `g.shift`; groups saved before the rename still carry the old key.
-function ocPresetOf(g) { return g.winPreset || g.shift; }
+function ocPresetOf(g) { const p = g.winPreset || g.shift; return OC_WIN_OLD[p] || p; }
+// the hours a single-window preset is showing: the first paged day's window
+function ocWinHours(g) { const d = OC_DAYS.find((x) => g.win && g.win[x]); const v = d ? String(g.win[d]).split(",")[0].trim() : "07:00-15:00"; const p = v.split("-"); return { f: (p[0] || "").trim(), t: (p[1] || "").trim() }; }
 function ocFmtWin(w) { return String(w).split(",").map((s) => s.trim().replace("-", "–")).join(", "); }
 // one line per distinct window, so a weekday/weekend group reads as two lines in the duty list
 function ocSchedLines(g) {
@@ -429,7 +444,8 @@ function ocSchedLines(g) {
 function ocSchedSummary(g) {
   const p = ocPresetOf(g);
   if (p === "split") return ocSchedLines(g).join(" · ");
-  if (p && p !== "custom") return ocWinPreset(p).summary;
+  if (p === "247") return "00:00–24:00 · every day";
+  if (p && p !== "custom") { const h = ocWinHours(g); return h.f + "–" + h.t + " · " + (p === "daily" ? "every day" : p === "wd" ? "Mon–Fri" : "Sat–Sun"); }
   const on = OC_DAYS.filter((d) => g.win && g.win[d]);
   if (!on.length) return "No active window";
   const wins = Array.from(new Set(on.map((d) => g.win[d])));
@@ -454,7 +470,7 @@ function ocTierOk(g, tier) { return tier !== "p1" || ocPaths(ocChan(g, tier)).si
 const OC_SEED = [
   { id: "g_all", name: "All Alarms", desc: "Every alarm, around the clock", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "low", tiers: { p1: ["vt1", "vt2", "lum", "jlo"], p2: ["kgr"], p3: ["elel"] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"] } },
   { id: "g_crit", name: "Critical alarms", desc: "Critical only, immediate response", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "critical", tiers: { p1: ["ov"], p2: ["sk"], p3: [] }, minUsers: { p1: 1, p2: 1, p3: 0 }, chan: { p1: ["sms", "voice", "uhf"], p2: ["sms", "uhf"], p3: ["voice"] } },
-  { id: "g_night", name: "Night shift", desc: "After-hours coverage, high & critical", enabled: true, winPreset: "night", win: ocWinPreset("night").win(), minPriority: "high", tiers: { p1: ["vt1"], p2: ["kgr"], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["voice"], p3: [] } },
+  { id: "g_night", name: "Night shift", desc: "After-hours coverage, high & critical", enabled: true, winPreset: "daily", win: ocWin("23:00-07:00"), minPriority: "high", tiers: { p1: ["vt1"], p2: ["kgr"], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["voice"], p3: [] } },
 ];
 // ── area coverage ──
 // A group used to be facility-wide by definition, so the only way to page one building's duty
@@ -473,22 +489,27 @@ function ocAreaSummary(g) {
 function ocNormalize(g) {
   const c = Object.assign({ p1: ["sms", "uhf"], p2: ["sms"], p3: ["voice"], b247: ["sms", "voice"] }, g.chan || {});
   const t = Object.assign({ p1: [], p2: [], p3: [], b247: [] }, g.tiers || {});
-  return Object.assign({}, g, { chan: c, tiers: t, areas: g.areas || [], alarmAdd: g.alarmAdd || [], alarmDel: g.alarmDel || [], required: Object.assign({ p1: true }, g.required || {}) });
+  // Area coverage removed (user): every group covers the whole facility; Alarms in group trims
+  return Object.assign({}, g, { chan: c, tiers: t, areas: [], alarmAdd: g.alarmAdd || [], alarmDel: g.alarmDel || [], required: Object.assign({ p1: true }, g.required || {}) });
 }
 
 // ── the rules the customer's duty list carries ──
 // REQUIRED (their yellow cells): a level that may never stand empty. The last name on it has no
 // remove — a swap is add the new name, then remove the old one. Admin setting, per group/level.
-function ocRequired(g, tier) { return !!(g.required && g.required[tier]); }
+// MINIMUM RECIPIENTS per escalation level (user): 0 = may be empty. Replaces the Required tick
+// (old stores: a ticked level reads as 1). The 24/7 backstop has no minimum.
+function ocMinRec(g, tier) { if (tier === "b247" || !g) return 0; const m = g.minRec && g.minRec[tier]; return m != null ? Math.max(0, +m || 0) : (g.required && g.required[tier] ? 1 : 0); }
+function ocRequired(g, tier) { return ocMinRec(g, tier) > 0; }
 // Priority 3 is changed by a Supervisor (their superbruker) only. The one screen that checks a
 // role; the app has no session yet, so the role is read from the same account oclWho uses.
 function njSessionRoles() { try { return window.NJ_SESSION_ROLES || (njPerms.session ? [njPerms.session] : (USERS[0] && USERS[0].roles)) || []; } catch (e) { return []; } }
-function ocCanEdit(tier) { return tier !== "p3" || njCan("On-call", "Change Priority 3"); }
+// Priority 3 is no longer Supervisor-only (user): every level is edited the same way
+function ocCanEdit(tier) { return true; }
 // pausing a group takes its whole window offline, so it is a permission, not an everyday act
 function ocCanPause() { return njCan("On-call", "Pause & Resume Groups"); }
 // The last name on a required level is NOT locked any more: edits are a draft, so a level may
 // be empty in between, and Save is what refuses a required level left empty.
-function ocLockReason(g, tier) { return ocCanEdit(tier) ? null : "Only a Supervisor can change Priority 3"; }
+function ocLockReason(g, tier) { return null; }
 // a person sits on ONE escalation level of a group, so the picker leaves out anyone already on
 // Priority 1–3 of it. Two Priority 1 duties in DIFFERENT groups is allowed and common.
 function ocEscIds(g) { return ["p1", "p2", "p3"].reduce((o, t) => o.concat((g.tiers && g.tiers[t]) || []), []); }
@@ -624,7 +645,7 @@ const oncallStore = {
       if (c.op === "add") { this._addMember(c.gid, c.tier, c.mid); if (window.njOcLog) window.njOcLog.add("Planned change applied: " + nm + " added to " + g.name, ocTierLabel(c.tier)); return; }
       // a planned removal never empties a required level: it is skipped and says so
       const n = ((g.tiers && g.tiers[c.tier]) || []).length;
-      if (ocRequired(g, c.tier) && n <= 1) { if (window.njOcLog) window.njOcLog.add("Planned removal skipped: " + nm + " on " + g.name, ocTierLabel(c.tier) + " is required and would be empty"); return; }
+      if (ocRequired(g, c.tier) && n <= ocMinRec(g, c.tier)) { if (window.njOcLog) window.njOcLog.add("Planned removal skipped: " + nm + " on " + g.name, ocTierLabel(c.tier) + " is required and would be empty"); return; }
       this._removeMember(c.gid, c.tier, c.mid); if (window.njOcLog) window.njOcLog.add("Planned change applied: " + nm + " removed from " + g.name, ocTierLabel(c.tier));
     });
     this.emit();
@@ -659,7 +680,7 @@ window.addEventListener("storage", (e) => { if (e.key === OC_LS) setTimeout(ocPu
 function ocTierLabel(t) { return t === "b247" ? "24/7" : "Priority " + t.slice(1); }
 function njOcFmtAt(ms) { const d = new Date(ms); return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + ", " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
 // delivery verification (screens/oncall-delivery.jsx) reads the same groups/channels — never fork them
-Object.assign(window, { OC_PRIOS, OC_CONTACTS, ocContactMeta, ocContactOfId, ocUserContact, ocSite, ocRosterAll, njPerms, usePerms, njCan, ocCanPause, oncallStore, useOncall, OC_CHANNELS, ocRoster, ocMember, njOcShiftsOn, ocRequired, ocCanEdit, ocLockReason, ocEscIds, ocTierLabel, njOcFmtAt, ocSchedLines, ocAreaSummary, ocPrio, ocPrioColor });
+Object.assign(window, { ocPhoneVias, ocPhoneContacts, ocMinRec, OC_PRIOS, OC_CONTACTS, ocContactMeta, ocContactOfId, ocUserContact, ocSite, ocRosterAll, njPerms, usePerms, njCan, ocCanPause, oncallStore, useOncall, OC_CHANNELS, ocRoster, ocMember, njOcShiftsOn, ocRequired, ocCanEdit, ocLockReason, ocEscIds, ocTierLabel, njOcFmtAt, ocSchedLines, ocAreaSummary, ocPrio, ocPrioColor });
 
 // severity dot color
 function ocPrioColor(id) { const s = (window.SEV && window.SEV[id]) || {}; return s.dot || s.color || "var(--slate-400)"; }
@@ -674,7 +695,7 @@ function OcTier({ group, tier, n }) {
         <span className="oc-tier-n">{n}</span>
         <span className="oncall-col-h">Priority {n}</span>
         {!editable && <span className="oc-tier-sup" title="Only a Supervisor can change Priority 3"><Icon name="lock" size={12} /></span>}
-        {req && <span className="oc-tier-req" title="Required: Save is refused while this level is empty">Required</span>}
+        {req && <span className="oc-tier-req" title={"Save is refused with fewer than " + ocMinRec(group, tier) + " here"}>Min {ocMinRec(group, tier)}</span>}
       </div>
       {window.OcLevelList && <window.OcLevelList g={group} tier={tier} />}
     </div>
@@ -693,7 +714,6 @@ function OcGroupCard({ g, flash }) {
           <span className="caption">{g.desc}</span>
         </div>
         <span className="oc-cover" title="Alarms this group is paged for"><span className="oc-cover-dot" style={{ background: ocPrioColor(g.minPriority) }} /> {prio.covers}</span>
-        <span className="sched" title="Where an alarm has to come from to reach this group"><Icon name="building-2" size={12} color="var(--slate-400)" /> {ocAreaSummary(g)}</span>
         <span className="sched" title="When an alarm reaches this group: the group's paging window, not anyone's working hours"><Icon name="clock" size={12} color="var(--slate-400)" /> {ocSchedSummary(g)}</span>
         <div className="oc-head-actions">
           <button className="icon-btn" title="Send a test alarm to this group and see who receives it" onClick={() => window.njOpenTestDispatch && window.njOpenTestDispatch(g.id)}><Icon name="send" size={16} /></button>
@@ -730,13 +750,18 @@ function OcBackstop({ g }) {
 // the group's own settings (covers, area, window, required levels). Rendered by the group
 // drawer (screens/oncall-page.jsx) and by the dialog fallback below; it owns no Save.
 function OcGroupFields({ g, setG }) {
-  const setReq = (tier, v) => setG((s) => Object.assign({}, s, { required: Object.assign({}, s.required, { [tier]: v }) }));
+  const setMin = (tier, v) => setG((s) => Object.assign({}, s, { minRec: Object.assign({ p1: ocMinRec(s, "p1"), p2: ocMinRec(s, "p2"), p3: ocMinRec(s, "p3") }, s.minRec, { [tier]: v }) }));
   const setSplit = (part, v) => setG((s) => Object.assign({}, s, { win: part === "wd" ? Object.assign({}, s.win, { mon: v, tue: v, wed: v, thu: v, fri: v }) : Object.assign({}, s.win, { sat: v, sun: v }) }));
   const winBad = ocWinBad(g);
   const toggleArea = (id) => setG((s) => { const cur = s.areas || []; return Object.assign({}, s, { areas: cur.includes(id) ? cur.filter((x) => x !== id) : cur.concat([id]) }); });
   const set = (patch) => setG((s) => Object.assign({}, s, patch));
   const setWin = (day, val) => setG((s) => Object.assign({}, s, { win: Object.assign({}, s.win, { [day]: val }) }));
-  const pickPreset = (id) => { const p = ocWinPreset(id); set({ winPreset: id, shift: undefined, win: id === "custom" ? (g.win || ocWin("00:00-24:00")) : id === "split" ? ocWin((g.win && g.win.mon) || "07:00-15:00", (g.win && g.win.sat) || "") : p.win() }); };
+  const pickPreset = (id) => {
+    const p = ocWinPreset(id), h = ocWinHours(g), iv = h.f + "-" + h.t === "00:00-24:00" ? "07:00-15:00" : h.f + "-" + h.t;
+    const win = id === "custom" ? (g.win || ocWin("00:00-24:00")) : id === "split" ? ocWin((g.win && g.win.mon) || iv, (g.win && g.win.sat) || "") : id === "247" ? ocWin("00:00-24:00") : ocWinOf(p.days, iv);
+    set({ winPreset: id, shift: undefined, win: win });
+  };
+  const setHours = (k, v) => setG((s) => { const p = ocWinPreset(ocPresetOf(s)), h = ocWinHours(s); const nh = Object.assign({}, h, { [k]: v.trim() }); return Object.assign({}, s, { win: ocWinOf(p.days, nh.f + "-" + nh.t) }); });
   return (
       <div className="oc-editor">
         <div className="oc-ed-row">
@@ -749,22 +774,6 @@ function OcGroupFields({ g, setG }) {
         </div>
         <label className="oc-field"><span className="oc-field-l">Description <span className="note-opt">(optional)</span></span>
           <input className="oos-input" value={g.desc} onChange={(e) => set({ desc: e.target.value })} placeholder="What this coverage is for" /></label>
-
-        <div className="oc-ed-sec">
-          <span className="oc-field-l">Area coverage</span>
-          <p className="oc-mininfo">Where an alarm has to come from to reach this group. Leave everything off for the whole facility. Pick departments to give a building its own duty phone.</p>
-          <div className="oc-area-grid">
-            <button type="button" className={"oc-area" + (!(g.areas || []).length ? " sel" : "")} onClick={() => set({ areas: [] })}>
-              <Icon name="globe" size={14} /> Whole facility
-            </button>
-            {OC_AREAS.map((a) => (
-              <button key={a.id} type="button" className={"oc-area" + ((g.areas || []).includes(a.id) ? " sel" : "")}
-                aria-pressed={(g.areas || []).includes(a.id)} onClick={() => toggleArea(a.id)}>
-                <span className="oc-area-b">{a.b}</span> {a.d}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {window.OcAlarmsSection && <window.OcAlarmsSection g={g} setG={setG} />}
 
@@ -781,32 +790,35 @@ function OcGroupFields({ g, setG }) {
               <p className="oc-days-hint">Format <code>HH:MM-HH:MM</code>. An end earlier than the start runs past midnight into the next day. Leave blank where the group is not paged.</p>
             </div>
           )}
-          {winBad.length > 0 && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> Not a valid window on {winBad.map((d) => OC_DAY_LABEL[d].slice(0, 3)).join(", ")}. Use HH:MM-HH:MM.</p>}
+          {winBad.length > 0 && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> <span>Not a valid window on {winBad.map((d) => OC_DAY_LABEL[d].slice(0, 3)).join(", ")}. Use HH:MM-HH:MM.</span></p>}
           {ocPresetOf(g) === "split" ? null : ocPresetOf(g) === "custom"
             ? <div className="oc-days">{OC_DAYS.map((d) => (
                 <div className="oc-day" key={d}><span className="oc-day-l">{OC_DAY_LABEL[d]}</span>
                   <input className="oos-input oc-day-in" value={g.win[d]} onChange={(e) => setWin(d, e.target.value)} placeholder="off" /></div>
               ))}<p className="oc-days-hint">Format <code>HH:MM-HH:MM</code>. Leave blank for a day this group is not paged. Two windows in one day: <code>00:00-07:00, 15:00-24:00</code>.</p></div>
-            : <p className="oc-sched-note"><Icon name="clock" size={14} color="var(--slate-400)" /> {ocWinPreset(ocPresetOf(g)).summary}</p>}
+            : ocWinPreset(ocPresetOf(g)).hours
+              ? <div className="oc-esc-row">
+                  <label className="oc-field"><span className="oc-min-l">From</span><input className="oos-input data oc-hhmm" value={ocWinHours(g).f} maxLength={5} placeholder="07:00" onChange={(e) => setHours("f", e.target.value)} aria-label="Paging window from" /></label>
+                  <label className="oc-field"><span className="oc-min-l">To</span><input className="oos-input data oc-hhmm" value={ocWinHours(g).t} maxLength={5} placeholder="15:00" onChange={(e) => setHours("t", e.target.value)} aria-label="Paging window to" /></label>
+                  <p className="oc-days-hint">24-hour, HH:MM. A To earlier than From runs past midnight.</p>
+                </div>
+              : <p className="oc-sched-note"><Icon name="clock" size={14} color="var(--slate-400)" /> {ocSchedSummary(g)}</p>}
         </div>
 
         <div className="oc-ed-sec">
-          <span className="oc-field-l">Required levels</span>
-          <p className="oc-mininfo">A <b>required</b> level can never be saved empty. Leave a level off when this site does not use it.</p>
-          <div className="oc-min-row">
-            {["p1", "p2", "p3", "b247"].map((t) => (
-              <div className="oc-min" key={t}>
-                <label className="oc-leg" {...njCheckable(() => setReq(t, !ocRequired(g, t)), { on: ocRequired(g, t), label: ocTierLabel(t) + " required" })}><Check on={ocRequired(g, t)} /> {ocTierLabel(t)}</label>
-              </div>
+          <span className="oc-field-l">Minimum recipients</span>
+          <p className="oc-mininfo">Save is refused while a level has fewer names than this. 0 means the level may be empty.</p>
+          <div className="oc-esc-row">
+            {["p1", "p2", "p3"].map((t) => (
+              <label className="oc-field" key={t}><span className="oc-min-l">{ocTierLabel(t)}</span><span className="oc-num-w"><input type="number" className="oos-input data oc-num" min="0" max="9" value={ocMinRec(g, t)} onChange={(e) => setMin(t, Math.max(0, Math.min(9, parseInt(e.target.value, 10) || 0)))} aria-label={"Minimum recipients on " + ocTierLabel(t)} /></span></label>
             ))}
           </div>
         </div>
-        <p className="oc-sched-note"><Icon name="message-square" size={14} color="var(--slate-400)" /> Each recipient is paged on their own contact (SMS, voice call or email, set on the user). UHF is one sender for the whole site, under More · On-call settings.</p>
       </div>
   );
 }
 // a blank group: Priority 1 required, whole facility, around the clock
-function ocNewGroup() { return { id: "g" + Date.now(), name: "", desc: "", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "critical", areas: [], tiers: { p1: [], p2: [], p3: [], b247: [] }, required: { p1: true }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: {} }; }
+function ocNewGroup() { return { id: "g" + Date.now(), name: "", desc: "", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "critical", areas: [], tiers: { p1: [], p2: [], p3: [], b247: [] }, minRec: { p1: 1, p2: 0, p3: 0 }, chan: {} }; }
 // what saving this group does to all-alarms cover — shown, never blocked (Coverage flags it after)
 function ocGapFor(g, editing) { if (ocWinBad(g).length || !window.njOcGapDelta) return []; return window.njOcGapDelta(editing ? oncallStore.groups.map((x) => (x.id === g.id ? g : x)) : oncallStore.groups.concat([g])); }
 function OcGapNote({ gap }) { return gap.length ? <p className="oc-gap-note"><Icon name="alert-triangle" size={14} /> <span>Saving leaves all alarms uncovered <b className="data">{window.njOcGapText(gap)}</b>. The Coverage panel will flag it until another group holds those hours.</span></p> : null; }
@@ -819,7 +831,7 @@ function OnCallEditorDialog({ group }) {
   return (
     <Dialog width={640}>
       <DlgHeader icon={editing ? "pencil" : "plus"} name={editing ? "Edit on-call group" : "New on-call group"} onClose={closeDialog} />
-      <div className="dlg-body"><OcGroupFields g={g} setG={setG} /><OcGapNote gap={ocGapFor(g, editing)} />{!editing && <p className="oc-sched-note"><Icon name="users" size={14} color="var(--slate-400)" /> Recipients are added on the duty list after the group is created.</p>}</div>
+      <div className="dlg-body"><OcGroupFields g={g} setG={setG} /><OcGapNote gap={ocGapFor(g, editing)} />{!editing && <p className="oc-sched-note txt"><Icon name="users" size={14} color="var(--slate-400)" /> <span>Recipients are added on Paging groups after the group is created.</span></p>}</div>
       <div className="dlg-foot">
         <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
         <button className="btn btn-primary" disabled={!canSave} onClick={save}><Icon name="check" size={16} /> {editing ? "Save changes" : "Create group"}</button>

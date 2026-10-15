@@ -74,7 +74,7 @@ try { const r = JSON.parse(sessionStorage.getItem(OC_DRAFT_SS)); if (r && r.ch) 
 function ocDraftProblems() {
   const touched = new Set(ocDraft.list().map((c) => c.gid));
   const out = [];
-  ocView().filter((g) => g.enabled && touched.has(g.id)).forEach((g) => OC_LEVELS.forEach((t) => { if (ocRequired(g, t) && !((g.tiers && g.tiers[t]) || []).length) out.push(g.name + " · " + ocTierLabel(t)); }));
+  ocView().filter((g) => g.enabled && touched.has(g.id)).forEach((g) => OC_ESC.forEach((t) => { const min = ocMinRec(g, t), n = ((g.tiers && g.tiers[t]) || []).length; if (n < min) out.push(g.name + " · " + ocTierLabel(t) + " " + n + "/" + min); }));
   return out;
 }
 // the draft as sentences: remove + add of one name in one group reads as a move
@@ -195,7 +195,7 @@ function OcLevelList({ g, tier, dense, row }) {
           {editable && <button className="oc-chip-x" title="Cancel planned change" onClick={() => window.oclCancel && window.oclCancel(x.id)}><Icon name="x" size={14} /></button>}
         </span>
       ))}
-      {!ids.length && !removed.length && !pend.length && <span className={"oc-tier-empty" + (req ? " req" : "")}>{req ? "Required · no one" : dense ? "—" : "No one assigned"}</span>}
+      {!ids.length && !removed.length && !pend.length && <span className={"oc-tier-empty" + (req ? " req" : "")}>{req ? "Min " + ocMinRec(g, tier) + " · no one" : dense ? "—" : "No one assigned"}</span>}
       {editable && <button className="member-add oc-lv-add" onClick={(e) => { const t = e.currentTarget; setEl((x) => (x ? null : t)); }}><Icon name="plus" size={14} /> Add</button>}
       {el && <OcPickPop anchor={el} g={g} tier={tier} onClose={() => setEl(null)} />}
     </div>
@@ -216,13 +216,14 @@ function OcSaveBar({ className }) {
   if (!n) return (
     <div className={"oc-savebar idle " + (className || "")} role="region" aria-label="On-call changes">
       <div className="oc-sb-l"><span className="oc-sb-n idle"><Icon name="check" size={14} /><span>No unsaved changes</span>{store.data.savedBy && store.data.savedAt ? <span className="oc-sb-meta">Last saved by {store.data.savedBy} at {ocHHMM(store.data.savedAt)}</span> : null}</span></div>
-      <div className="oc-sb-r"><OcSaveWhen w={{ mode: "now" }} setW={() => {}} disabled /><button className="btn btn-secondary btn-sm" disabled>Discard</button><button className="btn btn-primary btn-sm" disabled><Icon name="check" size={14} /> Save</button></div>
+      <div className="oc-sb-r">{window.njFlag && window.njFlag("oc_plan") && <OcSaveWhen w={{ mode: "now" }} setW={() => {}} disabled />}<button className="btn btn-secondary btn-sm" disabled>Discard</button><button className="btn btn-primary btn-sm" disabled><Icon name="check" size={14} /> Save</button></div>
     </div>
   );
   const probs = ocDraftProblems();
   const stale = (store.data.rev || 0) !== d.rev0;
-  const bad = window.oclAtBad ? window.oclAtBad(w) : false;
-  const at = w.mode === "later" && window.oclAt ? window.oclAt(w) : null;
+  const bad = window.njFlag && window.njFlag("oc_plan") && window.oclAtBad ? window.oclAtBad(w) : false;
+  const planOn = window.njFlag && window.njFlag("oc_plan");
+  const at = planOn && w.mode === "later" && window.oclAt ? window.oclAt(w) : null;
   const save = () => {
     const r = ocDraft.save(at);
     const head = (at ? "Planned " : "Saved ") + r.applied.length + (r.applied.length === 1 ? " change" : " changes") + (at ? " from " + njOcFmtAt(at) : "") + ".";
@@ -236,19 +237,19 @@ function OcSaveBar({ className }) {
         <button className="oc-sb-n" onClick={(e) => { const t = e.currentTarget; setListEl((x) => (x ? null : t)); }} aria-expanded={!!listEl}>
           <span className="oc-sb-dot" /><span><b className="data">{n}</b> unsaved {n === 1 ? "change" : "changes"}</span><Icon name={listEl ? "chevron-up" : "chevron-down"} size={14} />
         </button>
-        {probs.length > 0 ? <span className="oc-sb-err" title={"Required and empty: " + probs.join(", ")}><Icon name="alert-triangle" size={14} /><span className="oc-sb-t">Required and empty: {probs.join(", ")}</span></span>
+        {probs.length > 0 ? <span className="oc-sb-err" title={"Below minimum: " + probs.join(", ")}><Icon name="alert-triangle" size={14} /><span className="oc-sb-t">Below minimum: {probs.join(", ")}</span></span>
           : stale && store.data.savedBy ? <span className="oc-sb-note" title={store.data.savedBy + " saved at " + ocHHMM(store.data.savedAt) + " since you started. Yours go on top."}><Icon name="users" size={14} /><span className="oc-sb-t">{store.data.savedBy} saved at {ocHHMM(store.data.savedAt)} since you started. Yours go on top.</span></span> : null}
       </div>
       <div className="oc-sb-r">
-        <OcSaveWhen w={w} setW={setW} />
+        {planOn && <OcSaveWhen w={w} setW={setW} />}
         <button className="btn btn-secondary btn-sm" onClick={discard}>Discard</button>
-        <button className="btn btn-primary btn-sm" disabled={probs.length > 0 || bad} title={probs.length ? "A required level is empty" : undefined} onClick={save}><Icon name={at ? "calendar-clock" : "check"} size={14} /> {at ? "Plan" : "Save"}</button>
+        <button className="btn btn-primary btn-sm" disabled={probs.length > 0 || bad} title={probs.length ? "A level is below its minimum" : undefined} onClick={save}><Icon name={at ? "calendar-clock" : "check"} size={14} /> {at ? "Plan" : "Save"}</button>
       </div>
       {listEl && window.OclPop && (
         <window.OclPop anchor={listEl} onClose={() => setListEl(null)} width={360}>
           <div className="dl-pop-h">Unsaved changes</div>
           <div className="dl-pend-list">
-            {probs.map((p) => <div className="dl-pend-row oc-sb-prob" key={p}><Icon name="alert-triangle" size={14} /><span className="dl-pend-w">Required and empty<span className="dl-sub">{p}</span></span></div>)}
+            {probs.map((p) => <div className="dl-pend-row oc-sb-prob" key={p}><Icon name="alert-triangle" size={14} /><span className="dl-pend-w">Below minimum<span className="dl-sub">{p}</span></span></div>)}
             {ocDraftLines().map((l, i) => (
               <div className="dl-pend-row" key={i}>
                 <Icon name={l.icon} size={14} color="var(--slate-400)" />
@@ -314,13 +315,14 @@ function useOcSettingsForm(onDone) {
   const numBad = (v, lo, hi) => !(Number.isInteger(+v) && +v >= lo && +v <= hi);
   const polBad = numBad(pol.resendMin, 1, 60) || numBad(pol.upscaleAfter, 1, 10);
   const setPhone = (i, p) => setS((x) => Object.assign({}, x, { phones: x.phones.map((y, j) => (j === i ? Object.assign({}, y, p) : y)) }));
-  const addPhone = () => setS((x) => { let k = 1; while (x.phones.some((p) => p.id === "vt" + k)) k++; return Object.assign({}, x, { phones: x.phones.concat([{ id: "vt" + k, name: "Duty phone " + k, number: "", via: "sms" }]) }); });
+  const addPhone = () => setS((x) => { let k = 1; while (x.phones.some((p) => p.id === "vt" + k)) k++; return Object.assign({}, x, { phones: x.phones.concat([{ id: "vt" + k, name: "Duty phone " + k, number: "", email: "", vias: ["sms"] }]) }); });
   const delPhone = (i) => setS((x) => Object.assign({}, x, { phones: x.phones.filter((_, j) => j !== i) }));
-  const kept = new Set(s.phones.filter((p) => p.number.trim()).map((p) => p.id));
+  const togVia = (i, v) => setS((x) => Object.assign({}, x, { phones: x.phones.map((y, j) => { if (j !== i) return y; const cur = ocPhoneVias(y); return Object.assign({}, y, { vias: cur.includes(v) ? cur.filter((z) => z !== v) : cur.concat([v]) }); }) }));
+  const kept = new Set(s.phones.filter((p) => ocPhoneContacts(p).length).map((p) => p.id));
   const offList = s0.phones.filter((p) => !kept.has(p.id)).map((p) => ({ p: p, on: window.njPagedFor ? window.njPagedFor(p.id) : [] })).filter((x) => x.on.length);
   const save = () => {
     if (polBad) return;
-    oncallStore.setSite(Object.assign({}, s, { phones: s.phones.map((p) => Object.assign({}, p, { number: p.number.trim(), name: p.name.trim() || p.id })) }));
+    oncallStore.setSite(Object.assign({}, s, { phones: s.phones.map((p) => { const em = (p.email || (p.via === "email" && /@/.test(p.number || "") ? p.number : "") || "").trim(); const o = Object.assign({}, p, { number: /@/.test(p.number || "") ? "" : (p.number || "").trim(), email: em, vias: ocPhoneVias(p), name: p.name.trim() || p.id }); delete o.via; return o; }) }));
     const np = { resendMin: +pol.resendMin, upscaleAfter: +pol.upscaleAfter, personalShifts: pol.personalShifts };
     if (window.njOcLog && (np.resendMin !== p0.resendMin || np.upscaleAfter !== p0.upscaleAfter)) window.njOcLog.add("Escalation changed", "Resend every " + np.resendMin + " min · upscale after " + np.upscaleAfter + " tries");
     if (window.njOcLog && np.personalShifts !== !!p0.personalShifts) window.njOcLog.add(np.personalShifts ? "Personal duty shifts turned on" : "Personal duty shifts turned off", np.personalShifts ? "A name is reachable where the group's window and their shift overlap" : "A name is reachable for the whole of the group's window");
@@ -340,22 +342,23 @@ function useOcSettingsForm(onDone) {
         </div>
         <div className="oc-ed-sec">
           <span className="oc-field-l">Duty phones</span>
-          <p className="oc-mininfo">Separate handsets that are handed over between shifts. Add as many as the site has. A phone without a number is not listed for on-call.</p>
+          <p className="oc-mininfo">Separate handsets that are handed over between shifts. Add as many as the site has. Tick every channel it is paged on. A phone with no usable channel is not listed for on-call.</p>
           <div className="oc-site-phones">
             {s.phones.map((p, i) => (
               <div className="oc-site-ph" key={p.id}>
                 <Icon name="smartphone" size={16} color="var(--slate-400)" />
                 <input className="oos-input" value={p.name} onChange={(e) => setPhone(i, { name: e.target.value })} aria-label="Phone name" />
-                <input className="oos-input data" value={p.number} onChange={(e) => setPhone(i, { number: e.target.value })} placeholder="+47 …" aria-label="Phone number" />
-                <select className="nj-select" value={p.via || "sms"} onChange={(e) => setPhone(i, { via: e.target.value })} aria-label="Contact">
-                  {OC_CONTACTS.filter((c) => c.id !== "email").map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-                </select>
+                <input className="oos-input data" value={/@/.test(p.number || "") ? "" : p.number} onChange={(e) => setPhone(i, { number: e.target.value })} placeholder="+47 …" aria-label="Phone number" />
+                <input className="oos-input data" value={p.email != null ? p.email : (/@/.test(p.number || "") ? p.number : "")} onChange={(e) => setPhone(i, { email: e.target.value })} placeholder="Email (optional)" aria-label="Email address" />
                 <button className="icon-btn" title="Remove phone" onClick={() => delPhone(i)}><Icon name="trash-2" size={16} /></button>
+                <div className="oc-site-vias" role="group" aria-label={"Paged on · " + p.name}>
+                  {OC_CONTACTS.map((c) => { const on = ocPhoneVias(p).includes(c.id); const miss = on && !ocPhoneContacts(p).some((x) => x.via === c.id); return <label key={c.id} className="oc-leg" title={miss ? (c.id === "email" ? "Add an email address" : "Add a phone number") : undefined} {...njCheckable(() => togVia(i, c.id), { on: on, label: c.label })}><Check on={on} /> {c.label}{miss && <Icon name="alert-triangle" size={14} color="var(--warning-text)" />}</label>; })}
+                </div>
               </div>
             ))}
             {<button className="member-add" onClick={addPhone}><Icon name="plus" size={14} /> Add duty phone</button>}
           </div>
-          {offList.map((x) => <p key={x.p.id} className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> {x.p.name} is on {x.on.length} {x.on.length === 1 ? "list" : "lists"} ({Array.from(new Set(x.on.map((y) => y.g.name))).join(", ")}) and comes off when you save.</p>)}
+          {offList.map((x) => <p key={x.p.id} className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> <span>{x.p.name} is on {x.on.length} {x.on.length === 1 ? "list" : "lists"} ({Array.from(new Set(x.on.map((y) => y.g.name))).join(", ")}) and comes off when you save.</span></p>)}
         </div>
         <div className="oc-ed-sec">
           <span className="oc-field-l">UHF sender</span>
@@ -366,12 +369,6 @@ function useOcSettingsForm(onDone) {
               {OC_PRIOS.map((p) => <option key={p.id} value={p.id}>{p.covers}</option>)}
             </select>
           </div>
-          {!s.uhf.on && <p className="oc-chan-rule"><Icon name="alert-triangle" size={14} color="var(--warning-text)" /> Alarms leave on one path only. NS 9416 asks for two independent paths where the site is not staffed around the clock.</p>}
-        </div>
-        <div className="oc-ed-sec">
-          <span className="oc-field-l">Coverage rule</span>
-          <label className="oc-leg" {...njCheckable(() => setS((x) => Object.assign({}, x, { rule247: !x.rule247 })), { on: s.rule247, label: "Require all alarms around the clock" })}><Check on={s.rule247} /> All alarms must be on Priority 1 around the clock</label>
-          <p className="oc-mininfo">Turn off for a site that is staffed around the clock, or that only pages part of its alarms. Coverage then stops flagging it.</p>
         </div>
         <div className="oc-ed-sec">
           <span className="oc-field-l">Personal shifts</span>
