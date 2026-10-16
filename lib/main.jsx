@@ -39,15 +39,21 @@ function ComingSoon({ id }) {
 }
 
 function App() {
-  const [active, setActive] = React.useState("start");
+  // after a restart (njRestart) come back to the screen it was started from, not the Dashboard
+  const [active, setActive] = React.useState(() => { try { const r = sessionStorage.getItem("nj_restart_route"); sessionStorage.removeItem("nj_restart_route"); return r && SCREENS[r] ? r : "start"; } catch (e) { return "start"; } });
   // __njRoute mirrors the live route so shared code (njPickContext) can tell which top-level
   // screen is showing without prop threading.
-  React.useEffect(() => { window.__njNavigate = (id) => { window.__njRoute = id; setActive(id); }; window.__njRoute = active; }, []);
+  // Clicking the ACTIVE sidebar item returns that section to its first tab (same as Site Plan,
+  // which already went back to the overview): remount the screen so its tab state resets.
+  // Sidebar only; programmatic __njNavigate to the current route never resets.
+  const [nonce, setNonce] = React.useState(0);
+  React.useEffect(() => { window.__njNavigate = (id) => { window.__njRoute = id; setActive(id); }; window.__njResetRoute = () => setNonce((n) => n + 1); window.__njRoute = active; }, []);
   React.useEffect(() => { window.__njRoute = active; }, [active]);
+  React.useEffect(() => { const id = setTimeout(() => window.njRestartDone && window.njRestartDone(), 250); return () => clearTimeout(id); }, []);
   const Screen = SCREENS[active];
   return (
     <React.Fragment>
-      {Screen ? <Screen /> : <ComingSoon id={active} />}
+      {Screen ? <Screen key={active + ":" + nonce} /> : <ComingSoon id={active} />}
       <DialogHost />
       <TrendWindow />
       <ReportWindow />
