@@ -5,7 +5,7 @@
 // - the list may be empty in between; Save is what refuses a required level left empty
 // - Save re-applies the edits on top of the LATEST list, so a colleague's save is built on,
 //   and anything that no longer applies is skipped and reported (oncallStore.commit)
-// - "Takes effect: Now | Later" sits once beside Save, so a Monday swap is one planned batch
+// - "Takes effect: Now | Later" beside Save (one planned batch) only with njFlag("oc_plan"), default off
 // The draft is a set of changes keyed group|level|name, never a copy of the list: a copy would
 // silently undo whatever someone else saved meanwhile.
 const OC_DRAFT_SS = "nj_oc_draft_v1";
@@ -183,7 +183,7 @@ function OcLevelList({ g, tier, dense, row }) {
   const removed = ocDraft.list().filter((c) => c.gid === g.id && c.tier === tier && c.op === "remove").map((c) => c.mid);
   const editable = ocCanEdit(tier);
   const req = ocRequired(g, tier);
-  const pend = oncallStore.pending.filter((x) => x.gid === g.id && x.tier === tier);
+  const pend = window.oclPlanOn && window.oclPlanOn() ? oncallStore.pending.filter((x) => x.gid === g.id && x.tier === tier) : [];
   return (
     <div className={"oc-lv" + (dense ? " dense" : "") + (row ? " row" : "")}>
       {ids.map((id) => <OcPChip key={id} g={g} tier={tier} mid={id} st={ocDraft.state(g.id, tier, id)} editable={editable} />)}

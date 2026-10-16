@@ -277,7 +277,7 @@ function DeadfishTable({ rows, upd, addRow, removeRow, rowN, rowReady, rowIncomp
           <div className="dfl-head">
             <span className="dfl-n">Line <span className="data">{i + 1}</span></span>
             {lockedLoc && <span className="dfl-loc" title="Registering to the tank you opened this from"><Icon name="lock" size={12} color="var(--slate-400)" />{lockedLoc}</span>}
-            {rowIncomplete(r) && <span className="dfl-warn"><Icon name="alert-triangle" size={12} /> Not registered · add {missing(r)}</span>}
+            {rowIncomplete(r) && <span className="dfl-warn"><Icon name="alert-triangle" size={12} /> <span>Not registered · add {missing(r)}</span></span>}
             <button className="dfx-x" title={last ? "Clear line" : "Remove line"} aria-label={last ? `Clear line ${i + 1}` : `Remove line ${i + 1}`} onClick={() => removeRow(r.key)}><Icon name="trash-2" size={16} /></button>
           </div>
           <div className={"dfl-grid" + (lockedLoc ? "" : " withloc")}>
@@ -352,7 +352,7 @@ function DeadfishForm({ onBack }) {
           <span className="dfx-tot-wrap"><span className="dfx-tot data">{total.toLocaleString("nb-NO")}</span><span className="dfx-tot-l">total mortalities</span></span>
           <span className="dfx-foot-sep" aria-hidden="true">·</span>
           <span className="dfx-foot-meta">{valid.length} valid entr{valid.length === 1 ? "y" : "ies"} across {locCount} location{locCount === 1 ? "" : "s"}</span>
-          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={14} /> {dropped} on incomplete lines will not be registered</span>}
+          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={14} /> <span>{dropped} on incomplete lines will not be registered</span></span>}
         </div>
         <div className="dfx-foot-r">
           <button className="btn btn-secondary" onClick={onBack}>Cancel</button>
@@ -386,7 +386,7 @@ function DeadfishRegisterDialog({ tank }) {
         <span className="dfx-summary" role="status" aria-live="polite">
           <span className="dfx-tot-wrap"><span className="dfx-tot data">{total.toLocaleString("nb-NO")}</span><span className="dfx-tot-l">total mortalities</span></span>
           <span className="dfx-foot-sep" aria-hidden="true">·</span>
-          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={14} /> {dropped} on incomplete lines will not be registered</span>}
+          {dropped > 0 && <span className="dfx-foot-warn"><Icon name="alert-triangle" size={14} /> <span>{dropped} on incomplete lines will not be registered</span></span>}
           <button className="linkbtn" onClick={() => { closeDialog(); window.__njDeadfishPending = true; window.__njNavigate && window.__njNavigate("biology"); }}>Register several locations <Icon name="arrow-up-right" size={14} /></button>
         </span>
         <span style={{ display: "flex", gap: 10 }}>
@@ -452,6 +452,7 @@ function OverviewTab({ onGoto }) {
 }
 
 function FishBiologyScreen() {
+  if (njNoSite()) return <NjNoSitePage active="biology" title="Fish Biology" icon="fish" what="No fish registered" body="Welfare, mortality and batch data appear here once tanks are commissioned and stocked." />;
   const [tab, setTab] = React.useState(window.__njDeadfishPending ? "Mortality" : "Overview");
   const subs = { Overview: "Welfare & mortality at a glance", Mortality: "Mortality registration & cause analysis", Welfare: "Registrations, per-fish scoring (0–3) & indicator reports" };
   return (

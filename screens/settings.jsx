@@ -21,6 +21,7 @@ const USERS = [
   { u: "sk", first: "Sam", last: "King", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", contact: "voice", notif: "Voice call" },
   { u: "jlo", first: "Joe", last: "Lawrence", roles: ["Operator", "Supervisor"], phone: "47 xxx xxx", email: "jlo@puresalmontech.com", contact: "email", notif: "Email" },
 ];
+njBlank(USERS, (u, i) => i === 0); // empty-site demo (lib/empty-site.js)
 
 function UserDialog({ user, existing, onSave }) {
   const editing = !!user;
@@ -184,7 +185,8 @@ function UsersTab() {
               </td>
             </tr>
           ))}
-          {rows.length === 0 && <NjEmptyRow colSpan={6} reason="search" title={"No users match \u201c" + q + "\u201d"}
+          {rows.length === 0 && users.length === 0 && <NjEmptyRow colSpan={6} icon="users" title="No users yet" body="People who sign in, are paged or own a duty phone are added here." />}
+          {rows.length === 0 && users.length > 0 && <NjEmptyRow colSpan={6} reason="search" title={"No users match \u201c" + q + "\u201d"}
             action={<button className="btn btn-secondary btn-sm" onClick={() => setQ("")}>Clear search</button>} />}
         </tbody>
       </table>
@@ -365,6 +367,7 @@ const OC_PHONE_SEED = [
   { id: "vt1", name: "Duty phone 1", number: "+47 900 10 001", via: "sms" },
   { id: "vt2", name: "Duty phone 2", number: "+47 900 10 002", via: "sms" },
 ];
+njBlank(OC_PHONE_SEED); // empty-site demo (lib/empty-site.js)
 function ocSite() { return (window.oncallStore && window.oncallStore.site) || ocSiteDefault(); }
 function ocSiteDefault() { return { phones: OC_PHONE_SEED.map((p) => Object.assign({}, p)), uhf: { on: true, minPriority: "critical" }, rule247: true }; }
 // A duty phone may be paged on SEVERAL channels at once (user: some sites use email only on the
@@ -472,6 +475,7 @@ const OC_SEED = [
   { id: "g_crit", name: "Critical alarms", desc: "Critical only, immediate response", enabled: true, winPreset: "247", win: ocWin("00:00-24:00"), minPriority: "critical", tiers: { p1: ["ov"], p2: ["sk"], p3: [] }, minUsers: { p1: 1, p2: 1, p3: 0 }, chan: { p1: ["sms", "voice", "uhf"], p2: ["sms", "uhf"], p3: ["voice"] } },
   { id: "g_night", name: "Night shift", desc: "After-hours coverage, high & critical", enabled: true, winPreset: "daily", win: ocWin("23:00-07:00"), minPriority: "high", tiers: { p1: ["vt1"], p2: ["kgr"], p3: [] }, minUsers: { p1: 1, p2: 0, p3: 0 }, chan: { p1: ["sms", "uhf"], p2: ["voice"], p3: [] } },
 ];
+njBlank(OC_SEED); // empty-site demo (lib/empty-site.js)
 // ── area coverage ──
 // A group used to be facility-wide by definition, so the only way to page one building's duty
 // phone was to lean on priority. Coverage is now an explicit set of departments; empty means
@@ -1089,28 +1093,97 @@ function AlarmTargetsCard() {
 function njOpenAlarmTargets() { window.__njSettingsFocus = "targets"; if (window.__njNavigate) window.__njNavigate("settings"); }
 Object.assign(window, { njOpenAlarmTargets });
 
+// Project settings that restart the app: one value, Cancel / Apply. Deliberately no history,
+// limits table or comment (unlike setpoints) — these are plain configuration.
+const PS_LANGS = [{ v: "English", on: true }, { v: "Norsk", on: false }, { v: "日本語", on: false }];
+function ProjectSettingDialog({ kind, value, onApply }) {
+  const idle = kind === "idle";
+  const [v, setV] = React.useState(String(value));
+  const n = parseInt(v, 10);
+  const bad = idle && (!/^\d+$/.test(v.trim()) || n < 1 || n > 120);
+  const can = !bad && (idle ? n !== +value : v !== value);
+  const apply = () => { onApply(idle ? n : v); closeDialog(); };
+  return (
+    <Dialog width={400}>
+      <DlgHeader icon={idle ? "timer" : "languages"} name={idle ? "Inactivity logout" : "Report language"} onClose={closeDialog} />
+      <div className="dlg-body pe-body">
+        {idle ? (
+          <div className="pe-row">
+            <span className="pe-lbl">Sign out after</span>
+            <div className="pe-input-wrap">
+              <input className="pe-input data" inputMode="numeric" autoFocus value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && can) apply(); }} aria-label="Minutes" />
+              <span className="pe-unit">min</span>
+            </div>
+          </div>
+        ) : (
+          <div className="pe-optlist" role="radiogroup" aria-label="Report language" style={{ padding: "8px 0" }}>
+            {PS_LANGS.map((o) => (
+              <button key={o.v} type="button" role="radio" aria-checked={o.v === v} disabled={!o.on}
+                className={"pe-opt" + (o.v === v ? " sel" : "")} onClick={() => setV(o.v)}>
+                <span className="pe-opt-mark" aria-hidden="true">{o.v === v ? <Icon name="check" size={14} /> : null}</span>
+                <span className="pe-opt-lbl">{o.v}</span>
+                {!o.on && <span className="caption" style={{ marginLeft: "auto" }}>Not available yet</span>}
+              </button>
+            ))}
+          </div>
+        )}
+        {bad && v !== "" && <div className="pe-warn"><Icon name="alert-triangle" size={14} /> <span>Enter whole minutes, 1 to 120.</span></div>}
+        <p className="caption" style={{ margin: "8px 0 4px" }}>{idle ? "Applies to every operator." : "Used for generated reports and exports."} The app restarts when you apply.</p>
+      </div>
+      <div className="dlg-foot">
+        <button className="btn btn-secondary" onClick={closeDialog}>Cancel</button>
+        <button className="btn btn-primary" disabled={!can} onClick={apply}><Icon name="check" size={16} /> Apply</button>
+      </div>
+    </Dialog>
+  );
+}
+
 // Settings · General is the FACILITY's record — one shared truth for everyone on the plant.
 // Anything that is per-operator or per-device (theme, density, text size, language, equipment
 // label mode, units, default screen) lives in Preferences and is NOT duplicated here.
 function GeneralTab() {
-  const [idle, setIdle] = React.useState(() => { try { return localStorage.getItem("nj_idle_logout_min") || "20"; } catch (e) { return "20"; } });
-  const setIdleVal = (v) => { setIdle(v); try { localStorage.setItem("nj_idle_logout_min", v); } catch (e) {} };
+  const read = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+  const idle = parseInt(read("nj_idle_logout_min", "20"), 10) || 20;
+  const lang = read("nj_report_lang", "English");
+  // Both settings restart the running app, so they are edited in a Cancel / Apply dialog, never
+  // inline. Who may change them is a role permission (NJORD · Change Project Settings, Supervisor
+  // by default). The prototype SIMULATES the restart (overlay, stays on this tab): a real reload
+  // of this Babel build shows a blank page for seconds and lands on the Dashboard.
+  usePerms();
+  const canEdit = njCan("NJORD", "Change Project Settings");
+  const [, bump] = React.useReducer((x) => x + 1, 0);
+  const [restarting, setRestarting] = React.useState(false);
+  const applyAndReload = (k, v) => { try { localStorage.setItem(k, String(v)); } catch (e) {} setRestarting(true); setTimeout(() => { setRestarting(false); bump(); if (window.njToast) window.njToast("Setting applied · app restarted"); }, 1200); };
+  const editIdle = () => openDialog(<ProjectSettingDialog kind="idle" value={idle} onApply={(v) => applyAndReload("nj_idle_logout_min", v)} />);
+  const editLang = () => openDialog(<ProjectSettingDialog kind="lang" value={lang} onApply={(v) => applyAndReload("nj_report_lang", v)} />);
+  const empty = !!(window.njEmptySite && window.njEmptySite.on);
+  const toggleEmpty = () => openDialog(<ConfirmDialog
+    title={empty ? "Show demo data again" : "Show the empty site"}
+    message={empty ? "Brings back every building, department, alarm and log exactly as they were." : "Hides every building, department, system, alarm, log, note, measurement and on-call group so each screen shows its empty state."}
+    detail="Demo data is not deleted. The app restarts." confirmLabel={empty ? "Show demo data" : "Show empty site"} icon="inbox"
+    onConfirm={() => window.njEmptySite.set(!empty)} />);
   return (
     <div className="set-grid">
       <AlarmTargetsCard />
       <div className="card">
         <div className="card-head"><span className="card-title">Project Settings</span></div>
         <div className="set-form">
-          <div className="set-row">
+          <button type="button" className="set-row set-row-btn" onClick={editIdle} disabled={!canEdit} title={canEdit ? undefined : "Needs the Change Project Settings permission"}>
             <div className="set-row-l"><span className="set-row-name">Inactivity logout</span><span className="set-row-desc">Auto sign-out after idle · applies to every operator</span></div>
-            <span className="set-num"><input type="number" min="1" max="120" value={idle} onChange={(e) => setIdleVal(e.target.value)} onBlur={() => { const n = Math.min(120, Math.max(1, parseInt(idle, 10) || 20)); setIdleVal(String(n)); }} /> <span className="u">min</span></span>
-          </div>
-          <div className="set-row">
+            <span className="set-row-val"><span className="data">{idle}</span> <span className="u">min</span><Icon name="chevron-right" size={16} color="var(--slate-400)" /></span>
+          </button>
+          <button type="button" className="set-row set-row-btn" onClick={editLang} disabled={!canEdit} title={canEdit ? undefined : "Needs the Change Project Settings permission"}>
             <div className="set-row-l"><span className="set-row-name">Report language</span><span className="set-row-desc">Language of generated reports and exports</span></div>
-            <span className="select">English <Icon name="chevron-down" size={14} color="var(--slate-400)" /></span>
+            <span className="set-row-val">{lang}<Icon name="chevron-right" size={16} color="var(--slate-400)" /></span>
+          </button>
+          <div className="set-row">
+            <div className="set-row-l"><span className="set-row-name">Empty site</span><span className="set-row-desc">Demo only · no buildings, departments or data anywhere, to review empty states. Demo data is kept</span></div>
+            <button type="button" className={"oc-switch" + (empty ? " on" : "")} role="switch" aria-checked={empty} aria-label="Empty site" onClick={toggleEmpty}><span className="oc-switch-knob"></span></button>
           </div>
         </div>
+        {!canEdit && <p className="caption" style={{ margin: 0, padding: "0 20px 16px" }}>Changing project settings needs the Change Project Settings permission (Settings · Roles).</p>}
       </div>
+      {restarting && ReactDOM.createPortal(<div className="set-restart" role="status"><NjSpinner /> <span>Restarting NJORD…</span></div>, document.body)}
       <div className="card">
         <div className="card-head"><div className="card-head-l"><Icon name="sliders-horizontal" size={16} color="var(--slate-600)" /><span className="card-title">Your Preferences</span></div></div>
         <div className="set-form">

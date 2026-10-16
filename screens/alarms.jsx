@@ -400,7 +400,8 @@ function BlockDialog({ rows, ids, label, onDone, denied }) {
   );
 }
 function openBlockDialog(target, onDone) {
-  const rows = Array.isArray(target) ? target : [target];
+  const rows = (Array.isArray(target) ? target : [target]).filter(Boolean);
+  if (!rows.length) return;
   const split = njShelveSplit(rows);
   if (!split.ok.length) { openDialog(<BlockRefusal rows={split.no} onDone={onDone} />); return; }
   const ids = split.ok.map((r) => r.id);

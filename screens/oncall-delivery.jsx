@@ -64,7 +64,7 @@ function dlSeed() {
 }
 
 const njDeliveryLog = {
-  seed: dlSeed(),
+  seed: window.NJ_EMPTY_SITE ? [] : dlSeed(),
   extra: (function () { try { const r = JSON.parse(localStorage.getItem(DL_LS)); return Array.isArray(r) ? r : []; } catch (e) { return []; } })(),
   subs: new Set(),
   sub(fn) { this.subs.add(fn); return () => this.subs.delete(fn); },

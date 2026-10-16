@@ -118,7 +118,9 @@ body.standalone .nav-page{padding:var(--pad-y) var(--pad-x)}
   .de-rail-scroll{flex:none;max-width:460px;max-height:240px;overflow-y:auto}
   .de-panel-scroll{overflow:visible}
 }
-.start-grid,.bio-grid2{gap:var(--gap-lg)}
+/* card-to-card spacing is ONE value system-wide: var(--gap) (16px at desktop). These two used
+   --gap-lg (20px), the only screens off the rhythm. */
+.start-grid,.bio-grid2{gap:var(--gap)}
 
 @media (max-width:1180px){
   .ras-layout,.an-layout,.ratn-overview,.stat-charts,.role-layout,

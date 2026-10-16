@@ -15,8 +15,8 @@ function tvTankCount(dept) { return { "Grow-out": 6, "Start-Feeding": 6 }[dept &
 // DPT1 reads the real panel data (single source of truth with the Fish Tank screen); every
 // other department gets a deterministic set so the rail is honest about scope.
 function njVitalTanks(buildingId, deptId) {
-  const bld = FACILITY.find((b) => b.id === buildingId) || FACILITY[0];
-  const dept = bld.depts.find((d) => d.id === deptId) || bld.depts[0];
+  const bld = FACILITY.find((b) => b.id === buildingId) || FACILITY[0] || NJ_NO_BUILDING;
+  const dept = bld.depts.find((d) => d.id === deptId) || bld.depts[0] || NJ_NO_DEPT;
   if (deptId === "b1-d1" && window.TANK_PANELS) {
     return window.TANK_PANELS.map((t) => ({
       n: t.n, tag: t.tag, o2: t.o2, level: t.level, active: t.active, feeding: t.feeding,
@@ -35,8 +35,8 @@ function njVitalTanks(buildingId, deptId) {
   });
 }
 function njSumpVital(buildingId, deptId) {
-  const bld = FACILITY.find((b) => b.id === buildingId) || FACILITY[0];
-  const dept = bld.depts.find((d) => d.id === deptId) || bld.depts[0];
+  const bld = FACILITY.find((b) => b.id === buildingId) || FACILITY[0] || NJ_NO_BUILDING;
+  const dept = bld.depts.find((d) => d.id === deptId) || bld.depts[0] || NJ_NO_DEPT;
   if (deptId === "b1-d1") return { tag: "DPT1-SMP0-LT1", level: 193, pumpTag: "DPT1-FTA0-PU1", hz: 0, running: false };
   const h = tvSeed(bld.id + deptId + "sump");
   return { tag: dept.name + "-SMP0-LT1", level: 172 + (h % 42), pumpTag: dept.name + "-FTA0-PU1", hz: h % 3 === 0 ? 0 : 28 + (h % 14), running: h % 3 !== 0 };

@@ -63,6 +63,7 @@ const FACILITY = [
     ]},
   ]},
 ];
+njBlank(FACILITY); // empty-site demo (lib/empty-site.js)
 
 // ---- Facility utilities ("Other"): cross-facility, not scoped to a building/department ----
 // Reached from the Site Plan "Other" group; each opens a top-level route (not a dept sub-route).
@@ -71,6 +72,7 @@ const FACILITY_OTHER = [
   { label: "Energy Consumption", icon: "bar-chart-3", route: "energy", status: "ok" },
   { label: "Heat Pumps", icon: "thermometer-snowflake", route: "heatpumps", status: "ok" },
 ];
+njBlank(FACILITY_OTHER); // empty-site demo (lib/empty-site.js)
 
 // ---- Active batches: the stock currently in the facility ----
 // ONE list. Desktop WF_BATCHES (screens/fish-welfare.jsx) and both mobile registration sheets
@@ -81,6 +83,7 @@ const FACILITY_BATCHES = [
   { id: "21-2-31-0-26-25", deptId: "b2-d3", dept: "DPT3", stage: "Grow-out", pop: "188k", status: "warning" },
   { id: "21-2-41-0-26-25", deptId: "b2-d4", dept: "DPT4", stage: "Grow-out", pop: "210k", status: "ok" },
 ];
+njBlank(FACILITY_BATCHES); // empty-site demo (lib/empty-site.js)
 // Departments that own fish tanks, and how many tanks each has — the ONE derivation both
 // surfaces use to scope a registration (screens/reports.jsx reuses it as repDepts/repTankCount).
 function njTankDepts() {
@@ -100,6 +103,7 @@ const FACILITY_TANKS = {
   "b2-d4": [15, 16, 17, 18, 19, 20],
   "b3-d2": [21, 22, 23, 24, 25, 26],
 };
+njBlank(FACILITY_TANKS); // empty-site demo (lib/empty-site.js)
 function njTankCount(dept) { const t = FACILITY_TANKS[dept && dept.id]; return t ? t.length : 0; }
 function njDeptTanks(deptId) {
   const hit = njTankDepts().find((x) => x.d.id === deptId);

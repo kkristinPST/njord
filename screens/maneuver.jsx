@@ -55,8 +55,10 @@ const MVR_LOG = [
   { t: "04 Mar 2026 · 10:58:47", area: "DPT2 Seawater Exchange",tag: "DPT2-SWE0-VV3", sig: "Exchange valve",                from: "Closed",     to: "Open",    op: "System", cm: "" },
   { t: "04 Mar 2026 · 10:41:09", area: "DPT1 Water Treatment",  tag: "DPT1-WTR0-UV1", sig: "UV reactor intensity setpoint", from: "70 %",       to: "85 %", op: "M. Haugen", cm: "Increased after lamp cleaning, turbidity 0.6 NTU" },
 ];
+njBlank(MVR_LOG); // empty-site demo (lib/empty-site.js)
 
 function ManeuverHistoryScreen() {
+  if (njNoSite()) return <NjNoSitePage active="maneuver" title="Maneuver History" icon="history" what="No maneuvers recorded" body="Setpoint, mode and equipment changes are logged here once the site is in operation." />;
   const [src, setSrc] = React.useState("All");
   const [q, setQ] = React.useState("");
   const ql = q.trim().toLowerCase();
@@ -69,7 +71,9 @@ function ManeuverHistoryScreen() {
   };
   const rows = base.filter((r) => src === "All" || (src === "Operator") === (r.op !== "System"));
   const manual = MVR_LOG.filter((r) => r.op !== "System").length;
-  const pg = window.usePaged(rows, 25);
+  const mvrWrap = React.useRef(null);
+  const fitN = window.useFitRows(mvrWrap, true, [rows.length > 0]);
+  const pg = window.usePaged(rows, "fit", { key: "nj_mvr_rows_v1", fit: fitN });
   return (
     <AppShell active="maneuver" title="Maneuver History" crumbs={["Operator log"]} statusLevel="ok" scope="facility">
       <div className="pagehead">
@@ -109,7 +113,7 @@ function ManeuverHistoryScreen() {
           </div>
         </div>
 
-        <div className="mvr-scroll">
+        <div className="mvr-scroll" ref={mvrWrap}>
         <table className="tbl mvr-tbl">
           <thead>
             <tr>
@@ -142,7 +146,7 @@ function ManeuverHistoryScreen() {
         </table>
         </div>
 
-        <window.PageFoot pg={pg} noun="maneuvers" extra={manual + " by operators · 01 Jun 2026"} />
+        <window.PageFoot pg={pg} options={window.NJ_FIT_ROWS} noun="maneuvers" extra={manual + " by operators · 01 Jun 2026"} />
       </div>
     </AppShell>
   );

@@ -186,6 +186,7 @@ const EQ_ACTIVE_ALARMS = [
   { a: "General fault from drive", p: "critical", s: "Normal" },
   { a: "Missing operation feedback", p: "critical", s: "Normal" },
 ];
+njBlank(EQ_ACTIVE_ALARMS); // empty-site demo (lib/empty-site.js)
 function genEqAlarmHist(equip) {
   const h = eqHash(equip.tag || equip.name);
   const names = ["Missing operation feedback", "Communication error with drive", "General fault from drive"];

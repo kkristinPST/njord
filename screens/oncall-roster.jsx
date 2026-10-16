@@ -67,6 +67,7 @@ const SH_SEED = {
   },
   plan: {},
 };
+njBlank(SH_SEED.shifts, (s) => s.builtin); njBlank(SH_SEED.roster); // empty-site demo
 
 // ── dated planning ──
 // The USUAL WEEK (`roster`) is what repeats until someone says otherwise; `plan` holds only

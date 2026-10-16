@@ -3,11 +3,11 @@
 //
 // It is a VIEW over oncallStore, never a second model. It is the ONLY place names are edited
 // (the Groups cards are gone): the group name opens the group drawer (oncall-page.jsx) for
-// covers, area, window, pause, test, duplicate, delete. Rules carried from the customer's sheet:
+// covers, window, pause, test, duplicate, delete. Rules carried from the customer's sheet:
 //  · each level has a minimum number of recipients; Save refuses fewer
 //  · a person sits on one escalation level per group (the picker leaves the others out)
-//  · every add and every remove asks WHEN in the same popover: Now, or from a date and time
-//    (the Monday swap). There is no separate plan mode — one spot, one decision per change.
+//  · edits are a draft applied on Save. Planned (Later) changes are behind njFlag("oc_plan"),
+//    default OFF: with it off no Planned button, no planned chips, no Now|Later on the save bar.
 //  · all alarms held on Priority 1 around the clock is checked across the groups together
 //
 // Popovers are PORTALLED to <body> at a fixed position. Inside the scrolling table an absolute
@@ -40,9 +40,7 @@ function oclNextMonday() {
   d.setDate(d.getDate() + add);
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }
-// the last "Later" date/time is remembered for the session: a Monday swap is several changes
-// in a row, and re-typing the same date for each one is how one of them lands on the wrong day
-const oclWhenMemo = { mode: "now", date: null, time: "07:00" };
+function oclPlanOn() { return !!(window.njFlag && window.njFlag("oc_plan")); }
 function oclAt(w) { if (w.mode === "now") return null; const t = new Date(w.date + "T" + (w.time || "00:00")).getTime(); return isNaN(t) ? NaN : t; }
 function oclAtBad(w) { const t = oclAt(w); return w.mode === "later" && (!t || isNaN(t) || t <= oclDutyNow()); }
 
@@ -94,34 +92,6 @@ function OclPop({ anchor, onClose, width = 280, children }) {
   return ReactDOM.createPortal(<div className="dl-pop" ref={ref} style={{ left: st.left, top: st.top, width }}>{children}</div>, document.body);
 }
 
-// ── when: now, or from a date and time ──
-function OclWhen({ w, setW }) {
-  const bad = oclAtBad(w);
-  return (
-    <div className="dl-when-row">
-      <span className="dl-when-l">When</span>
-      <div className="segmented dl-when-seg">
-        <button className={"seg" + (w.mode === "now" ? " active" : "")} onClick={() => setW({ mode: "now" })}>Now</button>
-        <button className={"seg" + (w.mode === "later" ? " active" : "")} onClick={() => setW({ mode: "later" })}>Later</button>
-      </div>
-      {w.mode === "later" && (
-        <div className="dl-when-dt">
-          <input type="date" className="oos-input dl-dt" value={w.date} onChange={(e) => setW({ date: e.target.value })} aria-label="Date the change takes effect" />
-          <input type="time" className="oos-input dl-dt" value={w.time} onChange={(e) => setW({ time: e.target.value })} aria-label="Time the change takes effect" />
-        </div>
-      )}
-      {w.mode === "later" && bad && <span className="dl-when-bad"><Icon name="alert-triangle" size={12} /> Pick a time in the future</span>}
-    </div>
-  );
-}
-function useOclWhen() {
-  // When always opens on Now (a remembered Later made the next quick fix a silent plan); the
-  // Later date and time ARE remembered, so a Monday batch is still one date typed once.
-  const [w, set] = React.useState(() => Object.assign({}, oclWhenMemo, { mode: "now", date: oclWhenMemo.date || oclNextMonday() }));
-  const setW = (p) => set((s) => { const n = Object.assign({}, s, p); Object.assign(oclWhenMemo, n); return n; });
-  return [w, setW];
-}
-
 // one cell = one level of one group, drawn from the DRAFT view (screens/oncall-draft.jsx):
 // chips with a level dropdown, Add, and struck-through removals until Save.
 function OclCell({ g, tier }) {
@@ -142,7 +112,7 @@ const OcFindCtx = window.OcFindCtx || (window.OcFindCtx = React.createContext(""
 function oclRowNames(g) {
   const ids = new Set();
   OCL_TIERS.forEach((t) => ((g.tiers && g.tiers[t]) || []).forEach((id) => ids.add(id)));
-  window.oncallStore.pending.forEach((x) => { if (x.gid === g.id) ids.add(x.mid); });
+  if (oclPlanOn()) window.oncallStore.pending.forEach((x) => { if (x.gid === g.id) ids.add(x.mid); });
   return Array.from(ids).map((id) => ocMember(id).name.toLowerCase());
 }
 function OcDutyList({ find = "", flash, page }) {
@@ -179,7 +149,7 @@ function OcDutyList({ find = "", flash, page }) {
             return (
             <tr key={g.id} data-oc-id={g.id} className={cls}>
               <td><div className="dl-duty-row"><button className={"oc-switch dl-sw" + (g.enabled ? " on" : "")} role="switch" aria-checked={g.enabled} aria-label={"Paging " + g.name} disabled={!ocCanPause()} title={!ocCanPause() ? "Pausing a group needs the Pause & Resume Groups permission" : g.enabled ? "Paging · click to pause" : "Paused · click to resume"} onClick={() => window.ocTogglePause ? window.ocTogglePause(g.id) : store.toggle(g.id)}><span className="oc-switch-knob" /></button><button className="dl-duty dl-duty-btn" title={(g.desc ? g.desc + " · " : "") + "Open group settings"} onClick={() => open(g)}><span>{g.name}</span><Icon name="chevron-right" size={14} /></button></div>{window.OcWinBadge && <window.OcWinBadge st={st} />}</td>
-              <td><div className="dl-ag"><span className="oc-cover-dot" style={{ background: ocPrioColor(g.minPriority) }} /> {ocPrio(g.minPriority).covers}</div><div className="dl-sub">{ocAreaSummary(g)}</div></td>
+              <td><div className="dl-ag"><span className="oc-cover-dot" style={{ background: ocPrioColor(g.minPriority) }} /> {ocPrio(g.minPriority).covers}</div></td>
               <td>{ocSchedLines(g).map((l, i) => <div key={i} className="dl-win-l">{l}</div>)}</td>
               {OCL_TIERS.map((t) => <OclCell key={t} g={g} tier={t} />)}
             </tr>
@@ -227,13 +197,13 @@ function OclToolbar({ className, noStatus, popout }) {
   const [pendEl, setPendEl] = React.useState(null);
   if (window.useOcDraft) window.useOcDraft();
   const view = window.ocView ? window.ocView() : store.groups;
-  const rule = true; // the site switch was removed; the check always runs
   const aa = window.njAllAlarmsCover ? window.njAllAlarmsCover(view) : { groups: [], gaps: [] };
   const aaOk = aa.groups.length && !aa.gaps.length;
-  const nPend = store.pending.length;
+  const planOn = oclPlanOn();
+  const nPend = planOn ? store.pending.length : 0;
   return (
     <div className={className}>
-      {noStatus ? null : !rule ? <span className="dl-status off" title="Turned off for this site under On-call settings"><Icon name="shield" size={16} /> Round-the-clock check off</span> :
+      {noStatus ? null :
       <span className={"dl-status " + (aaOk ? "ok" : "crit")} title="All alarms must be held by someone on Priority 1 at every hour of the week">
         <Icon name={aaOk ? "shield-check" : "alert-octagon"} size={16} />
         {aaOk ? "All alarms covered around the clock"
@@ -243,13 +213,13 @@ function OclToolbar({ className, noStatus, popout }) {
       <div className="rwin-toolbar-r">
         <span className="dl-hint">Changes apply when you save.</span>
         {window.njPerms && window.njPerms.session && <span className="dl-as" title="Demo session role, set under Settings · Roles"><Icon name="user-cog" size={12} /> As {window.njPerms.session}</span>}
-        <button className={"btn btn-secondary btn-sm" + (nPend ? "" : " dl-pend-empty")} onClick={(e) => { const el = e.currentTarget; setPendEl((p) => (p ? null : el)); }}>
+        {planOn && <button className={"btn btn-secondary btn-sm" + (nPend ? "" : " dl-pend-empty")} onClick={(e) => { const el = e.currentTarget; setPendEl((p) => (p ? null : el)); }}>
           <Icon name="calendar-clock" size={14} /> Planned <span className="dl-pend data">{nPend}</span>
-        </button>
+        </button>}
         <button className="btn btn-secondary btn-sm" title="On-call change log: who changed what, and when" onClick={() => window.openOcLog && window.openOcLog()}><Icon name="history" size={14} /> Change log</button>
         {popout && <button className="an-cardic" onClick={() => window.openDutyList && window.openDutyList()} aria-label="Open paging groups in a floating window" title="Open paging groups in a floating window, so it stays visible while you work on other screens"><Icon name="square-arrow-out-up-right" size={16} /></button>}
       </div>
-      {pendEl && <OclPendingPop anchor={pendEl} onClose={() => setPendEl(null)} />}
+      {planOn && pendEl && <OclPendingPop anchor={pendEl} onClose={() => setPendEl(null)} />}
     </div>
   );
 }
@@ -327,4 +297,4 @@ function OcDutyListTab({ find, flash }) {
   );
 }
 
-Object.assign(window, { OcDutyListWindow, OcDutyListTab, openDutyList, dutyWin, OclPop, OclWhen, oclAt, oclAtBad, oclNextMonday, oclCancel, oclDutyNow });
+Object.assign(window, { OcDutyListWindow, OcDutyListTab, openDutyList, dutyWin, OclPop, oclPlanOn, oclAt, oclAtBad, oclNextMonday, oclCancel, oclDutyNow });

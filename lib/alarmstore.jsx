@@ -58,6 +58,7 @@ const ALARM_REGISTER_SEED = [
   // ---- DEACTIVATED · OUT OF SERVICE (maintenance, administrative — work order) ----
   { id: "AL23", t: "—",                   area: "DPT2 Pump Sump",       tag: "DPT2-SMP0-FT1", alarm: "Flow sensor signal error",    level: "low",    state: "unack", supp: "oos",     oosBy: "M. Haugen",      oosReason: "Sensor swap, work order WO-4471",        oosAt: "03/03/2026 22:40", meas: null },
 ];
+njBlank(ALARM_REGISTER_SEED); // empty-site demo (lib/empty-site.js)
 
 // Fixed "now" reference for the seeded register (latest event + a couple of minutes).
 const NJ_NOW = (function () { const d = new Date(2026, 2, 4, 13, 2, 0); return d.getTime(); })();

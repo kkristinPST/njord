@@ -127,6 +127,7 @@ function ConsChart({ input, period }) {
 }
 
 function ConsumptionScreen() {
+  if (njNoSite()) return <NjNoSitePage active="navigation" title="Consumption Overview" icon="package" what="No consumption data" body="Feed, oxygen, water and chemical use appear here once the site is in operation." />;
   const [pid, setPid] = React.useState("week");
   const [sel, setSel] = React.useState("feed");
   const period = CONS_PERIODS.find((p) => p.id === pid);
@@ -163,7 +164,7 @@ function ConsumptionScreen() {
         {CONS_INPUTS.map((i) => <ConsCard key={i.key} input={i} period={period} selected={i.key === sel} onSelect={setSel} />)}
       </div>
 
-      <div className="card">
+      <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-head">
           <div className="card-head-l">
             <Icon name={selInput.icon} size={16} color="var(--slate-600)" />

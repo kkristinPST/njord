@@ -37,6 +37,7 @@ const WF_REGS = [
   { id: "R-2599", batch: "21-2-31-0-26-25", loc: "DPT3 · Tank 11", deptId: "b2-d3", dept: "DPT3", tank: "Tank 11", period: "Jan 2026", created: "16/01/2026", modified: "16/01/2026", user: "A. Birkeland", done: 200, fish: 200, state: "complete" },
   { id: "R-2598", batch: "21-2-41-0-26-25", loc: "DPT4 · Tank 16", deptId: "b2-d4", dept: "DPT4", tank: "Tank 16", period: "Dec 2025", created: "11/12/2025", modified: "11/12/2025", user: "M. Haugen",   done: 200, fish: 200, state: "complete" },
 ];
+njBlank(WF_REGS); // empty-site demo (lib/empty-site.js)
 // Report scope is keyed on the department ID and labelled with its building — a name-keyed scope
 // cannot tell Building 1 · DPT2 from Building 3 · DPT2.
 const WF_DEPTS = njTankDepts().map((x) => x.d.id);

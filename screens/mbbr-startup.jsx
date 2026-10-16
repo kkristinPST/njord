@@ -519,6 +519,7 @@ function MbChart({ rows, series, unit, title, sub, pick }) {
 }
 
 function MbbrStartupScreen({ tab, onTab }) {
+  if (njNoSite()) return <NjNoSitePage active="analytics" title="Analytics" crumbs={["Biofilter Maturation"]} head={<window.AnalyticsTabs active={tab} onChange={onTab} />} icon="flask-conical" what="No biofilters maturing" body="Daily readings and chemical additions are logged here once a department's MBBR starts up." />;
   useMbbr();
   const opts = mbDepts();
   const [deptId, setDeptId] = React.useState(() => (opts[0] ? opts[0].d.id : ""));
@@ -557,7 +558,11 @@ function MbbrStartupScreen({ tab, onTab }) {
   const deptLabel = scope ? `${scope.b.name} · ${scope.d.name}` : "—";
   const all = scope ? mbStore.rows(scope.d.id) : [];
   const inRange = range === 0 ? all : all.filter((r) => r.day > MB_ELAPSED - range);
-  const rows = inRange.some((r) => r.date === MB_TODAY_KEY) ? inRange : [{ ...mbStore.blank(MB_TODAY_KEY), ghost: true }, ...inRange];
+  const allRows = inRange.some((r) => r.date === MB_TODAY_KEY) ? inRange : [{ ...mbStore.blank(MB_TODAY_KEY), ghost: true }, ...inRange];
+  const fitN = useFitRows(wrapRef, true, [allRows.length > 0]);
+  const pg = usePaged(allRows, "fit", { key: "nj_mb_rows_v1", fit: fitN });
+  React.useEffect(() => { pg.setPage(1); }, [deptId, range]);
+  const rows = pg.rows;
   const last = all[0];
   const stage = mbStage(last);
   const volNum = (() => { const n = parseFloat(circVol); return circ === "Custom" && !isNaN(n) && n > 0 ? n : null; })();
@@ -640,7 +645,7 @@ function MbbrStartupScreen({ tab, onTab }) {
         })}
       </div>
 
-      <div className="card">
+      <div className="card" style={{ marginBottom: 16 }}>
         <div className="rep-toolbar">
           <div className="rep-field">
             <span className="rep-lbl">Department</span>
@@ -794,6 +799,7 @@ function MbbrStartupScreen({ tab, onTab }) {
             </tbody>
           </table>
         </div>
+        <PageFoot pg={pg} noun="rounds" options={NJ_FIT_ROWS} />
       </div>
     </AppShell>
   );

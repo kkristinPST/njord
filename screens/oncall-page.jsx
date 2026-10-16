@@ -1,13 +1,13 @@
 // oncall-page.jsx — Settings · On-call, simplified (On-call Simplification.html, decisions A–D).
 // The duty list IS the page and Save is its only primary action. What left the page, and where:
-//  · Groups cards     → the duty-list row (names, covers, area, window, 24/7, required) and the
-//                       GROUP DRAWER opened from the group name (pause, covers, area, window,
-//                       required levels, test, duplicate, delete)
+//  · Groups cards     → the duty-list row (names, covers, window, 24/7, minimums) and the
+//                       GROUP DRAWER opened from the group name (pause, covers, alarms in group,
+//                       window, minimum recipients, test, duplicate, delete)
 //  · By person        → Find person: matching chips are marked, rows without them dimmed
 //  · Resend / Upscale / Personal shifts / Site channels → one On-call settings dialog (openOcSite)
 //  · Dispatch pill + Delivery verification card → one Dispatch drawer
-//  · New group, New shift, On-call settings → More (Pause all removed). Pop-out = icon on the duty list
-//    card (same as the Trend card); Send test alarm = Dispatch tab (footer + Last test) and group drawer
+//  · Toolbar: New group + Settings (the More menu is gone; OcMoreMenu is unused). Pop-out = icon on the
+//    duty list card; Send test alarm = Dispatch tab (footer + Last test) and group drawer
 // Rows outside their paging window are SHADED, never hidden or re-sorted (decision C).
 
 // ── paging state at a moment ── reads the same per-day window strings the editor writes
@@ -135,7 +135,7 @@ function OcGroupDrawerBody({ group }) {
         <div className="ad-head-l">
           <div className="ad-badges">{st ? <OcWinBadge st={st} /> : <span className="dl-state idle"><Icon name="plus" size={12} /> New group</span>}</div>
           <div className="ad-alarm">{g.name.trim() || (editing ? saved.name : "New on-call group")}</div>
-          <div className="ad-sub">{ocPrio(g.minPriority).covers} · {ocAreaSummary(g)} · {ocSchedLines(g).join(" · ")}</div>
+          <div className="ad-sub">{ocPrio(g.minPriority).covers} · {ocSchedLines(g).join(" · ")}</div>
         </div>
         <button className="ad-x" title="Close" aria-label="Close" onClick={close}><Icon name="x" size={20} /></button>
       </div>

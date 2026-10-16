@@ -307,6 +307,7 @@ const FEED_TABLE_SEED = [
       [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2],
     ] },
 ];
+njBlank(FEED_TABLE_SEED); // empty-site demo (lib/empty-site.js)
 const FEED_TABLE_TEMPS = [0,1,2,3,4,5,6,7,8,9,10,11,12];
 
 function FeedTablesView({ onBack }) {
@@ -386,6 +387,7 @@ function FeedTablesView({ onBack }) {
 }
 
 function FeedingScreen() {
+  if (njNoSite()) return <NjNoSitePage active="feeding" title="Fish Feeding" icon="utensils" what="No feeding lines" body="Feeders and feeding tanks appear here once a department with a feeding line is commissioned." />;
   const [view, setView] = React.useState("tanks");
   const ffView = useFfView();
   useAlarmHub();

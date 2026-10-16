@@ -21,6 +21,7 @@ const NOTES_SEED = [
   { id: "n6", type: "equipment", tag: "DPT1-FIL0", name: "Drum filter", area: "Water Treatment · DPT1", header: "Drive firmware updated", text: "Drive firmware updated to v2.4.1.", by: "System", ts: "12 May 2025 08:00", archived: true },
   { id: "n7", type: "equipment", tag: "DOX0", name: "Oxygenation cone", area: "RAS · DPT1", header: "Setpoint raised for grading", text: "O₂ setpoint temporarily raised ahead of grading; revert after operation.", by: "E. Sørensen", ts: "10 May 2025 13:19", archived: false },
 ];
+njBlank(NOTES_SEED); // empty-site demo (lib/empty-site.js)
 
 function notesLoad() {
   try {

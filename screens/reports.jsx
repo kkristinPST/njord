@@ -477,15 +477,16 @@ function ReportBrowser({ current, onOpen }) {
 function openReportBrowser(current, onOpen) { openDialog(<ReportBrowser current={current} onOpen={onOpen} />); }
 
 function ReportsScreen() {
+  if (njNoSite()) return <NjNoSitePage active="reports" title="Reports" icon="file-text" what="No reports available" body="Reports are generated per building, department or tank. They appear once the site is commissioned." />;
   const pins = useRepPins();
   const [report, setReport] = React.useState(() => repPins.pins[0] || "Fish Calculation");
   const [showCalc, setShowCalc] = React.useState(true);
   const ctx = useCtx();
   const opts = repDepts();
-  const first = opts.find((o) => o.d.id === ctx.dept.id) || opts[0];
+  const first = opts.find((o) => o.d.id === ctx.dept.id) || opts[0] || { b: NJ_NO_BUILDING, d: NJ_NO_DEPT };
   const [scope, setScope] = React.useState({ b: first.b.id, d: first.d.id, tank: 1 });
-  const bld = FACILITY.find((x) => x.id === scope.b) || FACILITY[0];
-  const dpt = bld.depts.find((x) => x.id === scope.d) || bld.depts[0];
+  const bld = FACILITY.find((x) => x.id === scope.b) || FACILITY[0] || NJ_NO_BUILDING;
+  const dpt = bld.depts.find((x) => x.id === scope.d) || bld.depts[0] || NJ_NO_DEPT;
   const tankList = njDeptTanks(dpt.id);
   const tanks = tankList.length;
   const def = REPORTS[report];

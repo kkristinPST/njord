@@ -428,12 +428,8 @@ body.nj-text-lg .dock-drawer, body.nj-text-xl .dock-drawer { width: calc(412px /
 /* ---- table footer / pagination ---- */
 .tbl-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid var(--slate-200); }
 .rows-select { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--slate-600); }
-/* native rows-per-page picker — inherits the .select chrome, adds its own caret */
-select.rows-select-input { appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 24px;
-  background-image: linear-gradient(45deg, transparent 50%, var(--slate-400) 50%), linear-gradient(135deg, var(--slate-400) 50%, transparent 50%);
-  background-position: calc(100% - 14px) calc(50% + 1px), calc(100% - 9px) calc(50% + 1px);
-  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
-select.rows-select-input:hover { border-color: var(--slate-400); }
+/* rows-per-page picker = the standard .nj-select dropdown, footer size */
+.nj-select.rows-select-input { height: 32px; padding-top: 0; padding-bottom: 0; line-height: 30px; min-width: 96px; }
 .select { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--fg); background: var(--surface); border: 1px solid var(--slate-300); border-radius: var(--r-md); padding: 6px 8px 6px 12px; cursor: pointer; white-space: nowrap; }
 .pager { display: flex; align-items: center; gap: 4px; }
 .pg { min-width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--slate-600); background: var(--surface); border: 1px solid transparent; border-radius: var(--r-md); cursor: pointer; padding: 0 8px; }

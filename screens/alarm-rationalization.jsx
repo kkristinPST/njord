@@ -478,7 +478,11 @@ function AlarmRationalizationScreen() {
   const [prioF, setPrioF] = React.useState(null);
   const [sort, setSort] = React.useState({ key: "tag", dir: 1 });
   const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(50);
+  const ratnWrap = React.useRef(null);
+  const [pageSel, setPageSelRaw] = React.useState(() => { try { const v = localStorage.getItem("nj_ratn_rows_v1"); if (v === "fit") return "fit"; const n = parseInt(v, 10); if (n > 0) return n; } catch (e) {} return "fit"; });
+  const setPageSize = (v) => { setPageSelRaw(v); setPage(1); try { localStorage.setItem("nj_ratn_rows_v1", String(v)); } catch (e) {} };
+  const ratnFit = useFitRows(ratnWrap, pageSel === "fit", [pageSel]);
+  const pageSize = pageSel === "fit" ? ratnFit : pageSel;
   const [cols, setCols] = React.useState(() => new Set(RATN_COLUMNS.filter((c) => !c.off).map((c) => c.key)));
   const [colMenu, setColMenu] = React.useState(false);
   const [showOverview, setShowOverview] = React.useState(true);
@@ -747,7 +751,7 @@ function AlarmRationalizationScreen() {
           <div className="ratn-selall">All {filtered.length.toLocaleString("nb-NO")} matching alarms selected. <button className="linkbtn" onClick={sel.clear}>Clear selection</button></div>
         )}
 
-        <div className="ratn-scroll">
+        <div className="ratn-scroll" ref={ratnWrap}>
           <table className="tbl ratn-tbl" style={{ minWidth: tableW, width: "100%" }}>
             <thead>
               <tr>
@@ -782,13 +786,7 @@ function AlarmRationalizationScreen() {
 
         {/* pagination */}
         <div className="tbl-foot ratn-foot">
-          <span className="rows-select">Rows per page
-            <span className="select ratn-pagesize">
-              <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
-                {RATN_PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </span>
-          </span>
+          <RowsSelect per={pageSel} options={NJ_FIT_ROWS} onPick={setPageSize} />
           <span className="small">{filtered.length ? `${(start + 1).toLocaleString("nb-NO")}–${Math.min(start + pageSize, filtered.length).toLocaleString("nb-NO")}` : 0} of {filtered.length.toLocaleString("nb-NO")} {filtered.length !== all.length ? `(filtered from ${all.length.toLocaleString("nb-NO")})` : "alarms"}</span>
           <RatnPager page={curPage} totalPages={totalPages} onGo={setPage} />
         </div>

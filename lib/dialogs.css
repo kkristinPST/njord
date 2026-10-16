@@ -8,7 +8,7 @@
 /* scrim + centering — anchor dialogs near the top (align-items:flex-start) rather than the
    vertical center, so switching tabs (which changes content height) grows the panel DOWNWARD
    only and the top edge / header never jumps. padding-top ≈ centers typical dialogs. */
-.modal-scrim { position: fixed; inset: 0; z-index: 2000; background: rgba(15, 24, 43, 0.46); display: flex; align-items: flex-start; justify-content: center; padding: 32px; padding-top: max(40px, 9vh); animation: dlgFade .14s ease; }
+.modal-scrim { position: fixed; inset: 0; z-index: 2900; background: rgba(15, 24, 43, 0.46); display: flex; align-items: flex-start; justify-content: center; padding: 32px; padding-top: max(40px, 9vh); animation: dlgFade .14s ease; }
 .modal-host { max-width: 100%; max-height: 100%; display: flex; }
 @keyframes dlgFade { from { opacity: 0; } to { opacity: 1; } }
 
@@ -261,6 +261,7 @@
 /* ── parameter edit dialog ── */
 .btn:disabled, .btn[disabled] { opacity: .45; cursor: not-allowed; box-shadow: none; }
 .pe-body { display: flex; flex-direction: column; gap: 0; padding-top: 2px; }
+.pe-body > * { flex-shrink: 0; } /* a short viewport scrolls the body; rows never shrink under their content */
 .pe-group { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--slate-400); padding: 4px 0 12px; }
 .pe-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--slate-100); min-height: 34px; }
 .pe-lbl { font-size: 14px; color: var(--slate-600); }
@@ -290,6 +291,8 @@
   border: 1.5px solid var(--slate-300); color: #fff; }
 .pe-opt.sel .pe-opt-mark { border-color: var(--primary); background: var(--primary); }
 .pe-opt-lbl { font-size: 14px; font-weight: 600; color: var(--fg); }
+.pe-opt:disabled { cursor: not-allowed; background: var(--slate-50); border-color: var(--slate-200); }
+.pe-opt:disabled .pe-opt-lbl { color: var(--slate-500); }
 .pe-meta { display: flex; flex-direction: column; gap: 0; }
 .pe-meta-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: var(--slate-500); padding: 10px 0; border-bottom: 1px solid var(--slate-100); }
 .pe-meta-row .data { font-weight: 700; color: var(--fg); }

@@ -32,6 +32,7 @@ const DE_SEED = [
   { id: "mt9", path: "Maintenance Logs", name: "Filter Status", value: "Clean", unit: "", decimals: null, min: null, max: null, building: "", department: "Maintenance",
     history: [{ value: "Clean", comment: "Backwash completed", ts: "04.03.2026, 22:15" }] },
 ];
+njBlank(DE_SEED); // empty-site demo (lib/empty-site.js)
 
 /* A stored record predates any field added to DE_SEED later, and load() restores the persisted
    array wholesale — so alarm limits added to the seed would never reach a browser that had
@@ -54,6 +55,9 @@ const deStore = {
   subs: new Set(),
   load() {
     if (deStore.tags) return;
+    // one-time: bring back the demo folders + measurements deleted while trying the empty look
+    // (the Settings · Empty site switch now does that without touching this data)
+    try { if (!localStorage.getItem("nj_de_restore_v1")) { localStorage.removeItem(DE_KEY); localStorage.removeItem(DE_FKEY); localStorage.setItem("nj_de_restore_v1", "1"); } } catch (e) {}
     try { const raw = localStorage.getItem(DE_KEY); deStore.tags = raw ? deMigrate(JSON.parse(raw)) : DE_SEED.map((t) => ({ ...t })); }
     catch (e) { deStore.tags = DE_SEED.map((t) => ({ ...t })); }
     try { const raw = localStorage.getItem(DE_FKEY); deStore.folders = raw ? JSON.parse(raw) : [...new Set(deStore.tags.map((t) => t.path))].sort(); }
@@ -631,23 +635,39 @@ function MoveTagDialog({ tag, existingPaths }) {
 }
 
 /* ── overflow (•••) menu — all admin actions hide here ── */
+// Portalled to body + fixed: the rail and the table are overflow containers, and an absolute
+// menu inside them was clipped (folder menu cut off at the rail's bottom). Flips up when short.
 function OverflowMenu({ items, onClose }) {
   const ref = React.useRef(null);
+  const anchor = React.useRef(null);
+  const [pos, setPos] = React.useState(null);
+  React.useLayoutEffect(() => {
+    const place = () => {
+      const a = anchor.current && anchor.current.parentElement; if (!a) return;
+      const r = a.getBoundingClientRect();
+      const mh = ref.current ? ref.current.offsetHeight : 260, mw = ref.current ? ref.current.offsetWidth : 214;
+      const up = r.bottom + 4 + mh > window.innerHeight - 8 && r.top - 4 - mh > 8;
+      const left = Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8));
+      setPos({ left, top: up ? r.top - 4 - mh : Math.min(r.bottom + 4, window.innerHeight - mh - 8) });
+    };
+    place();
+    window.addEventListener("resize", place); window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  }, []);
   React.useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target) && !(anchor.current && anchor.current.parentElement.contains(e.target))) onClose(); };
     const k = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("mousedown", h); document.addEventListener("keydown", k);
     return () => { document.removeEventListener("mousedown", h); document.removeEventListener("keydown", k); };
   }, [onClose]);
-  return (
-    <div className="de-menu" role="menu" ref={ref}>
+  return <><span ref={anchor} hidden></span>{ReactDOM.createPortal(
+    <div className="de-menu" role="menu" ref={ref} style={{ position: "fixed", top: pos ? pos.top : -9999, left: pos ? pos.left : -9999, right: "auto", zIndex: 2700 }}>
       {items.map((it, i) => it.sep
         ? <div className="de-menu-sep" key={i} />
         : <button key={i} className={"de-menu-item" + (it.danger ? " danger" : "")} role="menuitem" onClick={() => { onClose(); it.onClick(); }}>
             <Icon name={it.icon} size={16} /> <span>{it.label}</span>
           </button>)}
-    </div>
-  );
+    </div>, document.body)}</>;
 }
 
 /* ── measurement row (touch-first; one primary action + one overflow) ── */

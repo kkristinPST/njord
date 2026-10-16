@@ -226,5 +226,6 @@ const RATN_DATA = (function () {
   }
   return rows;
 })();
+njBlank(RATN_DATA); // empty-site demo (lib/empty-site.js)
 
 Object.assign(window, { RATN_DATA, RATN_PRIOS, RATN_CLASSES, RATN_RESP, RATN_GROUPS, RATN_JUSTIFY, RATN_STATUS, RATN_STATUS_ORDER });

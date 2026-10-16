@@ -79,6 +79,7 @@ const MANEUVERS = [
 ];
 
 function StartScreen() {
+  if (njNoSite()) return <NjNoSitePage active="start" title="Dashboard" icon="layout-dashboard" what="No buildings yet" body="Facility status, tank vitals, alarms and recent maneuvers appear here once the site is commissioned." />;
   const hub = useAlarmHub();
   const ac = alarmCounts();
   const active = hub.rows.filter(isActiveAlarm)
@@ -121,7 +122,7 @@ function StartScreen() {
           </div>
           <div className="pagehead-right">
             <button className="btn btn-secondary" onClick={() => window.__njNavigate && window.__njNavigate("maneuver")}><Icon name="history" size={16} /> Maneuver History</button>
-            <button className="btn btn-primary" onClick={() => window.__njGoPlan ? window.__njGoPlan() : window.__njNavigate && window.__njNavigate("navigation")}><Icon name="map" size={16} /> Site Plan</button>
+            <button className="btn btn-secondary" onClick={() => window.__njGoPlan ? window.__njGoPlan() : window.__njNavigate && window.__njNavigate("navigation")}><Icon name="map" size={16} /> Site Plan</button>
           </div>
         </div>
       </div>

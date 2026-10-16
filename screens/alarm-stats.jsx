@@ -55,6 +55,7 @@ const AS_REG = [
   { alarm: "Backwash valve filter 2 position fault",        tag: "DPT4-FIL2-XV1", level: "high",     loc: "DPT4", sub: "Drum filter",      week: 3, month: 12, total: 49, ev: "Returned",           last: "02/03/2026 11:07:52" },
   { alarm: "Level in pump sump High-high alarm",            tag: "DPT4-SMP0-LT2", level: "critical", loc: "DPT4", sub: "Pump Sump",        week: 2, month: 8,  total: 36, ev: "Returned",           last: "01/03/2026 15:41:29" },
 ];
+njBlank(AS_REG); // empty-site demo (lib/empty-site.js)
 
 const AS_PERIODS = { week: { key: "week", days: 7, label: "Last Week" }, month: { key: "month", days: 28, label: "Last Month" } };
 
@@ -571,13 +572,7 @@ function AsRegister({ data, q, onClear }) {
         </table>
       </div>
       <div className="tbl-foot">
-        <span className="rows-select">Rows per page
-          <span className="select ratn-pagesize">
-            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}>
-              {AS_PAGE_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </span>
-        </span>
+        <RowsSelect per={pageSize} options={AS_PAGE_SIZES} onPick={(n) => setPageSize(n)} />
         <span className="small">{filtered.length ? `${start + 1}–${Math.min(start + pageSize, filtered.length)}` : 0} of {filtered.length} alarms
           {filtered.length !== all.length ? ` (filtered from ${all.length})` : ""}</span>
         <AsPager page={cur} totalPages={totalPages} onGo={setPage} />

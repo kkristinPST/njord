@@ -19,8 +19,10 @@ const HP_UNITS = [
     ["Compressor frequency", "12.2 Hz"],
   ]},
 ];
+njBlank(HP_UNITS); // empty-site demo (lib/empty-site.js)
 
 function HeatPumpsScreen() {
+  if (njNoSite()) return <NjNoSitePage active="navigation" title="Heat Pumps" icon="thermometer" what="No heat pumps" body="Heat pump units appear here once they are connected." />;
   const running = HP_UNITS.filter((u) => u.status === "ok").length;
   return (
     <AppShell active="navigation" title="Heat Pumps" crumbs={["Facility utilities"]} statusLevel="ok" scope="facility">

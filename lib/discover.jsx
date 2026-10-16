@@ -47,15 +47,15 @@ const NJ_MODULES = [
   },
   {
     id: "analytics", icon: "line-chart", name: "Analytics",
-    tagline: "Manual readings, commissioning sheets and biofilter maturation.",
-    caps: ["Data Entry", "Commissioning", "Biofilter Maturation (MBBR)"],
-    lead: "The structured record for everything the instruments do not measure themselves: manual rounds, the commissioning period, and the nitrogen chemistry of biofilter start-up.",
+    tagline: "Manual readings, trial period sheets and biofilter maturation.",
+    caps: ["Data Entry", "Trial Period", "Biofilter Maturation (MBBR)"],
+    lead: "The structured record for everything the instruments do not measure themselves: manual rounds, the trial period, and the nitrogen chemistry of biofilter start-up.",
     blocks: [
       { t: "note", x: "Trends is part of the SCADA Basic package, so you already have it. Analytics adds the registration and start-up tooling described below." },
       { t: "sub", x: "Included functionality" },
       { t: "defs", x: [
         ["Data Entry", "A register of manual measurement points organised by location: expected range per measurement, out-of-range marking, reading history, and full entry from the mobile app."],
-        ["Commissioning", "The commissioning log sheet: one row per round, one column per parameter, with the instrument-bucket comparison and the trend of each parameter through the trial."],
+        ["Trial Period", "The trial period log sheet: one row per round with its batch, one column per parameter and sampling point, sensor, probe and lab readings told apart, and the trend of each parameter through the trial, one department or several side by side."],
         ["Biofilter Maturation (MBBR)", "Stoichiometric dosing model for biofilter start-up: nitrogen vitals per round, expected versus recorded chemical doses, and a pH strategy per department."],
       ] },
       { t: "sub", x: "Where it appears" },

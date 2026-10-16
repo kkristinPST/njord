@@ -186,7 +186,7 @@ function NavigationView() {
     setSub(window.__njNavSub || "plan");
     return () => { window.__njDeptTab = null; };
   }, []);
-  if (sub === "plan") return <FacilitySitePlan />;
+  if (sub === "plan") return njNoSite() ? <NjNoSitePage active="navigation" title="Site Plan" icon="map" what="No buildings yet" body="Buildings, departments and their systems appear on the site plan once the site is commissioned." /> : <FacilitySitePlan />;
   if (sub === "Fish Tank") return <TankScreen />;
   if (sub === "RAS" || sub === "MBBR") return <RASScreen active={sub} />;
   if (sub === "Fish Summary") return <FishSummaryView />;

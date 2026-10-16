@@ -42,6 +42,7 @@ const TREND_CATALOG = [
   { tag: "DPT1-EP0-PWR",  name: "Power · DPT1",       unit: "kW",   base: 53.9,  amp: 8,    group: "Energy" },
   { tag: "DPT1-FEED-RATE",name: "Feed rate",          unit: "kg/h", base: 40.9,  amp: 5,    group: "Feeding" },
 ];
+njBlank(TREND_CATALOG); // empty-site demo (lib/empty-site.js)
 const TREND_BY_TAG = {};
 TREND_CATALOG.forEach((c) => { TREND_BY_TAG[c.tag] = c; });
 
@@ -348,7 +349,7 @@ const TREND_LS = "nj_trend_pens_v1";
 function loadPens() {
   try { const r = JSON.parse(localStorage.getItem(TREND_LS)); if (Array.isArray(r) && r.length) return r; } catch (e) {}
   // sensible defaults so the workspace isn't empty on first visit
-  return ["DPT1-FT0-OT1", "DPT1-SMP0-QT3"].map((t, i) => makePen(TREND_BY_TAG[t], i));
+  return ["DPT1-FT0-OT1", "DPT1-SMP0-QT3"].filter((t) => TREND_BY_TAG[t]).map((t, i) => makePen(TREND_BY_TAG[t], i));
 }
 function makePen(cat, colorIdx) {
   return { id: cat.tag, tag: cat.tag, name: cat.name, unit: cat.unit, base: cat.base, amp: cat.amp,
@@ -1289,6 +1290,7 @@ function seedTrendGroups() {
 const TG_DEMO_GAPS = { id: "tg-demo-gaps", name: "Demo · data gaps", visibility: "shared", owner: "System", range: "24h",
   pens: tgSeedPens(["DPT1-SMP0-QT3", "DPT1-SMP0-QT4", "DPT1-FT0-OT1"]), updated: "04 Mar 2026" };
 function loadTrendGroups() {
+  if (window.NJ_EMPTY_SITE) { try { const r = JSON.parse(localStorage.getItem(TREND_GROUPS_LS)); if (Array.isArray(r)) return r; } catch (e) {} return []; }
   try {
     const r = JSON.parse(localStorage.getItem(TREND_GROUPS_LS));
     if (Array.isArray(r)) return r.some((g) => g.id === TG_DEMO_GAPS.id) ? r : r.concat(TG_DEMO_GAPS);

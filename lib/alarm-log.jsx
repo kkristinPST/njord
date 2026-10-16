@@ -20,6 +20,7 @@ const HIST = [
   { t: "04/03/2026 11:20:53", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High-high", event: "Activated", level: "critical", user: "—" },
   { t: "04/03/2026 11:20:53", area: "Building 3 Hatchery Vacuum degasser", tag: "DPT1-STR2-LT1", alarm: "Level sensor vacuum degasser 2 High alarm", event: "Activated", level: "high", user: "—" },
 ];
+njBlank(HIST); // empty-site demo (lib/empty-site.js)
 
 // shared text matcher for alarm tables (tag / area / description / time)
 function alarmMatch(r, q) {

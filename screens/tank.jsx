@@ -167,6 +167,7 @@ const TANK_PANELS = [
     biomass: 0, density: 0, population: 0, volume: 54, avgWt: 0, maxBiomass: 560,
     o2sp: 90, emgLimit: 82, hyst: 2.5, openToday: 0.0, openYest: 0.0, feedTarget: 0, activity: 0, paused: true, screw: "Stopped" },
 ];
+njBlank(TANK_PANELS); // empty-site demo (lib/empty-site.js)
 
 function PumpStat({ tag, label, value, unit, glyph, alarm }) {
   return (

@@ -9,6 +9,7 @@ const EC_SERIES = [
   { key: "DPT4", label: "Consumption DPT4", color: "#9AA7B5" },
   { key: "INT",  label: "Intake Building 2", color: "#1F3A5F" },
 ];
+njBlank(EC_SERIES); // empty-site demo (lib/empty-site.js)
 const EC_BASE = { DPT1: 1240, DPT2: 2480, DPT3: 4310, DPT4: 4205, INT: 1760 };
 
 // deterministic daily kW per series over n days
@@ -84,6 +85,7 @@ function EcChart({ data, active }) {
 }
 
 function EnergyConsumptionScreen() {
+  if (njNoSite()) return <NjNoSitePage active="navigation" title="Energy Consumption" icon="zap" what="No energy meters" body="Energy use per department appears here once meters are connected." />;
   const [days, setDays] = React.useState(7);
   const [active, setActive] = React.useState({ DPT1: true, DPT2: true, DPT3: true, DPT4: true, INT: true });
   const data = React.useMemo(() => ecData(days), [days]);
@@ -120,7 +122,7 @@ function EnergyConsumptionScreen() {
         <EcDeptCard name="DPT3: Growth" mode="GROWTH" power="203.8" today="2,154.0" yesterday="4,788.0" total="9,023,381" />
       </div>
 
-      <div className="card">
+      <div className="card" style={{ marginBottom: 16 }}>
         <div className="card-head">
           <div className="card-head-l"><Icon name="bar-chart-3" size={16} color="var(--slate-600)" /><span className="card-title">Consumption</span></div>
           <div className="segmented ec-range">
