@@ -169,37 +169,50 @@ function njSetTheme(t) { themeStore.set(t); }
 
 // ---- Sidebar collapse store — persisted; shared across every AppShell instance ----
 const COLLAPSE_KEY = "nj_sidebar_collapsed_v1";
-// Tri-state: "auto" (follow viewport — rail below the narrow breakpoint), or an
-// explicit user choice. Resizing across the breakpoint returns to "auto", so the
-// sidebar reflows with the layout instead of fighting it.
+// Wide viewports: tri-state persisted preference — "auto" (expanded), or an explicit user choice.
+// Narrow viewports (≤1080px: small desktop window, tablet, phone): the sidebar NEVER takes layout
+// width beyond the 72px rail. Expanding it opens a temporary OVERLAY drawer on top of the page
+// (scrim behind, Esc / scrim / navigating closes it); this is not persisted, so the desktop
+// preference survives a trip through a narrow window. On phones (≤640px) even the rail is hidden
+// and the drawer opens from the menu button in the top bar.
 const NARROW_MQ = typeof matchMedia === "function" ? matchMedia("(max-width: 1080px)") : null;
+const MOBILE_MQ = typeof matchMedia === "function" ? matchMedia("(max-width: 640px)") : null;
 const collapseStore = {
   // "1" = always rail, "e" = always expanded, anything else (incl. the legacy "0") = auto
   pref: (() => { try { const s = localStorage.getItem(COLLAPSE_KEY); return s === "1" ? true : s === "e" ? false : "auto"; } catch (e) { return "auto"; } })(),
   narrow: !!(NARROW_MQ && NARROW_MQ.matches),
-  get v() { return collapseStore.pref === "auto" ? collapseStore.narrow : collapseStore.pref; },
+  mobile: !!(MOBILE_MQ && MOBILE_MQ.matches),
+  overlay: false, // narrow only: drawer open over the page
+  get v() { return collapseStore.narrow ? !collapseStore.overlay : (collapseStore.pref === "auto" ? false : collapseStore.pref); },
   subs: new Set(),
   emit() { collapseStore.subs.forEach((f) => f()); },
   set(c) {
+    if (collapseStore.narrow) { collapseStore.overlay = !c; collapseStore.emit(); return; }
     collapseStore.pref = !!c;
     try { localStorage.setItem(COLLAPSE_KEY, c ? "1" : "e"); } catch (e) {}
     collapseStore.emit();
   },
   toggle() { collapseStore.set(!collapseStore.v); },
+  open() { collapseStore.set(false); },
+  close() { if (collapseStore.narrow && collapseStore.overlay) { collapseStore.overlay = false; collapseStore.emit(); } },
   subscribe(f) { collapseStore.subs.add(f); return () => collapseStore.subs.delete(f); },
   snapshot() { return collapseStore.v; },
+  narrowSnap() { return collapseStore.narrow; },
+  mobileSnap() { return collapseStore.mobile; },
 };
 if (NARROW_MQ) {
-  const onNarrow = (e) => {
-    collapseStore.narrow = e.matches;
-    collapseStore.pref = "auto";
-    try { localStorage.setItem(COLLAPSE_KEY, "auto"); } catch (err) {}
-    collapseStore.emit();
-  };
+  const onNarrow = (e) => { collapseStore.narrow = e.matches; collapseStore.overlay = false; collapseStore.emit(); };
   if (NARROW_MQ.addEventListener) NARROW_MQ.addEventListener("change", onNarrow);
   else NARROW_MQ.addListener(onNarrow);
 }
+if (MOBILE_MQ) {
+  const onMobile = (e) => { collapseStore.mobile = e.matches; collapseStore.emit(); };
+  if (MOBILE_MQ.addEventListener) MOBILE_MQ.addEventListener("change", onMobile);
+  else MOBILE_MQ.addListener(onMobile);
+}
 function useCollapsed() { return React.useSyncExternalStore(collapseStore.subscribe, collapseStore.snapshot); }
+function useNarrow() { return React.useSyncExternalStore(collapseStore.subscribe, collapseStore.narrowSnap); }
+function useMobile() { return React.useSyncExternalStore(collapseStore.subscribe, collapseStore.mobileSnap); }
 
 // ---- Table density (comfortable / compact) — persisted, applied as a body class ----
 const DENSITY_KEY = "nj_density_compact_v1";
@@ -441,6 +454,20 @@ function Sidebar({ active }) {
   // picker is what it used to belong to. Scope lives in the top bar, on scoped screens only.
   const collapsed = useCollapsed();
   const compact = useDensity();
+  const narrow = useNarrow();
+  const mobile = useMobile();
+  const overlay = narrow && !collapsed;
+  const sbRef = React.useRef(null);
+  // overlay drawer: Esc closes it; focus moves into it on open and back to the opener on close
+  React.useEffect(() => {
+    if (!overlay) return;
+    const opener = document.activeElement;
+    const first = sbRef.current && sbRef.current.querySelector(".sb-collapse");
+    if (first) first.focus();
+    const onKey = (e) => { if (e.key === "Escape") collapseStore.close(); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); if (opener && opener.focus && document.contains(opener)) opener.focus(); };
+  }, [overlay]);
   useAlarmHub();
   const ac = alarmCounts();
   const [uMenu, setUMenu] = React.useState(false);
@@ -454,17 +481,18 @@ function Sidebar({ active }) {
   }, [uMenu]);
   const signOut = () => openDialog(<ConfirmDialog title="Sign out" message="Sign out of NJORD?" detail="Any unsaved changes in open dialogs will be lost. Active alarms keep annunciating for the next operator." confirmLabel="Sign out" tone="danger" onConfirm={() => njToast("Signed out: returning to login.")} />);
   return (
-    <aside className={"sidebar" + (collapsed ? " collapsed" : "")}>
+    <aside ref={sbRef} id="nj-sidebar" className={"sidebar" + (collapsed ? " collapsed" : "") + (overlay ? " overlay" : "")}
+      {...(overlay ? { role: "dialog", "aria-modal": "true", "aria-label": "Main menu" } : {})}>
       <div className="sb-logo">
         {/* Full width: the wordmark goes home (operators expect it). Collapsed: the mark expands the rail, unchanged. */}
         {!collapsed && (
-          <button className="sb-home" onClick={() => window.__njNavigate && window.__njNavigate("start")} aria-label="NJORD, go to Dashboard">
+          <button className="sb-home" onClick={() => { collapseStore.close(); window.__njNavigate && window.__njNavigate("start"); }} aria-label="NJORD, go to Dashboard">
             <img className="sb-wordmark" src={(window.__resources && window.__resources.njWordmark) || "assets/njord-wordmark.png"} alt="" />
           </button>
         )}
         {!collapsed && (
-          <button className="sb-collapse" onClick={() => collapseStore.toggle()} title="Collapse sidebar" aria-label="Collapse sidebar">
-            <Icon name="chevrons-left" size={20} color="var(--slate-400)" />
+          <button className="sb-collapse" onClick={() => collapseStore.toggle()} title={overlay ? "Close menu" : "Collapse sidebar"} aria-label={overlay ? "Close menu" : "Collapse sidebar"}>
+            <Icon name={mobile ? "x" : "chevrons-left"} size={20} color="var(--slate-400)" />
           </button>
         )}
         {collapsed && (
@@ -479,7 +507,8 @@ function Sidebar({ active }) {
           const badge = n.id === "alarms" ? (ac.unack || null) : n.badge;
           return (
             <button key={n.id} className={"sb-item" + (isActive ? " active" : "")} title={collapsed ? n.label : undefined}
-              onClick={() => { if (n.id === "navigation" && window.__njGoPlan) { window.__njGoPlan(); } else if (n.id === window.__njRoute && window.__njResetRoute) { window.__njResetRoute(); } else if (window.__njNavigate) { window.__njNavigate(n.id); } }}>
+              aria-current={isActive ? "page" : undefined}
+              onClick={() => { collapseStore.close(); if (n.id === "navigation" && window.__njGoPlan) { window.__njGoPlan(); } else if (n.id === window.__njRoute && window.__njResetRoute) { window.__njResetRoute(); } else if (window.__njNavigate) { window.__njNavigate(n.id); } }}>
               <span className="sb-item-l">
                 <Icon name={n.icon} size={20} />
                 {!collapsed && <span className="sb-label">{n.label}</span>}
@@ -499,12 +528,13 @@ function Sidebar({ active }) {
         {uMenu && (
           <div className="sb-user-menu" role="menu">
             <div className="sb-um-head"><span className="sb-avatar sb-avatar-sm">ES</span><div><div className="sb-user-name">E. Sørensen</div><div className="sb-user-role">Shift Supervisor · on shift</div></div></div>
-            <button className="sb-um-item" role="menuitem" onClick={() => { setUMenu(false); if (window.openProfile) window.openProfile(); }}><Icon name="user" size={16} /> Profile & account</button>
-            <button className="sb-um-item" role="menuitem" onClick={() => { setUMenu(false); if (window.openPreferences) window.openPreferences(); }}><Icon name="sliders-horizontal" size={16} /> Preferences</button>
+            <button className="sb-um-item" role="menuitem" onClick={() => { setUMenu(false); collapseStore.close(); if (window.openProfile) window.openProfile(); }}><Icon name="user" size={16} /> Profile & account</button>
+            <button className="sb-um-item" role="menuitem" onClick={() => { setUMenu(false); collapseStore.close(); if (window.openPreferences) window.openPreferences(); }}><Icon name="sliders-horizontal" size={16} /> Preferences</button>
             <button className="sb-um-item" role="menuitem" aria-pressed={compact} onClick={() => densityStore.toggle()}><Icon name="rows-3" size={16} /> Compact density <span className={"sb-um-tog" + (compact ? " on" : "")}>{compact ? "On" : "Off"}</span></button>
-            <button className="sb-um-item" role="menuitem" onClick={() => { setUMenu(false); if (window.openHelp) window.openHelp(); }}><Icon name="help-circle" size={16} /> Help & manuals</button>
+            <button className="sb-um-item" role="menuitem" onClick={() => { setUMenu(false); collapseStore.close(); if (window.openHelp) window.openHelp(); }}><Icon name="help-circle" size={16} /> Help & manuals</button>
+            <button className="sb-um-item sb-um-narrow" role="menuitem" onClick={() => { setUMenu(false); collapseStore.close(); if (window.openNotes) window.openNotes(); }}><Icon name="notebook-pen" size={16} /> Notes</button>
             <div className="sb-um-div" />
-            <button className="sb-um-item sb-um-danger" role="menuitem" onClick={() => { setUMenu(false); signOut(); }}><Icon name="log-out" size={16} /> Sign out</button>
+            <button className="sb-um-item sb-um-danger" role="menuitem" onClick={() => { setUMenu(false); collapseStore.close(); signOut(); }}><Icon name="log-out" size={16} /> Sign out</button>
           </div>
         )}
         <button className={"sb-user" + (uMenu ? " open" : "")} onClick={() => setUMenu((v) => !v)} title="Account" aria-haspopup="menu" aria-expanded={uMenu}>
@@ -538,6 +568,11 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
   return (
     <div className="topbar">
       <div className={"topbar-l" + (scope !== "facility" ? " has-scope" : "")}>
+        {/* phones only (CSS): the rail is hidden there, so this opens the overlay menu */}
+        <button className="tb-menu" onClick={() => collapseStore.open()} aria-label="Open menu" aria-controls="nj-sidebar" title="Menu">
+          <Icon name="menu" size={20} />
+          {ac.unack > 0 && <span className="tb-menu-dot" />}
+        </button>
         <span className="tb-status" style={{ background: (SEV[statusLevel] || SEV.ok).dot }} />
         {scope !== "facility" && (
           <React.Fragment>
@@ -570,11 +605,11 @@ function TopBar({ title, crumbs = [], statusLevel = "ok", scope = "dept" }) {
             for the pair to be confused with, colour carries the priority, and each tooltip names
             the set in the same word as the tab it opens. */}
         <span className="tb-annun">
-          <button className="tb-pill" title={`${ac.critical} active critical alarms · opens the Active list filtered to Critical`} aria-label={`${ac.critical} active critical alarms`} onClick={() => window.__njGoAlarms("Active", "critical")} style={{ background: "var(--critical-solid)", color: "#fff" }}>
-            <span className="d" style={{ background: "#fff" }} /> {ac.critical}
+          <button className="tb-pill" title={`${ac.critical} active critical alarms · opens the Active list filtered to Critical`} aria-label={`${ac.critical} active critical alarms`} onClick={() => window.__njGoAlarms("Active", "critical")} style={ac.critical ? { background: "var(--critical-solid)", color: "#fff" } : { background: "var(--slate-100)", color: "var(--slate-500)" }}>
+            <span className="d" style={{ background: ac.critical ? "#fff" : "var(--slate-400)" }} /> {ac.critical}
           </button>
-          <button className="tb-pill" title={`${ac.high} active high alarms · opens the Active list filtered to High`} aria-label={`${ac.high} active high alarms`} onClick={() => window.__njGoAlarms("Active", "high")} style={{ background: "var(--warning-bg)", color: "var(--warning-text)" }}>
-            <span className="d" style={{ background: "var(--warning)" }} /> {ac.high}
+          <button className="tb-pill" title={`${ac.high} active high alarms · opens the Active list filtered to High`} aria-label={`${ac.high} active high alarms`} onClick={() => window.__njGoAlarms("Active", "high")} style={ac.high ? { background: "var(--warning-bg)", color: "var(--warning-text)" } : { background: "var(--slate-100)", color: "var(--slate-500)" }}>
+            <span className="d" style={{ background: ac.high ? "var(--warning)" : "var(--slate-400)" }} /> {ac.high}
           </button>
         </span>
         <button className="tb-bell" title={ac.unack > 0 ? `${ac.unack} alarms await acknowledgement · opens the full register` : "Opens the full alarm register"} aria-label={ac.unack > 0 ? `Alarm register · ${ac.unack} unacknowledged` : "Alarm register"} onClick={() => window.__njGoAlarms("All Alarms")}>
@@ -678,9 +713,13 @@ function AppShell({ active, title, crumbs, statusLevel, children, collapsed, sco
   const { building, dept } = useCtx();
   let sev = statusLevel;
   if (systemLabel && building && dept) sev = njSev(njSystemStatus(building.id, dept.id, systemLabel));
+  const isCollapsed = useCollapsed();
+  const narrow = useNarrow();
+  const overlay = narrow && !isCollapsed;
   return (
-    <div className="app">
+    <div className={"app" + (overlay ? " sb-open" : "")}>
       <Sidebar active={active} collapsed={collapsed} />
+      {overlay && <button className="sb-scrim" aria-label="Close menu" tabIndex={-1} onClick={() => collapseStore.close()} />}
       <div className="main">
         <TopBar title={title} crumbs={crumbs} statusLevel={sev} scope={scope} />
         <AlarmAnnunciator />
@@ -828,4 +867,4 @@ function njActivate(fn) {
   };
 }
 
-Object.assign(window, { njFlag, NJ_FLAG_DEFAULTS, njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, usePaged, useFitRows, NJ_FIT_ROWS, NjPager, RowsSelect, PageFoot });
+Object.assign(window, { njFlag, NJ_FLAG_DEFAULTS, njActivate, njCheckable, SEV, Dot, Badge, Check, KpiCard, Card, Sidebar, TopBar, AppShell, AlarmAnnunciator, NjClock, njFmtTs, njClockNow, NAV, FACILITY, FACILITY_OTHER, useCtx, setCtx, ctxStore, njPickContext, njDeptSystemFallback, njDeptHasSystem, njResolveArea, njDeptOffers, njGoArea, njGoSystem, AreaLink, njSev, njSystemStatus, themeStore, useTheme, njSetTheme, densityStore, useDensity, collapseStore, useCollapsed, useNarrow, useMobile, usePaged, useFitRows, NJ_FIT_ROWS, NjPager, RowsSelect, PageFoot });
